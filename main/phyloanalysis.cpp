@@ -2633,7 +2633,7 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     }
     
     if (params.print_extant_seqs) {
-        printExtantSequences((string)params.out_prefix + ".extant", &iqtree);
+        printExtantSequences(((string)params.out_prefix + ".extant").c_str(), &iqtree);
     }
     
     if (params.print_site_state_freq != WSF_NONE && !params.site_freq_file && !params.tree_freq_file) {

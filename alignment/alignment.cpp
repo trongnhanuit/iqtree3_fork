@@ -32,6 +32,7 @@ using namespace Eigen;
 
 char symbols_protein[] = "ARNDCQEGHILKMFPSTWYVX"; // X for unknown AA
 char symbols_dna[]     = "ACGT";
+char symbols_genotype[] = "ACGTMRWSYK";
 char symbols_rna[]     = "ACGU";
 //char symbols_binary[]  = "01";
 char symbols_morph[] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
@@ -1537,6 +1538,7 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
     size_t num_nuc   = 0;
     size_t num_ungap = 0;
     size_t num_bin   = 0;
+    size_t num_genotype = 0;
     size_t num_alpha = 0;
     size_t num_digit = 0;
     double detectStart = getRealTime();
@@ -1554,6 +1556,11 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
                 continue;
             }
             if ((*i)=='?' || (*i)=='-' || (*i) == '.' ) {
+                continue;
+            }
+            if (strchr(symbols_genotype, (*i))) {
+                ++num_genotype;
+                ++num_ungap;
                 continue;
             }
             if (*i != 'N' && *i != 'X' &&  (*i) != '~') {
@@ -1577,9 +1584,11 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
         return SEQ_DNA;
     if (num_bin == num_ungap) // For binary data, only 0, 1, ?, -, . can occur
         return SEQ_BINARY;
-    if (((double)num_alpha + num_nuc) / num_ungap > 0.9)
+    if (((double)num_genotype + num_nuc) / num_ungap > 0.9)
+        return SEQ_GENOTYPE;
+    if (((double)num_alpha + num_genotype + num_nuc) / num_ungap > 0.9)
         return SEQ_PROTEIN;
-    if (((double)(num_alpha + num_digit + num_nuc)) / num_ungap > 0.9)
+    if (((double)(num_alpha + num_genotype + num_digit + num_nuc)) / num_ungap > 0.9)
         return SEQ_MORPH;
     return SEQ_UNKNOWN;
 }
@@ -2023,6 +2032,12 @@ int Alignment::buildPattern(StrVector &sequences, char *sequence_type, int nseq,
     case SEQ_PROTEIN:
         num_states = 20;
         cout << "Alignment most likely contains protein sequences" << endl;
+        break;
+    case SEQ_GENOTYPE:
+        //num_states = getGenotypeStates(sequences);
+        num_states = 10;
+        if (num_states < 2 || num_states > 16) throw "Invalid number of states.";
+        cout << "Alignment most likely contains " << num_states << "-state genotype data" << endl;
         break;
     case SEQ_MORPH:
         num_states = getMorphStates(sequences);

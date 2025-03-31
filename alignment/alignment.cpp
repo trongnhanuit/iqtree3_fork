@@ -1962,6 +1962,9 @@ string Alignment::getSeqTypeStr(SeqType sequence_type) {
     case SEQ_PROTEIN:
         return "PROT";
         break;
+    case SEQ_GENOTYPE:
+        return "GT";
+        break;
     case SEQ_MORPH:
         return "MORPH";
         break;

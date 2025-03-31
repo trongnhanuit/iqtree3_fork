@@ -1628,6 +1628,7 @@ void Alignment::buildStateMap(char *map, SeqType seq_type) {
     case SEQ_GENOTYPE:
         for (int i = 0; i < STATE_UNKNOWN; i++)
             map[(int)symbols_genotype[i]] = i;
+        map[(unsigned char)'N'] = STATE_UNKNOWN;
         return;
     case SEQ_PROTEIN: // Protein
         for (int i = 0; i < 20; i++)

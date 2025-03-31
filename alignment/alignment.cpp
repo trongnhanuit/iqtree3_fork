@@ -1558,11 +1558,6 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
             if ((*i)=='?' || (*i)=='-' || (*i) == '.' ) {
                 continue;
             }
-            if (strchr(symbols_genotype, (*i))) {
-                ++num_genotype;
-                ++num_ungap;
-                continue;
-            }
             if (*i != 'N' && *i != 'X' &&  (*i) != '~') {
                 num_ungap++;
                 if (isdigit(*i)) {
@@ -1570,6 +1565,9 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
                     if ((*i) == '0' || (*i) == '1') {
                         num_bin++;
                     }
+                }
+                if (strchr(symbols_genotype, (*i))) {
+                    ++num_genotype;
                 }
             }
             if (isalpha(*i)) {
@@ -1586,9 +1584,9 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
         return SEQ_BINARY;
     if (((double)num_genotype + num_nuc) / num_ungap > 0.9)
         return SEQ_GENOTYPE;
-    if (((double)num_alpha + num_genotype + num_nuc) / num_ungap > 0.9)
+    if (((double)num_alpha + num_nuc) / num_ungap > 0.9)
         return SEQ_PROTEIN;
-    if (((double)(num_alpha + num_genotype + num_digit + num_nuc)) / num_ungap > 0.9)
+    if (((double)(num_alpha + num_digit + num_nuc)) / num_ungap > 0.9)
         return SEQ_MORPH;
     return SEQ_UNKNOWN;
 }
@@ -1626,6 +1624,10 @@ void Alignment::buildStateMap(char *map, SeqType seq_type) {
         map[(unsigned char)'H'] = 1+2+8+3; // A or C or T
         map[(unsigned char)'D'] = 1+4+8+3; // A or G or T
         map[(unsigned char)'V'] = 1+2+4+3; // A or G or C
+        return;
+    case SEQ_GENOTYPE:
+        for (int i = 0; i < STATE_UNKNOWN; i++)
+            map[(int)symbols_genotype[i]] = i;
         return;
     case SEQ_PROTEIN: // Protein
         for (int i = 0; i < 20; i++)
@@ -2060,6 +2062,9 @@ int Alignment::buildPattern(StrVector &sequences, char *sequence_type, int nseq,
         } else if (strcmp(sequence_type, "NT") == 0 || strcmp(sequence_type, "DNA") == 0) {
             num_states = 4;
             user_seq_type = SEQ_DNA;
+        } else if (strcmp(sequence_type, "GT") == 0) {
+            num_states = 10;
+            user_seq_type = SEQ_GENOTYPE;
         } else if (strcmp(sequence_type, "AA") == 0 || strcmp(sequence_type, "PROT") == 0) {
             num_states = 20;
             user_seq_type = SEQ_PROTEIN;

@@ -1721,6 +1721,16 @@ StateType Alignment::convertState(char state, SeqType seq_type) {
             return STATE_INVALID; // unrecognize character
         }
         return state;
+    case SEQ_GENOTYPE:
+        if (state == 'N') return STATE_UNKNOWN;
+        loc = strchr(symbols_genotype, state);
+
+        if (!loc) return STATE_INVALID; // unrecognize character
+        state = loc - symbols_genotype;
+        if (state < num_states)
+            return state;
+        else
+            return STATE_UNKNOWN;
     case SEQ_PROTEIN: // Protein
 //		if (state == 'B') return 4+8+19;
 //		if (state == 'Z') return 32+64+19;

@@ -15,6 +15,7 @@
 #include "modelset.h"
 #include "modelmixture.h"
 #include "modelpomo.h"
+#include "modelgenotype.h"
 //#include "phylokernelmixture.h"
 #include "modelpomomixture.h"
 
@@ -1176,7 +1177,9 @@ ModelSubst* createModel(string model_str, ModelsBlock *models_block,
 		model = new ModelCodon(model_str.c_str(), model_params, freq_type, freq_params, tree);
 	} else if (tree->aln->seq_type == SEQ_MORPH) {
 		model = new ModelMorphology(model_str.c_str(), model_params, freq_type, freq_params, tree);
-	} else {
+    } else if (tree->aln->seq_type == SEQ_GENOTYPE) {
+        model = new ModelGENOTYPE(model_str.c_str(), model_params, freq_type, freq_params, tree);
+    } else {
 		outError("Unsupported model type");
 	}
 

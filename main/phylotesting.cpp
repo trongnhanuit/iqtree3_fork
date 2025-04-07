@@ -60,6 +60,9 @@
 /******* Binary model set ******/
 const char* bin_model_names[] = {"GTR2", "JC2"};
 
+/******* Genotype model set ******/
+const char* genotype_model_names[] = {"GTR", "JC"};
+
 
 /******* Morphological model set ******/
 // 2018-08-20: don't test ORDERED model due to lots of numerical issues
@@ -208,6 +211,7 @@ const char* codon_usual_model = "GY+F3X4";
 const char* bin_usual_model = "GTR2";
 const char* morph_usual_model = "MK";
 const char* pomo_usual_model = "GTR+P";
+const char* genotype_usual_model = "GTR";
 
 //const double TOL_LIKELIHOOD_MODELTEST = 0.1;
 const double TOL_GRADIENT_MODELTEST   = 0.0001;
@@ -245,6 +249,7 @@ string getUsualModelSubst(SeqType seq_type) {
         case SEQ_BINARY: return bin_usual_model;
         case SEQ_MORPH: return morph_usual_model;
         case SEQ_POMO: return pomo_usual_model;
+        case SEQ_GENOTYPE: return genotype_usual_model;
         default: ASSERT(0 && "Unprocessed seq_type"); return "";
     }
 }
@@ -940,6 +945,16 @@ void getModelSubst(SeqType seq_type, bool standard_code, string model_name,
             // append model_set into existing models
             convert_string_vec(model_set.c_str()+1, model_names);
             appendCString(bin_model_names, sizeof(bin_model_names) / sizeof(char*), model_names);
+        } else {
+            convert_string_vec(model_set.c_str(), model_names);
+        }
+    } else if (seq_type == SEQ_GENOTYPE) {
+        if (model_set.empty()) {
+            copyCString(genotype_model_names, sizeof(genotype_model_names) / sizeof(char*), model_names);
+        } else if (model_set[0] == '+') {
+            // append model_set into existing models
+            convert_string_vec(model_set.c_str()+1, model_names);
+            appendCString(genotype_model_names, sizeof(genotype_model_names) / sizeof(char*), model_names);
         } else {
             convert_string_vec(model_set.c_str(), model_names);
         }

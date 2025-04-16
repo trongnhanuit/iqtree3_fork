@@ -55,6 +55,13 @@ string::size_type posRateFree(string &model_name);
 string::size_type posPOMO(string &model_name);
 
 /**
+    return the position of +GT or *GT in the model name
+    @param model_name model name string
+    @return position of +GT or *GT in the model string, string::npos if not found
+*/
+string::size_type posGenotype(const string& model_name);
+
+/**
 Store the transition matrix corresponding to evolutionary time so that one must not compute again. 
 For efficiency purpose esp. for protein (20x20) or codon (61x61).
 The values of the map contain 3 matricies consecutively: transition matrix, 1st, and 2nd derivative
@@ -321,6 +328,14 @@ protected:
     vector<double> optimizeGammaInvWithInitValue(int fixed_len, double logl_epsilon, double gradient_epsilon,
                                        double initPInv, double initAlpha, DoubleVector &lenvec, Checkpoint *model_ckp);
     
+    /**
+    restore the parameters for the Pomo and Genotype models
+    @param[in] seq_type Pomo or genotype
+    @param[in] p_pos position of +/*P or +/*GT
+    @param[in|out] rate_str rate string
+    @param[out] model_str model name string
+    */
+    void restorePomoGenotypeModel(const SeqType& seq_type, const string::size_type& p_pos, string& rate_str, string& model_str);
 };
 
 #endif

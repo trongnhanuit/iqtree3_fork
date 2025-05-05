@@ -2027,6 +2027,9 @@ public:
     
     /** TRUE to print extant ancestral sequences */
     bool print_extant_seqs;
+    
+    /** TRUE to reconstruct (ancestral/extant) sequences with gap prediction */
+    bool gapped_seq_reconstruction;
 
     /**
         0: print nothing

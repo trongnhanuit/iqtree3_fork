@@ -227,17 +227,47 @@ void printSiteLhCategory(const char*filename, PhyloTree *tree, SiteLoglType wsl)
     
 }
 
-void printAncestralSequences(const char *out_prefix, PhyloTree *tree, AncestralSeqType ast) {
-    printAncestralOrExtantSequences(true, out_prefix, tree, ast);
+void printAncestralSequences(const char *out_prefix, PhyloTree *tree, PhyloTree* gsr_tree, AncestralSeqType ast) {
+    printAncestralOrExtantSequences(true, out_prefix, tree, gsr_tree, ast);
 }
 
-void printExtantSequences(const char *out_prefix, PhyloTree* tree)
+void printExtantSequences(const char *out_prefix, PhyloTree* tree, PhyloTree* gsr_tree)
 {
-    printAncestralOrExtantSequences(false, out_prefix, tree, AST_NONE);
+    printAncestralOrExtantSequences(false, out_prefix, tree, gsr_tree, AST_NONE);
 }
 
-void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_prefix, PhyloTree *tree, AncestralSeqType ast)
+void computeMarginalState(const bool is_ancestral, PhyloTree *tree, PhyloNode *node, double *marginal_ancestral_prob, int *marginal_ancestral_seq)
 {
+    PhyloNode *dad = (PhyloNode*)node->neighbors[0]->node;
+    
+    // evoke the corresponding function according to the type of sequences
+    // we want to reconstruct
+    if (is_ancestral)
+    {
+        tree->computeMarginalAncestralState((PhyloNeighbor*)dad->findNeighbor(node), dad,
+                                            marginal_ancestral_prob, marginal_ancestral_seq);
+    }
+    else
+    {
+        tree->computeMarginalExtantState((PhyloNeighbor*)dad->findNeighbor(node), dad,
+                                            marginal_ancestral_prob, marginal_ancestral_seq);
+    }
+    
+    //            int *joint_ancestral_node = joint_ancestral + (node->id - tree->leafNum)*nptn;
+    
+    // set node name if neccessary
+    if (node->name.empty() || !isalpha(node->name[0])) {
+        node->name = "Node" + convertIntToString(node->id-tree->leafNum+1);
+    }
+}
+
+void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_prefix, PhyloTree *tree, PhyloTree* gsr_tree, AncestralSeqType ast)
+{
+    // make sure if users want to reconstruct sequences with gaps, the gsr_tree must be provided here (not null)
+    const bool gapped_seq_reconstruction = tree->params->gapped_seq_reconstruction;
+    ASSERT(!gapped_seq_reconstruction
+           || gsr_tree);
+    
     // init dummy variables
     const string reconstructed_seq_type = is_ancestral ? "Ancestral" : "Extant";
     
@@ -304,6 +334,20 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
             for (size_t i = 0; i < tree->aln->num_states; i++)
                 out << "\tp_" << tree->aln->convertStateBackStr(i);
         }
+        
+        // if reconstructing gapped ancestral/extant sequences
+        double *marginal_gsr_prob;
+        int *marginal_gsr_seq;
+        bool gsr_orig_kernel_nonrev;
+        if (gapped_seq_reconstruction)
+        {
+            // add two columns: p_gap and p_non_gap, if needed
+            out << "\tp_gap\tp_non_gap";
+            
+            // init variables
+            gsr_tree->initMarginalAncestralState(out, gsr_orig_kernel_nonrev, marginal_gsr_prob, marginal_gsr_seq);
+        }
+        
         out << endl;
         
         
@@ -312,30 +356,24 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
         
         for (NodeVector::iterator it = nodes.begin(); it != nodes.end(); it++) {
             PhyloNode *node = (PhyloNode*)(*it);
-            PhyloNode *dad = (PhyloNode*)node->neighbors[0]->node;
             
-            // evoke the corresponding function according to the type of sequences
+            // evoke the corresponding function according to the type of non-gapped sequences
             // we want to reconstruct
-            if (is_ancestral)
-            {
-                tree->computeMarginalAncestralState((PhyloNeighbor*)dad->findNeighbor(node), dad,
-                                                    marginal_ancestral_prob, marginal_ancestral_seq);
-            }
-            else
-            {
-                tree->computeMarginalExtantState((PhyloNeighbor*)dad->findNeighbor(node), dad,
-                                                    marginal_ancestral_prob, marginal_ancestral_seq);
-            }
+            computeMarginalState(is_ancestral, tree, node, marginal_ancestral_prob, marginal_ancestral_seq);
             
-            //            int *joint_ancestral_node = joint_ancestral + (node->id - tree->leafNum)*nptn;
-            
-            // set node name if neccessary
-            if (node->name.empty() || !isalpha(node->name[0])) {
-                node->name = "Node" + convertIntToString(node->id-tree->leafNum+1);
+            // if reconstructing gapped ancestral/extant sequences
+            if (gapped_seq_reconstruction)
+            {
+                // find the corresponding node
+                PhyloNode *gsr_node = (PhyloNode*)gsr_tree->findNodeID(node->id);
+                
+                // evoke the corresponding function according to the type of gapped sequences
+                // we want to reconstruct
+                computeMarginalState(is_ancestral, gsr_tree, gsr_node, marginal_gsr_prob, marginal_gsr_seq);
             }
             
             // print ancestral state probabilities
-            tree->writeMarginalAncestralState(out, node, marginal_ancestral_prob, marginal_ancestral_seq);
+            tree->writeMarginalAncestralState(out, node, marginal_ancestral_prob, marginal_ancestral_seq, gsr_tree, marginal_gsr_prob, marginal_gsr_seq);
             
             // print ancestral sequences
             //            outseq.width(name_width);
@@ -354,6 +392,13 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
         }
         
         tree->endMarginalAncestralState(orig_kernel_nonrev, marginal_ancestral_prob, marginal_ancestral_seq);
+        
+        // if reconstructing gapped ancestral/extant sequences
+        if (gapped_seq_reconstruction)
+        {
+            // release memory allocation
+            gsr_tree->endMarginalAncestralState(gsr_orig_kernel_nonrev, marginal_gsr_prob, marginal_gsr_seq);
+        }
         
         out.close();
         //        outseq.close();

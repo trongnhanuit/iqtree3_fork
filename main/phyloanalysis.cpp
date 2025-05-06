@@ -2628,6 +2628,11 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
         printSiteProbCategory(((string)params.out_prefix + ".siteprob").c_str(), &iqtree, params.print_site_prob);
     }
     
+    // reconstruct gapped sequences, if needed
+    if (iqtree.params->gapped_seq_reconstruction
+        && iqtree.aln->seq_type != SEQ_BINARY)
+        reconstructGappedSeqs(*iqtree.params, iqtree.aln);
+    
     if (params.print_ancestral_sequence) {
         printAncestralSequences(params.out_prefix, &iqtree, params.print_ancestral_sequence);
     }
@@ -5259,6 +5264,39 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
 
     checkpoint->putBool("finished", true);
     checkpoint->dump(true);
+}
+
+void reconstructGappedSeqs(Params &params, Alignment* original_aln)
+{
+    if (verbose_mode >= VB_MIN)
+        cout << "Start reconstructing gapped sequences..." << endl;
+    
+    // convert the original aln into binary aln
+    Alignment* alignment = original_aln->convertToBin();
+    
+    // dummy variables
+    /*IQTree *tree;
+
+    
+    // init a dummy checkpoint
+    Checkpoint *checkpoint = new Checkpoint;
+    string filename = (string)Params::getInstance().out_prefix +".bin.ckp.gz";
+    checkpoint->setFileName(filename);
+    checkpoint->startStruct("iqtree-bin");
+    checkpoint->endStruct();
+    
+    // convert aln into binary
+    
+
+    // runPhyloAnalysis(params, checkpoint, tree, alignment);
+
+    // clean up
+    alignment = tree->aln;
+    delete tree;
+    delete alignment;*/
+    
+    if (verbose_mode >= VB_MIN)
+        cout << "Finish reconstructing gapped sequences." << endl;
 }
 
 void runPhyloAnalysis(Params &params, Checkpoint *checkpoint) {

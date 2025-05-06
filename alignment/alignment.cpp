@@ -3790,6 +3790,47 @@ Alignment *Alignment::convertCodonToDNA() {
     return res;
 }
 
+Alignment* Alignment::convertToBin()
+{
+    Alignment *res = new Alignment;
+    for (size_t i = 0; i < getNSeq(); ++i) {
+        res->seq_names.push_back(getSeqName(i));
+    }
+    res->name = name;
+    res->model_name = ""; //res->model_name = model_name;
+    res->sequence_type = "BIN"; //res->sequence_type = sequence_type;
+    res->position_spec = position_spec;
+    res->aln_file = aln_file;
+    res->seq_type = SEQ_BINARY;
+    res->num_states = 2;
+    
+    res->computeUnknownState();
+    
+    res->site_pattern.resize(getNSite(), -1);
+    res->clear();
+    res->pattern_index.clear();
+    
+    VerboseMode save_mode = verbose_mode;
+    verbose_mode = min(verbose_mode, VB_MIN); // to avoid printing gappy sites in addPattern
+    size_t nsite = getNSite();
+    size_t nseq = getNSeq();
+    Pattern pat;
+    pat.resize(nseq);
+
+    for (size_t site = 0; site < nsite; ++site)
+    {
+        for (size_t seq = 0; seq < nseq; ++seq)
+        {
+            StateType state = at(getPatternID(site))[seq];
+            pat[seq] = state == STATE_UNKNOWN ? 0 : 1;
+        }
+        res->addPattern(pat, site);
+    }
+    verbose_mode = save_mode;
+    res->countConstSite();
+    return res;
+}
+
 void convert_range(const char *str, int &lower, int &upper, int &step_size, char* &endptr) noexcept(false) {
 
     // parse the lower bound of the range

@@ -49,6 +49,12 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint);
 */
 void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&aln);
 
+/**
+    reconstruct (ancestral/extant) sequences with gaps from faked binary data
+    @param params program parameters
+*/
+void reconstructGappedSeqs(Params &params, Alignment* original_aln);
+
 /*! \brief Run CMaple algorithm for phylogenetic inference (if suitable)
  *  @param params program parameters
  *  @return TRUE if CMaple algorithm is applicable for the input alignment

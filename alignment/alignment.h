@@ -660,6 +660,11 @@ public:
      convert this codon alignment to DNA
      */
     Alignment *convertCodonToDNA();
+    
+    /**
+        convert an alignment into binary (gap/non-gap) alignment
+    */
+    Alignment* convertToBin();
 
     /**
      @param quartet ID of four taxa

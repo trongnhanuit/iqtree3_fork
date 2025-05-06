@@ -5113,6 +5113,11 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
         cout << "Alignment sites statistics printed to " << site_info_file << endl;
     }
 
+    runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment);
+}
+
+void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&alignment)
+{
     /*************** initialize tree ********************/
     tree = newIQTree(params, alignment);
 
@@ -5275,8 +5280,7 @@ void reconstructGappedSeqs(Params &params, Alignment* original_aln)
     Alignment* alignment = original_aln->convertToBin();
     
     // dummy variables
-    /*IQTree *tree;
-
+    IQTree *tree;
     
     // init a dummy checkpoint
     Checkpoint *checkpoint = new Checkpoint;
@@ -5285,15 +5289,19 @@ void reconstructGappedSeqs(Params &params, Alignment* original_aln)
     checkpoint->startStruct("iqtree-bin");
     checkpoint->endStruct();
     
-    // convert aln into binary
+    // temporarily reset several variables
+    string bk_params_model_name= params.model_name;
+    params.model_name = ""; // to run ModelFinder
+     
+    runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment);
     
-
-    // runPhyloAnalysis(params, checkpoint, tree, alignment);
-
     // clean up
     alignment = tree->aln;
     delete tree;
-    delete alignment;*/
+    delete alignment;
+    
+    // restore variables
+    params.model_name = bk_params_model_name;
     
     if (verbose_mode >= VB_MIN)
         cout << "Finish reconstructing gapped sequences." << endl;

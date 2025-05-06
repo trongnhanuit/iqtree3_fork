@@ -50,6 +50,12 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint);
 void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&aln);
 
 /**
+    carry out phylogenetic inference after reading an alignment
+    @param params program parameters
+*/
+void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&aln);
+
+/**
     reconstruct (ancestral/extant) sequences with gaps from faked binary data
     @param params program parameters
 */

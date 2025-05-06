@@ -1536,9 +1536,14 @@ void PhyloTree::computeMarginalState(PhyloNeighbor *dad_branch, PhyloNode *dad,
 
 }
 
-void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq) {
+void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq, PhyloTree* gsr_tree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
     size_t nsites = aln->getNSite();
     size_t nstates = model->num_states;
+    
+    // num_states for gapped sequence reconstruction, default: 2
+    size_t gsr_nstates = gsr_tree ? gsr_tree->model->num_states : 2;
+    ASSERT(!gsr_tree || (ptn_gsr_prob && ptn_gsr_seq));
+    
     for (size_t site = 0; site < nsites; ++site) {
         int ptn = aln->getPatternID(site);
         out << node->name << "\t" << site+1 << "\t";
@@ -1549,6 +1554,20 @@ void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, doubl
         for (size_t j = 0; j < nstates; j++) {
             out << "\t" << state_prob[j];
         }
+        
+        // output p_gap and p_non_gap if gsr_tree is provided
+        if (gsr_tree)
+        {
+            // extract the current pattern
+            int gsr_ptn = gsr_tree->aln->getPatternID(site);
+            
+            // output p_gap and p_non_gap
+            double *gsr_state_prob = ptn_gsr_prob + gsr_ptn * gsr_nstates;
+            for (size_t j = 0; j < gsr_nstates; j++) {
+                out << "\t" << gsr_state_prob[j];
+            }
+        }
+        
         out << endl;
     }
 

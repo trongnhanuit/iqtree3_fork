@@ -1450,7 +1450,7 @@ void PhyloSuperTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, Phy
 }
 
 void PhyloSuperTree::writeMarginalAncestralState(ostream &out, PhyloNode *node,
-    double *ptn_ancestral_prob, int *ptn_ancestral_seq) {
+    double *ptn_ancestral_prob, int *ptn_ancestral_seq, PhyloTree* gsr_tree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
     int part = 1;
     for (auto it = begin(); it != end(); ++it, ++part) {
         size_t nsites  = (*it)->getAlnNSite();

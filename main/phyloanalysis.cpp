@@ -2629,16 +2629,25 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     }
     
     // reconstruct gapped sequences, if needed
+    IQTree* gsr_tree = nullptr;
     if (iqtree.params->gapped_seq_reconstruction
         && iqtree.aln->seq_type != SEQ_BINARY)
-        reconstructGappedSeqs(*iqtree.params, iqtree.aln);
+        gsr_tree = reconstructGappedSeqs(*iqtree.params, iqtree.aln);
     
     if (params.print_ancestral_sequence) {
-        printAncestralSequences(params.out_prefix, &iqtree, params.print_ancestral_sequence);
+        printAncestralSequences(params.out_prefix, &iqtree, gsr_tree, params.print_ancestral_sequence);
     }
     
     if (params.print_extant_seqs) {
-        printExtantSequences(((string)params.out_prefix + ".extant").c_str(), &iqtree);
+        printExtantSequences(((string)params.out_prefix + ".extant").c_str(), &iqtree, gsr_tree);
+    }
+    
+    // clean up the dummy tree and alignment for reconstructing gapped sequences
+    if (gsr_tree)
+    {
+        Alignment* gsr_alignment = gsr_tree->aln;
+        delete gsr_tree;
+        delete gsr_alignment;
     }
     
     if (params.print_site_state_freq != WSF_NONE && !params.site_freq_file && !params.tree_freq_file) {
@@ -5271,10 +5280,10 @@ void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQT
     checkpoint->dump(true);
 }
 
-void reconstructGappedSeqs(Params &params, Alignment* original_aln)
+IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln)
 {
     if (verbose_mode >= VB_MIN)
-        cout << "Start reconstructing gapped sequences..." << endl;
+        cout << endl << "----- Start reconstructing gapped sequences -----" << endl;
     
     // convert the original aln into binary aln
     Alignment* alignment = original_aln->convertToBin();
@@ -5282,29 +5291,31 @@ void reconstructGappedSeqs(Params &params, Alignment* original_aln)
     // dummy variables
     IQTree *tree;
     
+    // reset several program variables
+    params.model_name = ""; // to run ModelFinder
+    // disable sequence reconstruction flags to avoid recursively evoking this function
+    params.print_ancestral_sequence = AST_NONE;
+    params.print_extant_seqs = false;
+    params.gapped_seq_reconstruction = false;
+    // update prefix for output files of binary data
+    string tmp_out_prefix = (string)params.out_prefix + ".bin";
+    params.out_prefix = new char[tmp_out_prefix.length() + 1];
+    strcpy(params.out_prefix, tmp_out_prefix.c_str());
+    
     // init a dummy checkpoint
     Checkpoint *checkpoint = new Checkpoint;
-    string filename = (string)Params::getInstance().out_prefix +".bin.ckp.gz";
+    string filename = (string)params.out_prefix +".ckp.gz";
     checkpoint->setFileName(filename);
     checkpoint->startStruct("iqtree-bin");
     checkpoint->endStruct();
-    
-    // temporarily reset several variables
-    string bk_params_model_name= params.model_name;
-    params.model_name = ""; // to run ModelFinder
      
     runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment);
     
-    // clean up
-    alignment = tree->aln;
-    delete tree;
-    delete alignment;
-    
-    // restore variables
-    params.model_name = bk_params_model_name;
-    
     if (verbose_mode >= VB_MIN)
-        cout << "Finish reconstructing gapped sequences." << endl;
+        cout << "----- Finish reconstructing gapped sequences -----" << endl;
+    
+    // return tree for outputting gap and non-gap
+    return tree;
 }
 
 void runPhyloAnalysis(Params &params, Checkpoint *checkpoint) {

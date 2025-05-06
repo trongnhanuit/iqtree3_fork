@@ -466,7 +466,14 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
 //        computeMarginalAncestralState(nei, (PhyloNode*)(*it)->node,
 //            ptn_ancestral_prob, marginal_ancestral_seq);
         if (verbose_mode >= VB_MED)
-            writeMarginalAncestralState(cout, (PhyloNode*)((*it)->node), ptn_ancestral_prob, ptn_ancestral_seq);
+        {
+            // unused variables
+            double *ptn_gsr_prob = nullptr;
+            int *ptn_gsr_seq = nullptr;
+            PhyloTree* gsr_tree = nullptr;
+            
+            writeMarginalAncestralState(cout, (PhyloNode*)((*it)->node), ptn_ancestral_prob, ptn_ancestral_seq, gsr_tree, ptn_gsr_prob, ptn_gsr_seq);
+        }
         first_ancestral_prob.push_back(ptn_ancestral_prob);
         first_ancestral_seq.push_back(ptn_ancestral_seq);
     }
@@ -489,7 +496,14 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
 //        computeMarginalAncestralState(nei, (PhyloNode*)(*it)->node,
 //            ptn_ancestral_prob, marginal_ancestral_seq);
         if (verbose_mode >= VB_MED)
-            writeMarginalAncestralState(cout, (PhyloNode*)((*it)->node), ptn_ancestral_prob, ptn_ancestral_seq);
+        {
+            // unused variables
+            double *ptn_gsr_prob = nullptr;
+            int *ptn_gsr_seq = nullptr;
+            PhyloTree* gsr_tree = nullptr;
+            
+            writeMarginalAncestralState(cout, (PhyloNode*)((*it)->node), ptn_ancestral_prob, ptn_ancestral_seq, gsr_tree, ptn_gsr_prob, ptn_gsr_seq);
+        }
         second_ancestral_prob.push_back(ptn_ancestral_prob);
         second_ancestral_seq.push_back(ptn_ancestral_seq);
     }

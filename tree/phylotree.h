@@ -1157,7 +1157,17 @@ public:
     virtual void computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad,
         double *ptn_ancestral_prob, int *ptn_ancestral_seq);
 
-    virtual void writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq);
+    /**
+        write reconstructed (gapped/non-gapped) ancestral/extant sequence to an output stream
+        @param[in|out] out output stream
+        @param[in] node node of interest
+        @param[in] ptn_ancestral_prob non-gapped pattern ancestral probability vector
+        @param[in] marginal_ancestral_seq non-gapped state
+        @param[in] gsr_tree phylogenetic tree used 
+        @param[in] ptn_gsr_prob gapped pattern ancestral probability vector
+        @param[in] ptn_gsr_seq gapped state
+    */
+    virtual void writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq, PhyloTree* gsr_tree, double *ptn_gsr_prob, int *ptn_gsr_seq);
 
     /**
         end computing ancestral sequence probability for an internal node by marginal reconstruction

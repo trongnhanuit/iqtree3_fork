@@ -341,8 +341,8 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
         bool gsr_orig_kernel_nonrev;
         if (gapped_seq_reconstruction)
         {
-            // add two columns: p_gap and p_non_gap, if needed
-            out << "\tp_gap\tp_non_gap";
+            // add p_gap column, if needed
+            out << "\tp_gap";
             
             // init variables
             gsr_tree->initMarginalAncestralState(out, gsr_orig_kernel_nonrev, marginal_gsr_prob, marginal_gsr_seq);

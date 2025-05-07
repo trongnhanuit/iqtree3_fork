@@ -3790,14 +3790,14 @@ Alignment *Alignment::convertCodonToDNA() {
     return res;
 }
 
-Alignment* Alignment::convertToBin()
+Alignment* Alignment::convertToBin(string new_model_name)
 {
     Alignment *res = new Alignment;
     for (size_t i = 0; i < getNSeq(); ++i) {
         res->seq_names.push_back(getSeqName(i));
     }
     res->name = name;
-    res->model_name = ""; //res->model_name = model_name;
+    res->model_name = new_model_name; //res->model_name = model_name;
     res->sequence_type = "BIN"; //res->sequence_type = sequence_type;
     res->position_spec = position_spec;
     res->aln_file = aln_file;

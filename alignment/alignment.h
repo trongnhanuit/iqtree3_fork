@@ -663,8 +663,10 @@ public:
     
     /**
         convert an alignment into binary (gap/non-gap) alignment
+        @param[in] model_name name of model for the new alignment
+        @return a pointer to a new alignment
     */
-    Alignment* convertToBin();
+    Alignment* convertToBin(string model_name = "GTR2");
 
     /**
      @param quartet ID of four taxa

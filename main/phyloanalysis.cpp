@@ -2632,7 +2632,7 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     IQTree* gsr_tree = nullptr;
     if (iqtree.params->gapped_seq_reconstruction
         && iqtree.aln->seq_type != SEQ_BINARY)
-        gsr_tree = reconstructGappedSeqs(*iqtree.params, iqtree.aln);
+        gsr_tree = reconstructGappedSeqs(*iqtree.params, iqtree.aln, iqtree.getRateName());
     
     if (params.print_ancestral_sequence) {
         printAncestralSequences(params.out_prefix, &iqtree, gsr_tree, params.print_ancestral_sequence);
@@ -5280,23 +5280,25 @@ void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQT
     checkpoint->dump(true);
 }
 
-IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln)
+IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln, const string& rate_model_name)
 {
     if (verbose_mode >= VB_MIN)
         cout << endl << "----- Start reconstructing gapped sequences -----" << endl;
     
+    // dummy variables
+    IQTree *tree;
+    // fix the model to GTR2 + rate model from the original model
+    const string full_model_name = "GTR2" + rate_model_name;
+    
     // convert the original aln into binary aln
-    Alignment* alignment = original_aln->convertToBin();
+    Alignment* alignment = original_aln->convertToBin(full_model_name);
     
     // debug
     /*std::ofstream outFile((string)params.out_prefix + ".bin.phy");
     alignment->printPhylip(outFile);*/
     
-    // dummy variables
-    IQTree *tree;
-    
     // reset several program variables
-    params.model_name = ""; // to run ModelFinder
+    params.model_name = full_model_name; // avoid running ModelFinder
     // disable sequence reconstruction flags to avoid recursively evoking this function
     params.print_ancestral_sequence = AST_NONE;
     params.print_extant_seqs = false;

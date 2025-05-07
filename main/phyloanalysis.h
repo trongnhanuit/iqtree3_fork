@@ -59,9 +59,10 @@ void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQT
     reconstruct (ancestral/extant) sequences with gaps from faked binary data
     @param[in] params program parameters (clone a new instance)
     @param[in] original_aln the original alignment
+    @param[in] rate_model_name name of the rate model
     @return a tree that could be used to output gap and non-gap characters
 */
-IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln);
+IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln, const string& rate_model_name);
 
 /*! \brief Run CMaple algorithm for phylogenetic inference (if suitable)
  *  @param params program parameters

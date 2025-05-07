@@ -5288,6 +5288,10 @@ IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln)
     // convert the original aln into binary aln
     Alignment* alignment = original_aln->convertToBin();
     
+    // debug
+    /*std::ofstream outFile((string)params.out_prefix + ".bin.phy");
+    alignment->printPhylip(outFile);*/
+    
     // dummy variables
     IQTree *tree;
     
@@ -5301,6 +5305,12 @@ IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln)
     string tmp_out_prefix = (string)params.out_prefix + ".bin";
     params.out_prefix = new char[tmp_out_prefix.length() + 1];
     strcpy(params.out_prefix, tmp_out_prefix.c_str());
+    // allow IQ-TREE to re-estimate branch lengths for binary data
+    params.fixed_branch_length = BRLEN_OPTIMIZE;
+    params.optimize_alg_gammai = "EM";
+    params.opt_gammai = true;
+    // params.min_iterations = -1; // cannot be reset to fix the topology
+    // params.stop_condition = SC_UNSUCCESS_ITERATION; // cannot be reset to fix the topology
     
     // init a dummy checkpoint
     Checkpoint *checkpoint = new Checkpoint;

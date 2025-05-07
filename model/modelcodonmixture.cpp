@@ -75,6 +75,11 @@ ModelCodonMixture::ModelCodonMixture(string orig_model_name, string model_name,
     }
     initMixture(orig_model_name, model_name, model_list, models_block,
                 freq, freq_params, tree, optimize_weights);
+    
+    // show the initial parameters
+    cout << "Initial parameters in the Codon Mixture:" << endl;
+    writeInfo(cout);
+    cout << endl;
 }
 
 ModelCodonMixture::~ModelCodonMixture()

@@ -2630,8 +2630,7 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     
     // reconstruct gapped sequences, if needed
     IQTree* gsr_tree = nullptr;
-    if (iqtree.params->gapped_seq_reconstruction
-        && iqtree.aln->seq_type != SEQ_BINARY)
+    if (iqtree.params->gapped_seq_reconstruction)
         gsr_tree = reconstructGappedSeqs(*iqtree.params, iqtree.aln, iqtree.getRateName());
     
     if (params.print_ancestral_sequence) {
@@ -5299,14 +5298,24 @@ IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln, const stri
     
     // reset several program variables
     params.model_name = full_model_name; // avoid running ModelFinder
+    
     // disable sequence reconstruction flags to avoid recursively evoking this function
     params.print_ancestral_sequence = AST_NONE;
     params.print_extant_seqs = false;
     params.gapped_seq_reconstruction = false;
+    
+    // specify a fix tree topology
+    string tmp_in_treefile = (string)params.out_prefix + ".treefile"; // use the output treefile of the original run
+    params.user_file = new char[tmp_in_treefile.length() + 1];
+    strcpy(params.user_file, tmp_in_treefile.c_str());
+    params.min_iterations = 0;
+    params.stop_condition = SC_FIXED_ITERATION;
+    
     // update prefix for output files of binary data
     string tmp_out_prefix = (string)params.out_prefix + ".bin";
     params.out_prefix = new char[tmp_out_prefix.length() + 1];
     strcpy(params.out_prefix, tmp_out_prefix.c_str());
+    
     // allow IQ-TREE to re-estimate branch lengths for binary data
     params.fixed_branch_length = BRLEN_OPTIMIZE;
     params.optimize_alg_gammai = "EM";

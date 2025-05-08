@@ -666,7 +666,21 @@ public:
         @param[in] model_name name of model for the new alignment
         @return a pointer to a new alignment
     */
-    Alignment* convertToBin(string model_name = "GTR2");
+    virtual Alignment* convertToBin(const string& model_name = "GTR2");
+    
+    /**
+        convert an alignment into binary (gap/non-gap) alignment
+        @param[in] model_name name of model for the new alignment
+        @param[out] output_aln a pointer to a new alignment
+    */
+    void convertToBin(Alignment* output_aln, const string& model_name);
+    
+    /**
+        append rate model
+        @param[in] rate_models a vector of rate models (for a single aln, rate_models contains only one rate model)
+        @param[in] rate_model_index index to the rate model for this alignment
+    */
+    virtual void appendRateModel(const StrVector& rate_models, const size_t& rate_model_index = 0);
 
     /**
      @param quartet ID of four taxa

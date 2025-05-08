@@ -3790,9 +3790,8 @@ Alignment *Alignment::convertCodonToDNA() {
     return res;
 }
 
-Alignment* Alignment::convertToBin(string new_model_name)
+void Alignment::convertToBin(Alignment* res, const string& new_model_name)
 {
-    Alignment *res = new Alignment;
     for (size_t i = 0; i < getNSeq(); ++i) {
         res->seq_names.push_back(getSeqName(i));
     }
@@ -3828,6 +3827,12 @@ Alignment* Alignment::convertToBin(string new_model_name)
     }
     verbose_mode = save_mode;
     res->countConstSite();
+}
+
+Alignment* Alignment::convertToBin(const string& new_model_name)
+{
+    Alignment *res = new Alignment;
+    convertToBin(res, new_model_name);
     return res;
 }
 
@@ -6239,4 +6244,12 @@ void Alignment::outputMutation(ofstream &out, char state_char, int32_t pos, int3
     if (length != -1)
         out << "\t" << length;
     out << endl;
+}
+
+void Alignment::appendRateModel(const StrVector& rate_models, const size_t& rate_model_index)
+{
+    ASSERT(rate_model_index < rate_models.size());
+    
+    // append the rate model to the model name
+    model_name += rate_models[rate_model_index];
 }

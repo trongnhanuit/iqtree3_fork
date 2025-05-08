@@ -291,6 +291,20 @@ public:
     /** order pattern by number of character states and return in ptn_order
     */
     virtual void orderPatternByNumChars(int pat_type);
+    
+    /**
+        convert an alignment into binary (gap/non-gap) alignment
+        @param[in] model_name name of model for the new alignment
+        @return a pointer to a new alignment
+    */
+    virtual SuperAlignment* convertToBin(const string& model_name = "GTR2");
+    
+    /**
+        append rate model
+        @param[in] rate_models a vector of rate models (for a single aln, rate_models contains only one rate model)
+        @param[in] rate_model_index index to the rate model for this alignment
+    */
+    virtual void appendRateModel(const StrVector& rate_models, const size_t& rate_model_index = 0);
 
 	/**
 		actual partition alignments

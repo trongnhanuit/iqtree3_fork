@@ -1873,3 +1873,30 @@ void SuperAlignment::orderPatternByNumChars(int pat_type) {
     }
     // TODO compute pars_lower_bound (lower bound of pars score for remaining patterns)
 }
+
+SuperAlignment* SuperAlignment::convertToBin(const string& new_model_name)
+{
+    SuperAlignment* new_aln = new SuperAlignment;
+    // convert the base alignment
+    Alignment::convertToBin(new_aln, new_model_name);
+    // clone SuperAlignment-specific variables
+    new_aln->max_num_states = 2;
+    new_aln->taxa_index = taxa_index;
+    
+    // convert alignment members one by one
+    for (vector<Alignment*>::iterator it = partitions.begin(); it != partitions.end(); it++) {
+        new_aln->partitions.push_back((*it)->convertToBin(new_model_name));
+    }
+    
+    return new_aln;
+}
+
+void SuperAlignment::appendRateModel(const StrVector& rate_models, const size_t& rate_model_index)
+{
+    ASSERT(rate_models.size() == partitions.size());
+    
+    // process alignment members one by one
+    for (size_t part  = 0; part < partitions.size(); ++part) {
+        partitions.at(part)->appendRateModel(rate_models, part);
+    }
+}

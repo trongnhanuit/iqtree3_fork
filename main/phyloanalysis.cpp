@@ -2631,7 +2631,7 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     // reconstruct gapped sequences, if needed
     IQTree* gsr_tree = nullptr;
     if (iqtree.params->gapped_seq_reconstruction)
-        gsr_tree = reconstructGappedSeqs(*iqtree.params, iqtree.aln, iqtree.getRateName());
+        gsr_tree = reconstructGappedSeqs(*iqtree.params, &iqtree);
     
     if (params.print_ancestral_sequence) {
         printAncestralSequences(params.out_prefix, &iqtree, gsr_tree, params.print_ancestral_sequence);
@@ -5279,25 +5279,46 @@ void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQT
     checkpoint->dump(true);
 }
 
-IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln, const string& rate_model_name)
+IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
 {
+    ASSERT(original_tree && original_tree->aln);
+    
     if (verbose_mode >= VB_MIN)
         cout << endl << "----- Start reconstructing gapped sequences -----" << endl;
     
     // dummy variables
+    Alignment* original_aln = original_tree->aln;
     IQTree *tree;
-    // fix the model to GTR2 + rate model from the original model
-    const string full_model_name = "GTR2" + rate_model_name;
     
     // convert the original aln into binary aln
-    Alignment* alignment = original_aln->convertToBin(full_model_name);
+    Alignment* alignment = original_aln->convertToBin();
+    
+    // extract rate model of the original tree
+    StrVector rate_models;
+    // a single tree -> extract one rate model
+    if (!original_tree->isSuperTree())
+    {
+        ASSERT(!original_aln->isSuperAlignment());
+        rate_models.push_back(original_tree->getRateName());
+    }
+    // a super tree -> extract a vector of rate models
+    else
+    {
+        ASSERT(original_aln->isSuperAlignment());
+        
+        for (size_t i = 0; i < ((PhyloSuperTree*) original_tree)->size(); i++)
+            rate_models.push_back(((PhyloSuperTree*) original_tree)->at(i)->getRateName());
+    }
+    
+    // append the rate model(s) from the original tree to the binary aln
+    alignment->appendRateModel(rate_models);
     
     // debug
     /*std::ofstream outFile((string)params.out_prefix + ".bin.phy");
     alignment->printPhylip(outFile);*/
     
     // reset several program variables
-    params.model_name = full_model_name; // avoid running ModelFinder
+    params.model_name = "GTR2" + original_tree->getRateName(); // avoid running ModelFinder
     
     // disable sequence reconstruction flags to avoid recursively evoking this function
     params.print_ancestral_sequence = AST_NONE;
@@ -5318,8 +5339,8 @@ IQTree* reconstructGappedSeqs(Params params, Alignment* original_aln, const stri
     
     // allow IQ-TREE to re-estimate branch lengths for binary data
     params.fixed_branch_length = BRLEN_OPTIMIZE;
-    params.optimize_alg_gammai = "EM";
-    params.opt_gammai = true;
+    // params.optimize_alg_gammai = "EM"; // don't reset because it may cause problem when using partition model
+    // params.opt_gammai = true; // don't reset because it may cause problem when using partition model
     // params.min_iterations = -1; // cannot be reset to fix the topology
     // params.stop_condition = SC_UNSUCCESS_ITERATION; // cannot be reset to fix the topology
     

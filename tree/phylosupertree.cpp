@@ -1450,24 +1450,73 @@ void PhyloSuperTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, Phy
 }
 
 void PhyloSuperTree::writeMarginalAncestralState(ostream &out, PhyloNode *node,
-    double *ptn_ancestral_prob, int *ptn_ancestral_seq, PhyloTree* gsr_tree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
+    double *ptn_ancestral_prob, int *ptn_ancestral_seq, PhyloTree* gsr_supertree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
     int part = 1;
+    
+    ASSERT(!gsr_supertree || (ptn_gsr_prob && ptn_gsr_seq && gsr_supertree->isSuperTree()));
+    const size_t gsr_nstates = 2;
+    
     for (auto it = begin(); it != end(); ++it, ++part) {
         size_t nsites  = (*it)->getAlnNSite();
         int    nstates = (*it)->model->num_states;
+        
+        // extract the tree partition for gapped sequence reconstruction
+        PhyloTree* gsr_tree = gsr_supertree ? ((PhyloSuperTree*) gsr_supertree)->at(part - 1) : nullptr;
+        
         for (size_t site = 0; site < nsites; ++site) {
             int ptn = (*it)->aln->getPatternID(site);
             out << node->name << "\t" << part << "\t" << site+1 << "\t";
-            out << (*it)->aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
-            double *state_prob = ptn_ancestral_prob + ptn*nstates;
-            for (int j = 0; j < nstates; ++j) {
-                out << "\t" << state_prob[j];
+            
+            // if using gapped sequence reconstruction
+            if (gsr_tree)
+            {
+                // extract the current pattern
+                int gsr_ptn = gsr_tree->aln->getPatternID(site);
+                
+                // overwrite the predicted character if it's likely be a gap
+                if (ptn_gsr_seq[gsr_ptn] == 0)
+                    out << (*it)->aln->convertStateBackStr((*it)->aln->STATE_UNKNOWN);
+                // otherwise write the predicted non-gap character
+                else
+                    out << (*it)->aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
+                
+                // extract the probability of gap and non-gap
+                double *gsr_state_prob = ptn_gsr_prob + gsr_ptn * gsr_nstates;
+                double p_gap = gsr_state_prob[0];
+                double p_non_gap = gsr_state_prob[1];
+                
+                // normalize and print the probability of each non-gap state
+                // NOTE: this could be speeded up by vectorization
+                double *state_prob = ptn_ancestral_prob + ptn*nstates;
+                for (size_t j = 0; j < nstates; ++j) {
+                    out << "\t" << state_prob[j] * p_non_gap;
+                }
+                
+                // print p_gap
+                out << "\t" << p_gap;
+            }
+            // otherwise, using normal non-gapped sequence reconstruction
+            else
+            {
+                out << (*it)->aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
+                double *state_prob = ptn_ancestral_prob + ptn*nstates;
+                for (int j = 0; j < nstates; ++j) {
+                    out << "\t" << state_prob[j];
+                }
             }
             out << endl;
         }
         size_t nptn = (*it)->getAlnNPattern();
         ptn_ancestral_prob += nptn*nstates;
         ptn_ancestral_seq += nptn;
+        
+        // if using gapped sequence reconstruction -> move pointers
+        if (gsr_tree)
+        {
+            size_t gsr_nptn = gsr_tree->getAlnNPattern();
+            ptn_gsr_prob += gsr_nptn * gsr_nstates;
+            ptn_gsr_seq += gsr_nptn;
+        }
     }
 }
 

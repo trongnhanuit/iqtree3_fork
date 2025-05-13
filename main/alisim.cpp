@@ -997,13 +997,6 @@ void generateMultipleAlignmentsFromSingleTree(AliSimulator *super_alisimulator, 
             // otherwise, writing output to file after completing the simulation
             else
                 generatePartitionAlignmentFromSingleSimulator(super_alisimulator, ancestral_sequence, input_msa, site_locked_vec);
-            
-            // Bug fix: delete first_insertion
-            if (super_alisimulator->first_insertion)
-            {
-                delete super_alisimulator->first_insertion;
-                super_alisimulator->first_insertion = nullptr;
-            }
         }
         
         // merge & write alignments to files if they have not yet been written
@@ -1110,6 +1103,14 @@ void generateMultipleAlignmentsFromSingleTree(AliSimulator *super_alisimulator, 
                 if (super_alisimulator->params->alisim_openmp_alg == IM || !super_alisimulator->params->no_merge)
                     break;
             }
+        }
+        
+        // fix crashing issue because accessing to deallocated pointer
+        // delete first_insertion
+        if (super_alisimulator->first_insertion)
+        {
+            delete super_alisimulator->first_insertion;
+            super_alisimulator->first_insertion = nullptr;
         }
     }
     

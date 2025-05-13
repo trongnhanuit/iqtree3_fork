@@ -5314,8 +5314,44 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     alignment->appendRateModel(rate_models);
     
     // debug
-    /*std::ofstream outFile((string)params.out_prefix + ".bin.phy");
-    alignment->printPhylip(outFile);*/
+    if (verbose_mode >= VB_DEBUG)
+    {
+        // partition alignment
+        if (alignment->isSuperAlignment())
+        {
+            SuperAlignment* super_aln = (SuperAlignment*) alignment;
+            
+            // convert alignment members one by one
+            size_t part = 1;
+            for (vector<Alignment*>::iterator it = super_aln->partitions.begin(); it != super_aln->partitions.end(); it++, ++part) {
+                
+                // output each partition into a single alignment
+                std::ofstream outFile((string)params.out_prefix + "_part" + convertIntToString(part) + ".bin.phy");
+                (*it)->printPhylip(outFile);
+                outFile.close();
+            }
+            
+            // output the original partition alignments
+            SuperAlignment* ori_super_aln = (SuperAlignment*) original_aln;
+            
+            // convert alignment members one by one
+            part = 1;
+            for (vector<Alignment*>::iterator it = ori_super_aln->partitions.begin(); it != ori_super_aln->partitions.end(); it++, ++part) {
+                
+                // output each partition into a single alignment
+                std::ofstream outFile((string)params.out_prefix + "_part" + convertIntToString(part) + ".ori.phy");
+                (*it)->printPhylip(outFile);
+                outFile.close();
+            }
+        }
+        // single alignment
+        else
+        {
+            std::ofstream outFile((string)params.out_prefix + ".bin.phy");
+            alignment->printPhylip(outFile);
+            outFile.close();
+        }
+    }
     
     // reset several program variables
     params.model_name = "GTR2" + original_tree->getRateName(); // avoid running ModelFinder

@@ -5291,27 +5291,8 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     IQTree *tree;
     
     // convert the original aln into binary aln
-    Alignment* alignment = original_aln->convertToBin();
-    
-    // extract rate model of the original tree
-    StrVector rate_models;
-    // a single tree -> extract one rate model
-    if (!original_tree->isSuperTree())
-    {
-        ASSERT(!original_aln->isSuperAlignment());
-        rate_models.push_back(original_tree->getRateName());
-    }
-    // a super tree -> extract a vector of rate models
-    else
-    {
-        ASSERT(original_aln->isSuperAlignment());
-        
-        for (size_t i = 0; i < ((PhyloSuperTree*) original_tree)->size(); i++)
-            rate_models.push_back(((PhyloSuperTree*) original_tree)->at(i)->getRateName());
-    }
-    
-    // append the rate model(s) from the original tree to the binary aln
-    alignment->appendRateModel(rate_models);
+    // we must empty the model name of alignment to force IQ-TREE running ModelFinder
+    Alignment* alignment = original_aln->convertToBin("");
     
     // debug
     if (verbose_mode >= VB_DEBUG)
@@ -5354,7 +5335,12 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     }
     
     // reset several program variables
-    params.model_name = "GTR2" + original_tree->getRateName(); // avoid running ModelFinder
+    // Run ModelFinder to select the rate heterogeneity model
+    params.model_name = "";
+    // fix the substitution model to GTR2
+    params.model_set = "GTR2";
+    // consider all rate models
+    params.ratehet_set = "E,I,G,I+G,R,I+R";
     
     // disable sequence reconstruction flags to avoid recursively evoking this function
     params.print_ancestral_sequence = AST_NONE;

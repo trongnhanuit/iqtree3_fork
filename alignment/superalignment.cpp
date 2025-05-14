@@ -1892,13 +1892,3 @@ SuperAlignment* SuperAlignment::convertToBin(const string& new_model_name)
     
     return new_aln;
 }
-
-void SuperAlignment::appendRateModel(const StrVector& rate_models, const size_t& rate_model_index)
-{
-    ASSERT(rate_models.size() == partitions.size());
-    
-    // process alignment members one by one
-    for (size_t part  = 0; part < partitions.size(); ++part) {
-        partitions.at(part)->appendRateModel(rate_models, part);
-    }
-}

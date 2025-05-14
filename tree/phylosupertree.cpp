@@ -1450,7 +1450,7 @@ void PhyloSuperTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, Phy
 }
 
 void PhyloSuperTree::writeMarginalAncestralState(ostream &out, PhyloNode *node,
-    double *ptn_ancestral_prob, int *ptn_ancestral_seq, PhyloTree* gsr_supertree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
+    double *ptn_ancestral_prob, int *ptn_ancestral_seq, const bool gapped_seq_reconstruction, PhyloTree* gsr_supertree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
     int part = 1;
     
     ASSERT(!gsr_supertree || (ptn_gsr_prob && ptn_gsr_seq && gsr_supertree->isSuperTree()));

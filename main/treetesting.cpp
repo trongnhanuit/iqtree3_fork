@@ -263,10 +263,7 @@ void computeMarginalState(const bool is_ancestral, PhyloTree *tree, PhyloNode *n
 
 void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_prefix, PhyloTree *tree, PhyloTree* gsr_tree, AncestralSeqType ast)
 {
-    // make sure if users want to reconstruct sequences with gaps, the gsr_tree must be provided here (not null)
     const bool gapped_seq_reconstruction = tree->params->gapped_seq_reconstruction;
-    ASSERT(!gapped_seq_reconstruction
-           || gsr_tree);
     
     // init dummy variables
     const string reconstructed_seq_type = is_ancestral ? "Ancestral" : "Extant";
@@ -345,7 +342,8 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
             out << "\tp_gap";
             
             // init variables
-            gsr_tree->initMarginalAncestralState(out, gsr_orig_kernel_nonrev, marginal_gsr_prob, marginal_gsr_seq);
+            if (gsr_tree)
+                gsr_tree->initMarginalAncestralState(out, gsr_orig_kernel_nonrev, marginal_gsr_prob, marginal_gsr_seq);
         }
         
         out << endl;
@@ -362,7 +360,7 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
             computeMarginalState(is_ancestral, tree, node, marginal_ancestral_prob, marginal_ancestral_seq);
             
             // if reconstructing gapped ancestral/extant sequences
-            if (gapped_seq_reconstruction)
+            if (gapped_seq_reconstruction && gsr_tree)
             {
                 // find the corresponding node
                 PhyloNode *gsr_node = (PhyloNode*)gsr_tree->findNodeID(node->id);
@@ -373,7 +371,7 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
             }
             
             // print ancestral state probabilities
-            tree->writeMarginalAncestralState(out, node, marginal_ancestral_prob, marginal_ancestral_seq, gsr_tree, marginal_gsr_prob, marginal_gsr_seq);
+            tree->writeMarginalAncestralState(out, node, marginal_ancestral_prob, marginal_ancestral_seq, gapped_seq_reconstruction, gsr_tree, marginal_gsr_prob, marginal_gsr_seq);
             
             // print ancestral sequences
             //            outseq.width(name_width);
@@ -394,7 +392,7 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
         tree->endMarginalAncestralState(orig_kernel_nonrev, marginal_ancestral_prob, marginal_ancestral_seq);
         
         // if reconstructing gapped ancestral/extant sequences
-        if (gapped_seq_reconstruction)
+        if (gapped_seq_reconstruction && gsr_tree)
         {
             // release memory allocation
             gsr_tree->endMarginalAncestralState(gsr_orig_kernel_nonrev, marginal_gsr_prob, marginal_gsr_seq);

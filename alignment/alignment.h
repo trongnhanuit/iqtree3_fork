@@ -489,6 +489,13 @@ public:
         @return number of absent states in the alignment
     */
     virtual int checkAbsentStates(string msg);
+    
+    /*
+        check if the alignment contains only one single state
+        @param[in] state the state to check, if not specified, there is no constraint on the only single state
+        @return TRUE if the alignment contains only one single state; otherwise return FALSE
+    */
+    bool containSingleStateOnly(const int& state = -1);
 
     /**
             check proper and undupplicated sequence names

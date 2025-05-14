@@ -5374,6 +5374,10 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     strcpy(params.out_prefix, tmp_out_prefix.c_str());
     
     // allow IQ-TREE to re-estimate branch lengths for binary data
+    if (params.fixed_branch_length == BRLEN_FIX)
+    {
+        outWarning("When reconstructing gapped ancestral/extant sequences, IQ-TREE will re-estimate the branch lengths of the input tree for the binary data.");
+    }
     params.fixed_branch_length = BRLEN_OPTIMIZE;
     // params.optimize_alg_gammai = "EM"; // don't reset because it may cause problem when using partition model
     // params.opt_gammai = true; // don't reset because it may cause problem when using partition model

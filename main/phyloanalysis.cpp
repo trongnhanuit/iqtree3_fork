@@ -5295,25 +5295,36 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     Alignment* alignment = original_aln->convertToBin("");
     
     // special case: the alignment contains only non-gap characters
-    // single alignment
-    if (!alignment->isSuperAlignment())
-    {
-        // the alignment contains only non-gap characters
-        // don't need to run ASR/ESR on the binary data
-        // simply return a null tree
-        const int NON_GAPPED_STATE = 1;
-        if (alignment->containSingleStateOnly(NON_GAPPED_STATE))
-        {
-            delete alignment;
-            
-            return nullptr;
-        }
-    }
+    const int NON_GAPPED_STATE = 1;
+    bool all_non_gapped_aln = alignment->containSingleStateOnly(NON_GAPPED_STATE);
     // partition alignment
-    else
+    if (alignment->isSuperAlignment())
     {
+        all_non_gapped_aln = true;
+        
+        // check if all partition alignments contain no gap
+        SuperAlignment* super_aln = (SuperAlignment*) alignment;
+        
+        // check alignment members one by one
+        for (vector<Alignment*>::iterator it = super_aln->partitions.begin(); it != super_aln->partitions.end(); it++) {
+            if(!(*it)->containSingleStateOnly(NON_GAPPED_STATE))
+            {
+                all_non_gapped_aln = false;
+                break;
+            }
+        }
+        
         // TODO
-        cout << "TODO: special treatment for partition alns" << endl;
+        cout << "TODO: special treatment for cases where some alns contain gaps while some others don't" << endl;
+    }
+    // if the alignment contains only non-gap characters
+    // don't need to run ASR/ESR on the binary data
+    // simply return a null tree
+    if (all_non_gapped_aln)
+    {
+        delete alignment;
+        
+        return nullptr;
     }
     
     // debug

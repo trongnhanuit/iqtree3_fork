@@ -298,13 +298,6 @@ public:
         @return a pointer to a new alignment
     */
     virtual SuperAlignment* convertToBin(const string& model_name = "GTR2");
-    
-    /**
-        append rate model
-        @param[in] rate_models a vector of rate models (for a single aln, rate_models contains only one rate model)
-        @param[in] rate_model_index index to the rate model for this alignment
-    */
-    virtual void appendRateModel(const StrVector& rate_models, const size_t& rate_model_index = 0);
 
 	/**
 		actual partition alignments

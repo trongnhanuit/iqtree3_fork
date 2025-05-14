@@ -152,6 +152,27 @@ int Alignment::checkAbsentStates(string msg) {
     return count;
 }
 
+bool Alignment::containSingleStateOnly(const int& state)
+{
+    // the alignment contains only one single state if:
+    // 1. it contains only one pattern
+    // 2. that pattern contains only one state
+    if (size() == 1
+        && at(0).num_chars == 1)
+    {
+        // if a specific state is specified (not -1), check if that state is the only one present in the alignment
+        if (state >= 0)
+        {
+            ASSERT(state < num_states);
+            return at(0).freqs[state] == at(0).size();
+        }
+        // otherwise, don't need to check that constraint
+        return true;
+    }
+    
+    return false;
+}
+
 void Alignment::checkSeqName() {
     ostringstream warn_str;
     StrVector::iterator it;

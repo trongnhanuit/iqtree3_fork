@@ -1536,7 +1536,7 @@ void PhyloTree::computeMarginalState(PhyloNeighbor *dad_branch, PhyloNode *dad,
 
 }
 
-void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq, PhyloTree* gsr_tree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
+void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq, const bool gapped_seq_reconstruction, PhyloTree* gsr_tree, double *ptn_gsr_prob, int *ptn_gsr_seq) {
     size_t nsites = aln->getNSite();
     size_t nstates = model->num_states;
     const size_t gsr_nstates = 2;
@@ -1549,24 +1549,36 @@ void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, doubl
 //        if (params->print_ancestral_sequence == AST_JOINT)
 //            out << aln->convertStateBackStr(joint_ancestral_node[ptn]) << "\t";
         
+        string predicted_state = aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
+        
         // if using gapped sequence reconstruction
-        if (gsr_tree)
+        if (gapped_seq_reconstruction)
         {
-            // extract the current pattern
-            int gsr_ptn = gsr_tree->aln->getPatternID(site);
+            // initial default values
+            // to handle the special case: the alignment contains all non-gap characters
+            // -> output p_gap = 0 to all positions
+            double p_gap = 0;
+            double p_non_gap = 1.0;
             
-            // overwrite the predicted character if it's likely be a gap
-            if (ptn_gsr_seq[gsr_ptn] == 0)
-                out << aln->convertStateBackStr(aln->STATE_UNKNOWN);
-            // otherwise write the predicted non-gap character
-            else
-                out << aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
+            // normal case
+            if (gsr_tree)
+            {
+                // extract the current pattern
+                int gsr_ptn = gsr_tree->aln->getPatternID(site);
+                
+                // overwrite the predicted character if it's likely be a gap
+                if (ptn_gsr_seq[gsr_ptn] == 0)
+                    predicted_state = aln->convertStateBackStr(aln->STATE_UNKNOWN);
+                
+                // extract the probability of gap and non-gap
+                double *gsr_state_prob = ptn_gsr_prob + gsr_ptn * gsr_nstates;
+                double p_gap = gsr_state_prob[0];
+                double p_non_gap = gsr_state_prob[1];
+            }
             
-            // extract the probability of gap and non-gap
-            double *gsr_state_prob = ptn_gsr_prob + gsr_ptn * gsr_nstates;
-            double p_gap = gsr_state_prob[0];
-            double p_non_gap = gsr_state_prob[1];
-            
+            // write the predicted non-gap character
+            out << predicted_state;
+                
             // normalize and print the probability of each non-gap state
             // NOTE: this could be speeded up by vectorization
             double *state_prob = ptn_ancestral_prob + ptn*nstates;
@@ -1581,7 +1593,7 @@ void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, doubl
         else
         {
             // print the predicted character
-            out << aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
+            out << predicted_state;
             
             // print the probability of each non-gap state
             double *state_prob = ptn_ancestral_prob + ptn*nstates;

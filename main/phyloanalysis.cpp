@@ -5294,6 +5294,28 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     // we must empty the model name of alignment to force IQ-TREE running ModelFinder
     Alignment* alignment = original_aln->convertToBin("");
     
+    // special case: the alignment contains only non-gap characters
+    // single alignment
+    if (!alignment->isSuperAlignment())
+    {
+        // the alignment contains only non-gap characters
+        // don't need to run ASR/ESR on the binary data
+        // simply return a null tree
+        const int NON_GAPPED_STATE = 1;
+        if (alignment->containSingleStateOnly(NON_GAPPED_STATE))
+        {
+            delete alignment;
+            
+            return nullptr;
+        }
+    }
+    // partition alignment
+    else
+    {
+        // TODO
+        cout << "TODO: special treatment for partition alns" << endl;
+    }
+    
     // debug
     if (verbose_mode >= VB_DEBUG)
     {

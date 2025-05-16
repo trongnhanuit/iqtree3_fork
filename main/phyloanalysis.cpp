@@ -5300,22 +5300,30 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     // partition alignment
     if (alignment->isSuperAlignment())
     {
-        all_non_gapped_aln = true;
+        all_non_gapped_aln = false;
+        int count_non_gapped_parts = 0;
         
         // check if all partition alignments contain no gap
         SuperAlignment* super_aln = (SuperAlignment*) alignment;
         
         // check alignment members one by one
         for (vector<Alignment*>::iterator it = super_aln->partitions.begin(); it != super_aln->partitions.end(); it++) {
-            if(!(*it)->containSingleStateOnly(NON_GAPPED_STATE))
+            if((*it)->containSingleStateOnly(NON_GAPPED_STATE))
             {
-                all_non_gapped_aln = false;
-                break;
+                ++count_non_gapped_parts;
             }
         }
         
-        // TODO
-        cout << "TODO: special treatment for cases where some alns contain gaps while some others don't" << endl;
+        // check if all partitions are non-gapped
+        if (count_non_gapped_parts == super_aln->partitions.size())
+            all_non_gapped_aln = true;
+        // otherwise, if there is at least one non-gapped partition => others are gapped
+        // return an error
+        else if (count_non_gapped_parts > 0)
+        {
+            outError("Sorry! Currently we don't support `-gap-esr` and `-gap-asr` if some partitions are gapped while some others are non-gapped. They could be all either gapped or non-gapped.");
+        }
+            
     }
     // if the alignment contains only non-gap characters
     // don't need to run ASR/ESR on the binary data

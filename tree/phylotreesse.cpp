@@ -1572,8 +1572,8 @@ void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, doubl
                 
                 // extract the probability of gap and non-gap
                 double *gsr_state_prob = ptn_gsr_prob + gsr_ptn * gsr_nstates;
-                double p_gap = gsr_state_prob[0];
-                double p_non_gap = gsr_state_prob[1];
+                p_gap = gsr_state_prob[0];
+                p_non_gap = gsr_state_prob[1];
             }
             
             // write the predicted non-gap character

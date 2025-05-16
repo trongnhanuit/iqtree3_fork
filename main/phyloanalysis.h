@@ -140,4 +140,13 @@ void exportMCMCTreeCMD(Params &params, ostream &out);
 /** compute rootstrap for a user defined tree from a set of trees */
 void runRootstrap(Params &params);
 
+/**
+    Initialize a Checkpoint and check to restore/restart the previous run
+    @param[in] filename the filename of the checkpoint
+    @param[in] params program parameters
+    @param[in|out] append_log check whether the log file should be appended
+    @return a pointer to the checkpoint
+*/
+Checkpoint* initAndCheckCheckpoint(const string& filename, const Params& params, bool& append_log);
+
 #endif

@@ -5381,7 +5381,10 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     params.gapped_seq_reconstruction = false;
     
     // specify a fix tree topology
-    string tmp_in_treefile = (string)params.out_prefix + ".treefile"; // use the output treefile of the original run
+    // print the tree out so that the binary-data run can use it as a fixed tree
+    original_tree->printResultTree();
+    // use the output treefile of the original run
+    string tmp_in_treefile = (string)params.out_prefix + ".treefile";
     params.user_file = new char[tmp_in_treefile.length() + 1];
     strcpy(params.user_file, tmp_in_treefile.c_str());
     params.min_iterations = 0;
@@ -5404,13 +5407,25 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     // params.stop_condition = SC_UNSUCCESS_ITERATION; // cannot be reset to fix the topology
     
     // init a dummy checkpoint
-    Checkpoint *checkpoint = new Checkpoint;
     string filename = (string)params.out_prefix +".ckp.gz";
-    checkpoint->setFileName(filename);
-    checkpoint->startStruct("iqtree-bin");
-    checkpoint->endStruct();
+    bool append_log = false;
+    Checkpoint *checkpoint = initAndCheckCheckpoint(filename, params, append_log);
+    if (append_log) {
+        cout << endl << "******************************************************"
+             << endl << "CHECKPOINT: Resuming analysis from " << filename << endl << endl;
+    }
      
     runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment);
+    
+    // Don't set finished = true for the checkpoint of the binary-data run
+    // To avoid the case when the interuption occurs between the end of the binary-data run and the original-data run
+    // If letting the checkpoint of the binary-data run to be finished, users cannot get the output of -gap-esr/asr unless they use -redo
+    checkpoint->eraseKeyPrefix("finished");
+    checkpoint->dump(true);
+    // delete checkpoint
+    try {
+        delete checkpoint;
+    } catch(int err_num){}
     
     if (verbose_mode >= VB_MIN)
         cout << "----- Finish reconstructing gapped sequences -----" << endl;
@@ -6319,4 +6334,46 @@ void runRootstrap(Params &params) {
         tree.computeRootstrapUnrooted(trees, params.root, false);
     cout << getRealTime() - start_time << " sec" << endl;
     
+}
+
+Checkpoint* initAndCheckCheckpoint(const string& filename, const Params& params, bool& append_log)
+{
+    Checkpoint *checkpoint = new Checkpoint;
+    checkpoint->setFileName(filename);
+    
+    append_log = false;
+    
+    if (!params.ignore_checkpoint && fileExists(filename)) {
+        checkpoint->load();
+        if (checkpoint->hasKey("finished")) {
+            if (checkpoint->getBool("finished")) {
+                if (params.force_unfinished) {
+                    if (MPIHelper::getInstance().isMaster())
+                        cout << "NOTE: Continue analysis although a previous run already finished" << endl;
+                } else {
+                    delete checkpoint;
+                    if (MPIHelper::getInstance().isMaster())
+                        outError("Checkpoint (" + filename + ") indicates that a previous run successfully finished\n" +
+                            "Use `-redo` option if you really want to redo the analysis and overwrite all output files.\n" +
+                            "Use `--redo-tree` option if you want to restore ModelFinder and only redo tree search.\n" +
+                            "Use `--undo` option if you want to continue previous run when changing/adding options."
+                        );
+                    else
+                        exit(EXIT_SUCCESS);
+                    exit(EXIT_FAILURE);
+                }
+            } else {
+                append_log = true;
+            }
+        } else {
+            if (MPIHelper::getInstance().isMaster())
+                outWarning("Ignore invalid checkpoint file " + filename);
+            checkpoint->clear();
+        }
+    }
+    
+    if (MPIHelper::getInstance().isWorker())
+        checkpoint->setFileName("");
+    
+    return checkpoint;
 }

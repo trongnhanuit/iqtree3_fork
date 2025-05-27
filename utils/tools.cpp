@@ -1258,6 +1258,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.model_test_and_tree = 0;
     params.model_test_separate_rate = false;
     params.optimize_mixmodel_weight = false;
+    params.optimize_mixmodel_freq = false;
     params.optimize_rate_matrix = false;
     params.store_trans_matrix = false;
     params.parallel_over_sites = false;
@@ -3474,6 +3475,10 @@ void parseArg(int argc, char *argv[], Params &params) {
 			}
 			if (strcmp(argv[cnt], "-mwopt") == 0 || strcmp(argv[cnt], "--mix-opt") == 0) {
 				params.optimize_mixmodel_weight = true;
+				continue;
+			}
+			if (strcmp(argv[cnt], "-mfopt") == 0 || strcmp(argv[cnt], "--mfopt") == 0) {
+				params.optimize_mixmodel_freq = true;
 				continue;
 			}
 			if (strcmp(argv[cnt], "--opt-rate-mat") == 0) {

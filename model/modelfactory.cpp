@@ -212,7 +212,6 @@ ModelFactory::ModelFactory(Params &params, string &model_name, PhyloTree *tree, 
         for (mix_pos = 0; mix_pos < curr_model_str.length(); mix_pos++) {
             size_t next_mix_pos = curr_model_str.find_first_of("+*", mix_pos);
             string sub_model_str = curr_model_str.substr(mix_pos, next_mix_pos-mix_pos);
-            // cout << "mix_pos =  "<< mix_pos << "; sub_model_str = " << sub_model_str << endl;
             nxsmodel = models_block->findMixModel(sub_model_str);
             if (nxsmodel) sub_model_str = nxsmodel->description;
             new_model_str += sub_model_str;
@@ -1127,10 +1126,8 @@ bool ModelFactory::initFromNestedModel(map<string, vector<string> > nest_network
         */
 
         for (i = 0; i < nested_models.size(); i++) {
-            map<string, string>::iterator itr = checkpoint->find(nested_models[i] + rate_name);
-            ASSERT(itr != checkpoint->end());
-
-            string best_model_logl_df = itr->second;
+            string best_model_logl_df;
+            ASSERT(checkpoint->getString(nested_models[i] + rate_name, best_model_logl_df));
             stringstream ss(best_model_logl_df);
             ss >> cur_logl;
 
@@ -1179,10 +1176,8 @@ bool ModelFactory::initFromNestedModel(map<string, vector<string> > nest_network
 
         for (i = 0; i < nested_models.size(); i++) {
             nested_mix_model = replaceLastQ(model_name, nested_models[i]);
-            map<string, string>::iterator itr = checkpoint->find(nested_mix_model + rate_name);
-            ASSERT(itr != checkpoint->end());
-
-            string best_model_logl_df = itr->second;
+            string best_model_logl_df;
+            ASSERT(checkpoint->getString(nested_mix_model + rate_name, best_model_logl_df));
             stringstream ss(best_model_logl_df);
             ss >> cur_logl;
 

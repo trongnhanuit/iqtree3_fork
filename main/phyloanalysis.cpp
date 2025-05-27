@@ -928,8 +928,7 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
         int ntrees; //mix_df;
         double mix_lh;
 
-        string maic_warning;
-        mix_lh = tree.getModelFactory()->computeMixLh(maic_warning);
+        mix_lh = tree.getModelFactory()->computeMarginalLh();
         if (mix_lh < 0) {
             PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
             ntrees = stree->size();
@@ -940,13 +939,13 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
             computeInformationScores(mix_lh, df, ssize, mAIC, mAICc, mBIC);
 
             out << endl;
-            out << "Mixture-based log-likelihood of the tree: " << mix_lh << endl;
+            out << "Marginal log-likelihood of the tree: " << mix_lh << endl;
             out << "Marginal Akaike information criterion (mAIC) score: " << mAIC << endl;
             //out << "Marginal corrected Akaike information criterion (mAICc) score: " << mAICc << endl;
             //out << "Marginal Bayesian information criterion (mBIC) score: " << mBIC << endl;
         } else {
             out << endl;
-            out << maic_warning << endl;
+            out << "mAIC calculation is skipped because not all partition sequence types are same" << endl;
         }
     }
 
@@ -1239,7 +1238,7 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
         cout << "  Concatenated alignment:        " << params.out_prefix
                     << ".conaln" << endl;
     }
-    if ((params.model_name.find("TEST") != string::npos || params.model_name.substr(0,2) == "MF") && tree.isSuperTree()) {
+    if ((params.model_name.find("TEST") != string::npos || params.model_name.substr(0,2) == "MF" || params.model_name.substr(0,6) == "MIX+MF") && tree.isSuperTree()) {
         cout << "  Best partitioning scheme:      " << params.out_prefix << ".best_scheme.nex" << endl;
         bool raxml_format_printed = true;
 
@@ -1351,7 +1350,7 @@ void reportSubstitutionProcess(ostream &out, Params &params, IQTree &tree)
             out << "Edge-unlinked partition model with ";
         else
             out << "Topology-unlinked partition model with ";
-        
+
         // if (params.model_joint)
         if (!params.model_joint.empty())
             out << "joint substitution model ";
@@ -1365,8 +1364,10 @@ void reportSubstitutionProcess(ostream &out, Params &params, IQTree &tree)
 
         PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
         PhyloSuperTree::iterator it;
+        it = stree->begin();
+
         int part;
-        
+
         // force showing full params if running AliSim
         bool show_full_params = tree.params->alisim_active;
 
@@ -1670,7 +1671,10 @@ void reportPhyloAnalysis(Params &params, IQTree &tree, ModelCheckpoint &model_in
                 << endl;
 */
         if (params.compute_ml_tree) {
-            if (params.model_name.find("ONLY") != string::npos || (params.model_name.substr(0,2) == "MF" && params.model_name.substr(0,3) != "MFP")) {
+            if (params.model_name == "MIX+MF" || params.model_name == "MF+MIX") {
+                out << "TREE USED FOR MixtureFinder" << endl
+                    << "---------------------------" << endl << endl;
+            } else if (params.model_name.find("ONLY") != string::npos || (params.model_name.substr(0,2) == "MF" && params.model_name.substr(0,3) != "MFP")) {
                 out << "TREE USED FOR ModelFinder" << endl
                     << "-------------------------" << endl << endl;
             } else if (params.min_iterations == 0) {

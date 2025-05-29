@@ -84,7 +84,7 @@ public:
     // cat_assign_method:
     //  0 - the categories along sites is assigned according to the path with maximum probability (default)
     //  1 - the categories along sites is assigned according to the max posterior probability
-    void showSiteCatMaxLike(ostream& out, bool show_assignment = true, int cat_assign_method = 0, int* numSiteCat = NULL);
+    void showSiteCatMaxLike(ostream& out, bool show_assignment = true, int cat_assign_method = 0, int* numSiteCat = nullptr);
     
     // number of sites
     int nsite;
@@ -158,7 +158,7 @@ public:
     void checkEachSiteBackFwdLikeArray();
     
     // compute the marginal probabilities for each site
-    void computeMarginalProb(ostream* out = NULL);
+    void computeMarginalProb(ostream* out = nullptr);
 
     // compute the marginal probabilities for transitions between every pair of sites
     void computeMarginalTransitProb();

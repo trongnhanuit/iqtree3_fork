@@ -9,16 +9,16 @@
 
 PhyloHmm::PhyloHmm() {
     nsite = ncat = 0;
-    prob = NULL;
-    prob_log = NULL;
-    site_like_cat = NULL;
-    site_categories = NULL;
-    work_arr = NULL;
-    next_cat = NULL;
-    bwd_array = NULL;
-    fwd_array = NULL;
-    marginal_prob = NULL;
-    marginal_tran = NULL;
+    prob = nullptr;
+    prob_log = nullptr;
+    site_like_cat = nullptr;
+    site_categories = nullptr;
+    work_arr = nullptr;
+    next_cat = nullptr;
+    bwd_array = nullptr;
+    fwd_array = nullptr;
+    marginal_prob = nullptr;
+    marginal_tran = nullptr;
 }
 
 PhyloHmm::PhyloHmm(int n_site, int n_cat) {
@@ -369,7 +369,7 @@ void PhyloHmm::showSiteCatMaxLike(ostream& out, bool show_assignment, int cat_as
         out << "The path with maximum log likelihood: " << fixed << setprecision(5) << pathLogLike << endl;
     }
     
-    // copy numSites to numSiteCat if numSiteCat is not NULL
+    // copy numSites to numSiteCat if numSiteCat is not nullptr
     if (numSiteCat)
         memcpy(numSiteCat, numSites, sizeof(int) * ncat);
 
@@ -464,7 +464,7 @@ void PhyloHmm::computeMarginalProb(ostream* out) {
     computeBackLikeArray();
     computeFwdLikeArray();
 
-    if (out != NULL) {
+    if (out != nullptr) {
         *out << "# Marginal probabilities" << endl;
         *out << "Site";
         for (i=0; i<ncat; i++) {
@@ -473,15 +473,15 @@ void PhyloHmm::computeMarginalProb(ostream* out) {
         *out << endl;
     }
     for (i=0; i<nsite; i++) {
-        if (out != NULL)
+        if (out != nullptr)
             *out << i+1;
         score = logDotProd(f_array, b_array, ncat);
         for (int j=0; j<ncat; j++) {
             mprob[j] = exp(f_array[j]+b_array[j]-score);
-            if (out != NULL)
+            if (out != nullptr)
                 *out << "\t" << mprob[j];
         }
-        if (out != NULL)
+        if (out != nullptr)
             *out << endl;
         f_array += ncat;
         b_array += ncat;

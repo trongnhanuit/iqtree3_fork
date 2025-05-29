@@ -38,7 +38,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
 
     dad_branch->partial_lh_computed |= 2;
 
-    vector<Alignment*> *partitions = NULL;
+    vector<Alignment*> *partitions = nullptr;
     if (aln->isSuperAlignment())
         partitions = &((SuperAlignment*)aln)->partitions;
     else {
@@ -168,7 +168,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
     } else {
         // internal node
         ASSERT(node->degree() == 3); // it works only for strictly bifurcating tree
-        PhyloNeighbor *left = NULL, *right = NULL; // left & right are two neighbors leading to 2 subtrees
+        PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
         FOR_NEIGHBOR_IT(node, dad, it) {
             PhyloNeighbor* pit = (PhyloNeighbor*) (*it);
             if ((*it)->node->name != ROOT_NAME && (pit->partial_lh_computed & 2) == 0) {
@@ -468,7 +468,7 @@ int PhyloTree::setParsimonyBranchLengths() {
 void PhyloTree::initCostMatrix(CostMatrixType cost_type) {
     if(cost_matrix){
         aligned_free(cost_matrix);
-        cost_matrix = NULL;
+        cost_matrix = nullptr;
     }
     ASSERT(aln);
     int cost_nstates = aln->num_states;
@@ -495,10 +495,10 @@ void PhyloTree::initCostMatrix(CostMatrixType cost_type) {
 void PhyloTree::loadCostMatrixFile(char * file_name){
     if(cost_matrix){
         aligned_free(cost_matrix);
-        cost_matrix = NULL;
+        cost_matrix = nullptr;
     }
     //    if(strcmp(file_name, "fitch") == 0)
-    ////    if(file_name == NULL)
+    ////    if(file_name == nullptr)
     //        cost_matrix = new SankoffCostMatrix(aln->num_states);
     //    else
     //        cost_matrix = new SankoffCostMatrix(file_name);
@@ -659,7 +659,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
     UINT * partial_pars = dad_branch->partial_pars;
     memset(partial_pars, 0, sizeof(UINT)*pars_block_size);
 
-    PhyloNeighbor *left = NULL, *right = NULL;
+    PhyloNeighbor *left = nullptr, *right = nullptr;
     
     FOR_NEIGHBOR_IT(node, dad, it)
         if ((*it)->node->name != ROOT_NAME) {
@@ -785,7 +785,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
  compute tree parsimony score based on a particular branch
  @param dad_branch the branch leading to the subtree
  @param dad its dad, used to direct the traversal
- @param branch_subst (OUT) if not NULL, the number of substitutions on this branch
+ @param branch_subst (OUT) if not nullptr, the number of substitutions on this branch
  @return parsimony score of the tree
  */
 int PhyloTree::computeParsimonyBranchSankoff(PhyloNeighbor *dad_branch, PhyloNode *dad, int *branch_subst) {
@@ -895,7 +895,7 @@ UINT PhyloTree::computeParsimonyOutOfTreeSankoff(UINT* ptn_scores) {
 
     PhyloNeighbor *dad_branch = (PhyloNeighbor*) root->neighbors[0];
     PhyloNode *dad = (PhyloNode*) root;
-    int *branch_subst = NULL;
+    int *branch_subst = nullptr;
 
     PhyloNode *node = (PhyloNode*) dad_branch->node;
     PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
@@ -1062,7 +1062,7 @@ void getNeiBranches(NeighborVec &removed_nei, NodeVector &attached_node, NodeVec
                     NodeVector &nodes1, NodeVector &nodes2)
 {
     // get target branches surrounding attached_node
-    FOR_NEIGHBOR_IT(attached_node[i], NULL, it) {
+    FOR_NEIGHBOR_IT(attached_node[i], nullptr, it) {
         if (attached_node[i]->id < (*it)->node->id) {
             nodes1.push_back(attached_node[i]);
             nodes2.push_back((*it)->node);
@@ -1077,7 +1077,7 @@ void getNeiBranches(NeighborVec &removed_nei, NodeVector &attached_node, NodeVec
         if (attached_node[j] != attached_node[i])
             break;
         Node *node = added_nodes[j];
-        FOR_NEIGHBOR_IT(node, NULL, it) {
+        FOR_NEIGHBOR_IT(node, nullptr, it) {
             if (node->id < (*it)->node->id) {
                 bool present = false;
                 for (int k = 0; k < nodes1.size(); k++)
@@ -1178,8 +1178,8 @@ int PhyloTree::computeParsimonyTree(const char *out_prefix, Alignment *alignment
     // stepwise adding the next taxon for the remaining taxa
     for (int step = 0; leafNum < nseq; step++) {
         NodeVector nodes1, nodes2;
-        PhyloNode *target_node = NULL;
-        PhyloNode *target_dad = NULL;
+        PhyloNode *target_node = nullptr;
+        PhyloNode *target_dad = nullptr;
         best_pars_score = UINT_MAX;
         
         // create a new node attached to new taxon or removed node

@@ -1277,7 +1277,7 @@ void EigenDecomposition::luinverse(double **inmat, double **imtrx, int size) {
 			imtrx[ix][jx] = wk[ix];
 	}
 	free((char *)wk);
-	wk = NULL;
+	wk = nullptr;
 	for (i = size-1; i >= 0; i--)
 		delete [] omtrx[i];
 	delete [] omtrx;

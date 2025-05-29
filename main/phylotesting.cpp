@@ -6611,10 +6611,10 @@ double runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mo
 
     cout << endl << "Model: " << best_subst_name << best_rate_name << "; df: " << curr_df << "; loglike: " << curr_loglike << "; " << criteria_str << " score: " << curr_score << endl;
 
-    model_info.getString("best_model_AIC", best_model_pre_AIC);
-    model_info.getString("best_model_AICc", best_model_pre_AICc);
-    model_info.getString("best_model_BIC", best_model_pre_BIC);
-    model_info.getString("best_model_list_" + criteria_str, best_model_pre_list);
+    ASSERT(model_info.getString("best_model_AIC", best_model_pre_AIC));
+    ASSERT(model_info.getString("best_model_AICc", best_model_pre_AICc));
+    ASSERT(model_info.getString("best_model_BIC", best_model_pre_BIC));
+    ASSERT(model_info.getString("best_model_list_" + criteria_str, best_model_pre_list));
 
     // Step 3: keep adding a new class until no further improvement
     if (params.opt_qmix_criteria == 1) {
@@ -6646,10 +6646,10 @@ double runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mo
             curr_score = best_model.getScore();
             model_str = best_subst_name;
 
-            model_info.getString("best_model_AIC", best_model_pre_AIC);
-            model_info.getString("best_model_AICc", best_model_pre_AICc);
-            model_info.getString("best_model_BIC", best_model_pre_BIC);
-            model_info.getString("best_model_list_" + criteria_str, best_model_pre_list);
+            ASSERT(model_info.getString("best_model_AIC", best_model_pre_AIC));
+            ASSERT(model_info.getString("best_model_AICc", best_model_pre_AICc));
+            ASSERT(model_info.getString("best_model_BIC", best_model_pre_BIC));
+            ASSERT(model_info.getString("best_model_list_" + criteria_str, best_model_pre_list));
 
         }
     } while (better_model && getClassNum(best_subst_name)+1 <= params.max_mix_cats);

@@ -178,7 +178,7 @@ ModelFactory::ModelFactory(Params &params, string &model_name, PhyloTree *tree, 
     // handle continuous gamma model => remove 'C' from model_name to make sure it doesn't cause error when parsing model
     if (model_str.find("+GC") != std::string::npos) {
         std::string tmp_model_str(1, model_str[0]);
-        for (int c_index = 1; c_index < model_str.length(); c_index++)
+        for (size_t c_index = 1; c_index < model_str.length(); c_index++)
             if (!(model_str[c_index-1]=='G' && model_str[c_index]=='C'))
                 tmp_model_str = tmp_model_str + model_str[c_index];
         model_name = tmp_model_str;

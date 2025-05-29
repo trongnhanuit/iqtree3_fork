@@ -653,7 +653,7 @@ void ModelCodon::computeRateAttributes() {
     if (verbose_mode >= VB_MAX) {
 
         // make cost matrix fulfill triangular inequality
-        for (int k = 0; k < 20; k++)
+        for (size_t k = 0; k < 20; k++)
             for (i = 0; i < 20; i++)
                 for (j = 0; j < 20; j++)
                     if (aa_cost_change[i*20+j] > aa_cost_change[i*20+k] + aa_cost_change[k*20+j])

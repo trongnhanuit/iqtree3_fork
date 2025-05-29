@@ -1651,7 +1651,7 @@ void ModelMixture::initFromClassMinusOne(double init_weight) {
             }
             endCheckpoint();
             // update all the class weights by multiplying ( 1 - init_weight )
-            for (int i = 0 ; i < nmix - 1; i++)
+            for (size_t i = 0 ; i < nmix - 1; i++)
                 prop[i] = prop[i] * (1.0 - init_weight);
         } else {
             // for 2-class mixture model
@@ -1733,7 +1733,7 @@ void ModelMixture::getStateFrequency(double *state_freq, int mixture) {
         // fused model, take the weight from site_rate
         if (fused)
             weight = phylo_tree->getRate()->getProp(i) / (1.0 - phylo_tree->getRate()->getPInvar());
-        for (int j = 0; j < num_states; j++)
+        for (size_t j = 0; j < num_states; j++)
             state_freq[j] += weight*state_freq_class[j];
     }
     // // DEBUG.

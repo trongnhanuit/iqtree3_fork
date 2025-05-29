@@ -186,7 +186,7 @@ void ModelSubst::multiplyWithInvEigenvector(double *state_lk) {
     double saved_state_lk[num_states];
     memcpy(saved_state_lk, state_lk, sizeof(double)*num_states);
     memset(state_lk, 0, sizeof(double)*num_states*nmixtures);
-    for (int m = 0; m < nmixtures; m++) {
+    for (size_t m = 0; m < nmixtures; m++) {
         double *inv_evec = &inv_eigenvectors[m * mnstates * num_states];
         double *this_state_lk = &state_lk[m*num_states];
         for (int i = 0; i < num_states; i++)

@@ -45,7 +45,7 @@ void PartitionModelPlen::saveCheckpoint() {
     if (!tree->fixed_rates) {
         int nrates = tree->part_info.size();
         double *part_rates = new double[nrates];
-        for (int i = 0; i < nrates; i++)
+        for (size_t i = 0; i < nrates; i++)
             part_rates[i] = tree->part_info[i].part_rate;
         CKP_ARRAY_SAVE(nrates, part_rates);
         delete [] part_rates;
@@ -61,7 +61,7 @@ void PartitionModelPlen::restoreCheckpoint() {
         int nrates = tree->part_info.size();
         double *part_rates = new double[nrates];
         if (CKP_ARRAY_RESTORE(nrates, part_rates)) {
-            for (int i = 0; i < nrates; i++)
+            for (size_t i = 0; i < nrates; i++)
                 tree->part_info[i].part_rate = part_rates[i];
             tree->mapTrees();
         }
@@ -233,8 +233,8 @@ double PartitionModelPlen::optimizeGeneRate(double gradient_epsilon)
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+: score) schedule(dynamic) if(tree->num_threads > 1)
 #endif
-    for (int j = 0; j < tree->size(); j++) {
-        int i = tree->part_order[j];
+    for (size_t j = 0; j < tree->size(); j++) {
+        size_t i = tree->part_order[j];
         double min_scaling = 1.0/tree->at(i)->getAlnNSite();
         double max_scaling = nsites / tree->at(i)->getAlnNSite();
         if (max_scaling < tree->part_info[i].part_rate)

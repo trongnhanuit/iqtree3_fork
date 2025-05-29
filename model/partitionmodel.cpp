@@ -134,7 +134,7 @@ PartitionModel::PartitionModel(Params &params, PhyloSuperTree *tree, ModelsBlock
                     sum_state_counts = new size_t[(*it)->aln->STATE_UNKNOWN+1];
                     memset(sum_state_counts, 0, sizeof(size_t)*((*it)->aln->STATE_UNKNOWN+1));
                 }
-                for (int state = 0; state <= (*it)->aln->STATE_UNKNOWN; ++state) {
+                for (size_t state = 0; state <= (*it)->aln->STATE_UNKNOWN; ++state) {
                     sum_state_counts[state] += state_counts[state];
                 }
             }
@@ -308,7 +308,7 @@ double PartitionModel::targetFunk(double x[]) {
     #ifdef _OPENMP
     #pragma omp parallel for schedule(dynamic) if(tree->num_threads > 1)
     #endif
-    for (int j = 0; j < ntrees; j++) {
+    for (size_t j = 0; j < ntrees; j++) {
         
         int i = tree->part_order[j];
         ModelSubst *part_model = tree->at(i)->getModel();
@@ -364,7 +364,7 @@ double PartitionModel::computeMixLh(string &warning) {
     t_seqs_vec_array.resize(ntrees);
     t_seqs_set_array.resize(ntrees);
 
-    for (int j = 0; j < ntrees; j++) {
+    for (size_t j = 0; j < ntrees; j++) {
         PhyloTree *t = tree->at(j);
         t->getTaxaName(t_seqs_vec_array[j]);
         t_seqs_set_array[j].insert(t_seqs_vec_array[j].begin(), t_seqs_vec_array[j].end());
@@ -374,7 +374,7 @@ double PartitionModel::computeMixLh(string &warning) {
     double mix_lh = 0.0;
     bool too_much_missing = false;
 
-    for (int j = 0; j < ntrees && (!too_much_missing); j++) {
+    for (size_t j = 0; j < ntrees && (!too_much_missing); j++) {
         //int i = tree->part_order[j];
         Alignment *tree1_aln = tree->at(j)->aln;
         int tree1_nsite = tree1_aln->getNSite();
@@ -386,7 +386,7 @@ double PartitionModel::computeMixLh(string &warning) {
 #ifdef _OPENMP
 #pragma omp parallel for if(tree->num_threads > 1)
 #endif
-        for (int k = 0; k < ntrees ; k++) {
+        for (size_t k = 0; k < ntrees ; k++) {
             PhyloTree *tree2 = tree->at(k);
 
             // get the intersection of tree1_aln and tree2.
@@ -435,7 +435,7 @@ double PartitionModel::computeMixLh(string &warning) {
                 // subset tree2
                 PhyloTree *sub_tree2 = NULL;
                 string inter_seqs_set (tree2_seqs.size(), 0);
-                for (int l = 0; l < tree2_seqs.size(); l++) {
+                for (size_t l = 0; l < tree2_seqs.size(); l++) {
                     if (inter_seqs.find(tree2_seqs[l]) != inter_seqs.end()) {
                         inter_seqs_set[l] = 1;
                     }
@@ -473,7 +473,7 @@ double PartitionModel::computeMixLh(string &warning) {
                 sub_tree2->getModel()->getStateFrequency(state_freq);
 
                 vector<double> log_state_freq(n_states);
-                for (int n = 0; n < n_states; n++) {
+                for (size_t n = 0; n < n_states; n++) {
                     log_state_freq[n] = log(state_freq[n]);
                 }
 
@@ -540,7 +540,7 @@ double PartitionModel::computeMixLh(string &warning) {
                 }
 
                 double mix_lh_site_original = 0.0;
-                for (int k = 0; k < ntrees; k++) {
+                for (size_t k = 0; k < ntrees; k++) {
                     mix_lh_site_original += exp(log_weight_array[k]+lh_array[tree1_nsite*k+l]-max_lh);
                 }
                 mix_lh_site = max_lh + log(mix_lh_site_original);

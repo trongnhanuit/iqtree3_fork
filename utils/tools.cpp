@@ -818,7 +818,7 @@ void random_frequencies_from_distributions(double *freqs, int num_states, string
     
     // calculate the total frequency
     double total_freq = 0;
-    for (int i = 0; i<num_states; i++)
+    for (size_t i = 0; i<num_states; i++)
     {
         // extract the name of distribution used for the current state
         int pos = list_distribution_names.find(',');
@@ -3059,7 +3059,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                 string arg = argv[cnt];
                 int pos = -1;
                 bool inside_bracket = false;
-                for (int i = 0; i < arg.length(); i++)
+                for (size_t i = 0; i < arg.length(); i++)
                 {
                     // detect brackets
                     if (arg[i] == '{')
@@ -5181,7 +5181,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                         // detect delimiter
                         string delimiter = ",";
                         bool inside_bracket = false;
-                        for (int i = 0; i < t_params.length(); i++)
+                        for (size_t i = 0; i < t_params.length(); i++)
                         {
                             // detect brackets
                             if (t_params[i] == '{')
@@ -8207,8 +8207,8 @@ double hypergeometric_dist(unsigned int k, unsigned int n, unsigned int K, unsig
 // concatenated) and linearly scaled by SCALE.
  double frob_norm(double m[], int n, double scale) {
    double sum = 0;
-   for (int i = 0; i < n; i++) {
-     for (int j = 0; j < n; j++) {
+   for (size_t i = 0; i < n; i++) {
+     for (size_t j = 0; j < n; j++) {
        sum += m[i*n + j] * m[i*n + j] * scale * scale;
      }
    }

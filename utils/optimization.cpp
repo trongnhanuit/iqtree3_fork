@@ -147,7 +147,7 @@ void free_matrix(double **m, long nrl, long nrh, long ncl, long nch)
 }
 
 void fixBound(double x[], double lower[], double upper[], int n) {
-	for (int i = 1; i <= n; i++) {
+	for (size_t i = 1; i <= n; i++) {
 		if (x[i] < lower[i])
 			x[i] = lower[i];
 		else if (x[i] > upper[i])
@@ -559,7 +559,7 @@ double Optimization::minimizeNewtonMulti(double *x1, double *xguess, double *x2,
         // now take the product
         for (i = 0; i < N; i++) {
             space[i] = 0.0;
-            for (int k = 0; k < N; k++) {
+            for (size_t k = 0; k < N; k++) {
                 space[i] += df[i*N+k] * f[k];
             }
         }

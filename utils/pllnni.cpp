@@ -324,7 +324,7 @@ double pllDoNNISearch(pllInstance* tr, partitionList *pr, SearchInfo &searchinfo
 		sort(searchinfo.posNNIList.begin(), searchinfo.posNNIList.end(), comparePLLNNIMove);
         if (verbose_mode >= VB_DEBUG) {
         	cout << "curScore: "  << searchinfo.curLogl << endl;
-            for (int i = 0; i < searchinfo.posNNIList.size(); i++) {
+            for (size_t i = 0; i < searchinfo.posNNIList.size(); i++) {
                 cout << "Logl of positive NNI " << i << " : " << searchinfo.posNNIList[i].likelihood << endl;
             }
         }
@@ -419,7 +419,7 @@ double pllDoNNISearch(pllInstance* tr, partitionList *pr, SearchInfo &searchinfo
 void updateBranchLengthForNNI(pllInstance* tr, partitionList *pr, pllNNIMove &nni) {
 	int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
 	/*  apply branch lengths */
-	for (int i = 0; i < numBranches; i++) {
+	for (size_t i = 0; i < numBranches; i++) {
 		nni.p->z[i] = nni.z0[i];
 		nni.p->back->z[i] = nni.z0[i];
 		nni.p->next->z[i] = nni.z1[i];
@@ -914,9 +914,9 @@ void pllSaveCurrentTree(pllInstance* tr, partitionList *pr, nodeptr p){
 		int nptn = pllUFBootDataPtr->n_patterns;
 		int updated = 0;
 		int nsamples = globalParams->gbo_replicates;
-		for (int sample = 0; sample < nsamples; sample++) {
+		for (size_t sample = 0; sample < nsamples; sample++) {
 			double rell = 0.0;
-			for (int ptn = 0; ptn < nptn; ptn++)
+			for (size_t ptn = 0; ptn < nptn; ptn++)
 				rell += pattern_lh[ptn] * pllUFBootDataPtr->boot_samples[sample][ptn];
 
 			if (rell > pllUFBootDataPtr->boot_logl[sample] + globalParams->ufboot_epsilon ||

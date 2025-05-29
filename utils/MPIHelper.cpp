@@ -191,7 +191,7 @@ void MPIHelper::gatherCheckpoint(Checkpoint *ckp) {
 
     // now real contents to MASTER
     if (isMaster()) {
-        for (int i = 0; i < getNumProcesses(); i++) {
+        for (size_t i = 0; i < getNumProcesses(); i++) {
             displ[i] = totalCount;
             totalCount += msgCounts[i];
         }

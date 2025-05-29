@@ -75,7 +75,7 @@ void PartitionModelPlen::restoreCheckpoint() {
 double PartitionModelPlen::optimizeParameters(int fixed_len, bool write_info, double logl_epsilon, double gradient_epsilon) {
     PhyloSuperTreePlen *tree = (PhyloSuperTreePlen*)site_rate->getTree();
     double tree_lh = 0.0, cur_lh = 0.0;
-    size_t ntrees = tree->size();
+    int ntrees = tree->size();
     
     
     //tree->initPartitionInfo(); // FOR OLGA: needed here
@@ -83,7 +83,7 @@ double PartitionModelPlen::optimizeParameters(int fixed_len, bool write_info, do
     unordered_map<string, bool> fixed_params;
     unordered_map<string, ModelSubst*>::iterator it;
 
-    for(size_t part = 0; part < ntrees; part++){
+    for(int part = 0; part < ntrees; part++){
         tree->part_info[part].cur_score = 0.0;
     }
     

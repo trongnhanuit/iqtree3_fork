@@ -2683,7 +2683,7 @@ static inline void scatter(Vec4f const & data, float * array) {
     _mm_mask_i32scatter_ps(array, mask, indx, data, 4);
 #else
     const int index[4] = {i0,i1,i2,i3};
-    for (int i = 0; i < 4; i++) {
+    for (size_t i = 0; i < 4; i++) {
         if (index[i] >= 0) array[index[i]] = data[i];
     }
 #endif
@@ -2700,7 +2700,7 @@ static inline void scatter(Vec4i const & index, uint32_t limit, Vec4f const & da
     __mmask16 mask = _mm_cmplt_epu32_mask(index, Vec4ui(limit));
     _mm_mask_i32scatter_ps(array, mask, index, data, 4);
 #else
-    for (int i = 0; i < 4; i++) {
+    for (size_t i = 0; i < 4; i++) {
         if (uint32_t(index[i]) < limit) array[index[i]] = data[i];
     }
 #endif

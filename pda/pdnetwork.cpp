@@ -104,7 +104,7 @@ void PDNetwork::readParams(Params &params) {
 
 	// now convert the weights
 	tax_weight.resize(ntaxa, 0);
-	for (int i = 0; i < tax_name.size(); i++) {	
+	for (size_t i = 0; i < tax_name.size(); i++) {
 		int id = -1;
 		try {
 			string name = "";
@@ -553,7 +553,7 @@ double PDNetwork::exhaustPDBudget(int cur_budget, int cur_tax, Split &curset,
 {
 	int ntaxa = getNTaxa();
 	double saved_score = curset.weight;
-	for (int tax = cur_tax+1; tax < ntaxa; tax ++) 
+	for (size_t tax = cur_tax+1; tax < ntaxa; tax ++)
 	if (pda->costs[taxa_order[tax]] <= cur_budget)
 	{
 		curset.addTaxon(taxa_order[tax]);

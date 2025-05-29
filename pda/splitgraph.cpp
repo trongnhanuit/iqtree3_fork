@@ -491,9 +491,9 @@ bool SplitGraph::checkCircular(mmatrix(double) &dist) {
     return true;
     int ntaxa = getNTaxa();
     Split taxa_set(ntaxa, 0.0);
-    for (int i = 0; i < ntaxa-2; i++)
-        for (int j = i+1; j < ntaxa-1; j++)
-            for (int k = j+1; k < ntaxa; k++) {
+    for (size_t i = 0; i < ntaxa-2; i++)
+        for (size_t j = i+1; j < ntaxa-1; j++)
+            for (size_t k = j+1; k < ntaxa; k++) {
                 taxa_set.addTaxon(i);
                 taxa_set.addTaxon(j);
                 taxa_set.addTaxon(k);

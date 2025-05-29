@@ -257,7 +257,7 @@ RateFree::~RateFree() {
 string RateFree::getNameParams() {
 	stringstream str;
 	str << "+R" << ncategory << "{";
-	for (int i = 0; i < ncategory; i++) {
+	for (size_t i = 0; i < ncategory; i++) {
 		if (i > 0) str << ",";
 		str << prop[i]<< "," << rates[i];
 	}
@@ -267,7 +267,7 @@ string RateFree::getNameParams() {
 
 double RateFree::meanRates() {
 	double ret = 0.0;
-	for (int i = 0; i < ncategory; i++)
+	for (size_t i = 0; i < ncategory; i++)
 		ret += prop[i] * rates[i];
 	return ret;
 }
@@ -488,7 +488,7 @@ bool RateFree::getVariables(double *variables) {
 */
 void RateFree::writeInfo(ostream &out) {
 	out << "Site proportion and rates: ";
-	for (int i = 0; i < ncategory; i++)
+	for (size_t i = 0; i < ncategory; i++)
 		out << " (" << prop[i] << "," << rates[i] << ")";
 	out << endl;
 }
@@ -498,7 +498,7 @@ void RateFree::writeInfo(ostream &out) {
 	@param out output stream
 */
 void RateFree::writeParameters(ostream &out) {
-	for (int i = 0; i < ncategory; i++)
+	for (size_t i = 0; i < ncategory; i++)
 		out << "\t" << prop[i] << "\t" << rates[i];
 
 }

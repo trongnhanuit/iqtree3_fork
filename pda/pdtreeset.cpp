@@ -99,7 +99,7 @@ void PDTreeSet::readParams(Params &params) {
 		mytree->buildLeafMapName(lsn);
 		DoubleVector tax_weight;
 		tax_weight.resize(ntaxa, 0);
-		for (int i = 0; i < tax_name.size(); i++) {
+		for (size_t i = 0; i < tax_name.size(); i++) {
 			LeafMapName::iterator nameit = lsn.find(tax_name[i]);
 			if (nameit == lsn.end())
 				outError(ERR_NO_TAXON, tax_name[i]);

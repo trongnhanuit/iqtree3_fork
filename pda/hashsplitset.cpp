@@ -64,7 +64,7 @@ void SplitIntMap::insertSplit(Split *sp, int value) {
 
 void SplitIntMap::buildMap(SplitGraph &sg, bool use_index) {
     clear();
-    for (int i = 0; i < sg.size(); i++) {
+    for (size_t i = 0; i < sg.size(); i++) {
         if (use_index) 
             insertSplit(sg[i], i);
         else

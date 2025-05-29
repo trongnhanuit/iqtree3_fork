@@ -12,7 +12,7 @@
  */
 GenomeTree::GenomeTree()
 {
-    root = NULL;
+    root = nullptr;
 }
 
 /**
@@ -31,7 +31,7 @@ GenomeTree::~GenomeTree()
     if (root)
     {
         delete root;
-        root = NULL;
+        root = nullptr;
     }
 }
 
@@ -40,7 +40,7 @@ GenomeTree::~GenomeTree()
  */
 GenomeNode* GenomeTree::findNodeByPos(GenomeNode* node, Insertion* insertion, int num_cumulative_gaps_from_parents, int num_cumulative_converts_from_parents)
 {
-    // return NULL if not found
+    // return nullptr if not found
     if (!node)
         outError("Opps! Insertion occurs at an invalid position. There is something wrong!");
     
@@ -146,7 +146,7 @@ void GenomeTree::buildGenomeTree(Insertion* prev_insertion, int ori_seq_length, 
     if (!prev_insertion)
         return;
     
-    // init root node if it's NULL
+    // init root node if it's nullptr
     if (!root)
         root = new GenomeNode(ori_seq_length);
     

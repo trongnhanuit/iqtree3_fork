@@ -160,7 +160,7 @@ bool ConstraintTree::isCompatible(StrVector &tax1, StrVector &tax2) {
         // tax1 and tax2 form all taxa in the constraint tree
         
         // quick check if this split is contained in the tree
-        Split *res = NULL;
+        Split *res = nullptr;
         if (sp1.containTaxon(0))
             res = findSplit(&sp1);
         else

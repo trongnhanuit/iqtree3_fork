@@ -27,7 +27,7 @@ PartitionModel::PartitionModel()
 {
 	linked_alpha = -1.0;
     opt_gamma_invar = false;
-    partLike = NULL;
+    partLike = nullptr;
 }
 
 PartitionModel::PartitionModel(Params &params, PhyloSuperTree *tree, ModelsBlock *models_block)
@@ -58,7 +58,7 @@ PartitionModel::PartitionModel(Params &params, PhyloSuperTree *tree, ModelsBlock
     double init_by_divmat = false;
     if (params.model_name_init && strcmp(params.model_name_init, "DIVMAT") == 0) {
         init_by_divmat = true;
-        params.model_name_init = NULL;
+        params.model_name_init = nullptr;
     }
     for (it = tree->begin(), part = 0; it != tree->end(); it++, part++) {
         ASSERT(!((*it)->getModelFactory()));
@@ -116,7 +116,7 @@ PartitionModel::PartitionModel(Params &params, PhyloSuperTree *tree, ModelsBlock
         if (mit->second->freq_type != FREQ_ESTIMATE && mit->second->freq_type != FREQ_EMPIRICAL)
             continue;
         // count state occurrences
-        size_t *sum_state_counts = NULL;
+        size_t *sum_state_counts = nullptr;
         int num_parts = 0;
         for (it = stree->begin(); it != stree->end(); it++) {
             if ((*it)->getModel()->getName() == mit->second->getName()) {
@@ -424,7 +424,7 @@ double PartitionModel::computeMixLh(string &warning) {
 
             } else {
                 // subset tree1_aln
-                Alignment *sub_tree1_aln = NULL;
+                Alignment *sub_tree1_aln = nullptr;
                 if (tree1_seqs.size() != inter_seqs_id.size()) {
                     sub_tree1_aln = new Alignment();
                     sub_tree1_aln->extractSubAlignment(tree1_aln, inter_seqs_id, 0);
@@ -433,7 +433,7 @@ double PartitionModel::computeMixLh(string &warning) {
                 }
 
                 // subset tree2
-                PhyloTree *sub_tree2 = NULL;
+                PhyloTree *sub_tree2 = nullptr;
                 string inter_seqs_set (tree2_seqs.size(), 0);
                 for (size_t l = 0; l < tree2_seqs.size(); l++) {
                     if (inter_seqs.find(tree2_seqs[l]) != inter_seqs.end()) {
@@ -513,8 +513,8 @@ double PartitionModel::computeMixLh(string &warning) {
                 if (tree1_seqs.size() != inter_seqs_id.size()) {
                     delete sub_tree1_aln;
                 }
-                sub_tree2->setModelFactory(NULL);
-                sub_tree2->aln = NULL;
+                sub_tree2->setModelFactory(nullptr);
+                sub_tree2->aln = nullptr;
                 delete sub_tree2;
                 delete[] ptn_lh_array;
                 delete[] state_freq;
@@ -796,7 +796,7 @@ double PartitionModel::optimizeParametersGammaInvar(int fixed_len, bool write_in
 
 PartitionModel::~PartitionModel()
 {
-    if (partLike != NULL)
+    if (partLike != nullptr)
         delete[] partLike;
 }
 

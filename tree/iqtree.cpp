@@ -48,8 +48,8 @@ void IQTree::init() {
 //    PhyloTree::init();
     k_represent = 0;
     k_delete = k_delete_min = k_delete_max = k_delete_stay = 0;
-    dist_matrix = NULL;
-    var_matrix = NULL;
+    dist_matrix = nullptr;
+    var_matrix = nullptr;
 //    curScore = 0.0; // Current score of the tree
     cur_pars_score = -1;
 //    enable_parsimony = false;
@@ -65,7 +65,7 @@ void IQTree::init() {
 //    save_all_br_lens = false;
     duplication_counter = 0;
     //boot_splits = new SplitGraph;
-    pll2iqtree_pattern_index = NULL;
+    pll2iqtree_pattern_index = nullptr;
 
     treels_name = Params::getInstance().out_prefix;
     treels_name += ".treels";
@@ -414,7 +414,7 @@ void IQTree::initSettings(Params &params) {
 
         // Diep: initialize data members to be used in the Refinement Step
         on_refine_btree = false;
-        saved_aln_on_refine_btree = NULL;
+        saved_aln_on_refine_btree = nullptr;
         if(params.ufboot2corr){
             boot_samples_int.resize(params.gbo_replicates);
             for (size_t i = 0; i < params.gbo_replicates; i++) {
@@ -438,7 +438,7 @@ void IQTree::initSettings(Params &params) {
 IQTree::~IQTree() {
     //if (bonus_values)
     //delete bonus_values;
-    //bonus_values = NULL;
+    //bonus_values = nullptr;
 
     for (vector<SplitGraph*>::reverse_iterator it2 = boot_splits.rbegin(); it2 != boot_splits.rend(); it2++)
         delete (*it2);
@@ -584,12 +584,12 @@ void IQTree::computeInitialTree(LikelihoodKernel kernel, istream* in) {
         }
     }
 
-    if (in != NULL || params->user_file) {
+    if (in != nullptr || params->user_file) {
         
         // start the search with user-defined tree
         bool myrooted = params->is_rooted;
         bool mesgExist = false;
-        if (in != NULL) {
+        if (in != nullptr) {
             readTree(*in, myrooted);
         } else {
             cout << "Reading input tree file " << params->user_file << " ...";
@@ -696,7 +696,7 @@ void IQTree::computeInitialTree(LikelihoodKernel kernel, istream* in) {
 
         stringstream treeStr;
         this->sortTaxa();
-        //this->printTree(treeStr, NULL);
+        //this->printTree(treeStr, nullptr);
         this->printTree(treeStr, 0);
         outfile << this->aln->getNSeq() << ' ' << 1 << endl;
         outfile << treeStr.str() << endl;
@@ -782,7 +782,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             tree.rooted = rooted;
             #pragma omp for schedule(dynamic)
             for (int i = 0; i < nParTrees; i++) {
-                tree.computeParsimonyTree(NULL, aln, rstream);
+                tree.computeParsimonyTree(nullptr, aln, rstream);
                 pars_trees[i] = tree.getTreeString();
             }
             finish_random(rstream);
@@ -823,7 +823,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 #ifdef _OPENMP
             PhyloTree::readTreeString(pars_trees[treeNr-1]);
 #else
-            computeParsimonyTree(NULL, aln, randstream);
+            computeParsimonyTree(nullptr, aln, randstream);
 #endif
         } else {
             //Use the tree we've already got!
@@ -958,7 +958,7 @@ string IQTree::generateParsimonyTree(int randomSeed) {
         wrapperFixNegativeBranch(true);
         parsimonyTreeString = getTreeString();
     } else {
-        computeParsimonyTree(NULL, aln, randstream);
+        computeParsimonyTree(nullptr, aln, randstream);
         parsimonyTreeString = getTreeString();
     }
     return parsimonyTreeString;
@@ -972,7 +972,7 @@ void IQTree::initializePLL(Params &params) {
     pllAttr.useRecom = PLL_FALSE;
     pllAttr.randomNumberSeed = params.ran_seed;
     pllAttr.numberOfThreads = max(params.num_threads, 1); /* This only affects the pthreads version */
-    if (pllInst != NULL) {
+    if (pllInst != nullptr) {
         pllDestroyInstance(pllInst);
     }
     /* Create a PLL getInstance */
@@ -1013,7 +1013,7 @@ void IQTree::initializePLL(Params &params) {
 }
 
 bool IQTree::isInitializedPLL() {
-    return pllInst != NULL;
+    return pllInst != nullptr;
 }
 
 void IQTree::initializeModel(Params &params, string model_name, ModelsBlock *models_block) {
@@ -1103,7 +1103,7 @@ RepresentLeafSet* IQTree::findRepresentLeaves(vector<RepresentLeafSet*> &leaves_
     if (leaves_vec[set_id])
         return leaves_vec[set_id];
     RepresentLeafSet* leaves = new RepresentLeafSet;
-    RepresentLeafSet* leaves_it[2] = { NULL, NULL };
+    RepresentLeafSet* leaves_it[2] = { nullptr, nullptr };
     leaves_vec[set_id] = leaves;
     RepresentLeafSet::iterator last;
     RepresentLeafSet::iterator cur_it;
@@ -1170,7 +1170,7 @@ RepresentLeafSet* IQTree::findRepresentLeaves(vector<RepresentLeafSet*> &leaves_
  for (RepresentLeafSet::iterator rlit = leaves_vec[set_id]->begin(); rlit != leaves_vec[set_id]->end(); rlit++)
  delete (*rlit);
  delete leaves_vec[set_id];
- leaves_vec[set_id] = NULL;
+ leaves_vec[set_id] = nullptr;
  }
  FOR_NEIGHBOR_IT(node, dad, it) {
  clearRepresentLeaves(leaves_vec, (*it)->node, node);
@@ -1182,7 +1182,7 @@ void IQTree::deleteNonCherryLeaves(PhyloNodeVector &del_leaves) {
     NodeVector noncherry_taxa;
     // get the vector of non cherry taxa
     getNonCherryLeaves(noncherry_taxa, cherry_taxa);
-    root = NULL;
+    root = nullptr;
     size_t num_taxa = aln->getNSeq();
     int num_delete = k_delete;
     if (num_delete > num_taxa - 4)
@@ -1230,7 +1230,7 @@ void IQTree::deleteLeaves(PhyloNodeVector &del_leaves) {
     NodeVector taxa;
     // get the vector of taxa
     getTaxa(taxa);
-    root = NULL;
+    root = nullptr;
     //int num_delete = floor(p_delete * taxa.size());
     int num_delete = k_delete;
     int i;
@@ -1249,7 +1249,7 @@ void IQTree::deleteLeaves(PhyloNodeVector &del_leaves) {
         PhyloNode *taxon = (PhyloNode*) taxa[id];
         del_leaves.push_back(taxon);
         deleteLeaf(taxon);
-        taxa[id] = NULL;
+        taxa[id] = nullptr;
     }
     // set root to the first taxon which was not deleted
     for (i = 0; i < taxa.size(); i++)
@@ -1375,7 +1375,7 @@ void IQTree::assessQuartets(vector<RepresentLeafSet*> &leaves_vec, PhyloNode *cu
 
     // find the representative leaf set for three subtrees
 
-    FOR_NEIGHBOR_IT(cur_root, NULL, it){
+    FOR_NEIGHBOR_IT(cur_root, nullptr, it){
     leaves[cnt] = findRepresentLeaves(leaves_vec, cnt, cur_root);
     cnt++;
 }
@@ -1403,11 +1403,11 @@ void IQTree::reinsertLeavesByParsimony(PhyloNodeVector &del_leaves) {
         //cout << "Add leaf " << (*it_leaf)->id << " to the tree" << endl;
         initializeAllPartialPars();
         clearAllPartialLH();
-        Node *target_node = NULL;
-        Node *target_dad = NULL;
+        Node *target_node = nullptr;
+        Node *target_dad = nullptr;
         Node *added_node = (*it_leaf)->neighbors[0]->node;
-        Node *node1 = NULL;
-        Node *node2 = NULL;
+        Node *node1 = nullptr;
+        Node *node2 = nullptr;
         //Node *leaf;
         for (size_t i = 0; i < 3; i++) {
             if (added_node->neighbors[i]->node->id == (*it_leaf)->id) {
@@ -1425,7 +1425,7 @@ void IQTree::reinsertLeavesByParsimony(PhyloNodeVector &del_leaves) {
 
         best_pars_score = INT_MAX;
         // TODO: this needs to be adapted
-//        addTaxonMPFast(added_node, target_node, target_dad, NULL, root->neighbors[0]->node, root);
+//        addTaxonMPFast(added_node, target_node, target_dad, nullptr, root->neighbors[0]->node, root);
         target_node->updateNeighbor(target_dad, added_node, -1.0);
         target_dad->updateNeighbor(target_node, added_node, -1.0);
         added_node->updateNeighbor((Node*) 1, target_node, -1.0);
@@ -1445,7 +1445,7 @@ void IQTree::reinsertLeaves(PhyloNodeVector &del_leaves) {
         if (verbose_mode >= VB_DEBUG)
             cout << "Reinserting " << (*it_leaf)->name << " (" << (*it_leaf)->id << ")" << endl;
         vector<RepresentLeafSet*> leaves_vec;
-        leaves_vec.resize(nodeNum * 3, NULL);
+        leaves_vec.resize(nodeNum * 3, nullptr);
         initializeBonus();
         NodeVector nodes;
         getInternalNodes(nodes);
@@ -1508,7 +1508,7 @@ void IQTree::getNonTabuBranches(Branches& allBranches, SplitGraph& tabuSplits, B
             if (!tabuSplits.containSplit(*sp)) {
                 nonTabuBranches.insert(pair<int,Branch>(pairInteger(nodeID1, nodeID2), curBranch));
             } else {
-                if (tabuBranches != NULL) {
+                if (tabuBranches != nullptr) {
                     tabuBranches->insert(pair<int,Branch>(pairInteger(nodeID1, nodeID2), curBranch));
                 }
             }
@@ -1529,11 +1529,11 @@ void IQTree::getSplitBranches(Branches &branches, SplitIntMap &splits, Node *nod
                 curBranch.second = node;
                 Split* curSplit;
                 Split *sp = (*it)->split;
-                ASSERT(sp != NULL);
+                ASSERT(sp != nullptr);
                 curSplit = new Split(*sp);
                 if (curSplit->shouldInvert())
                     curSplit->invert();
-                if (splits.findSplit(curSplit) != NULL) {
+                if (splits.findSplit(curSplit) != nullptr) {
                     //curSplit->report(cout);
                     branches.insert(pair<int,Branch>(pairInteger(curBranch.first->id, curBranch.second->id), curBranch));
                 }
@@ -1546,14 +1546,14 @@ void IQTree::getSplitBranches(Branches &branches, SplitIntMap &splits, Node *nod
 bool IQTree::shouldEvaluate(Split *curSplit, SplitIntMap &tabuSplits, SplitIntMap &candSplits) {
     bool answer = true;
     /******************** CHECK TABU SPLIT **************************/
-    if (tabuSplits.findSplit(curSplit) != NULL) {
+    if (tabuSplits.findSplit(curSplit) != nullptr) {
         answer = false;
     } else if (!candSplits.empty()) {
         Split *_curSplit;
         /******************** CHECK STABLE SPLIT **************************/
         int value;
         _curSplit = candSplits.findSplit(curSplit, value);
-        if (_curSplit == NULL || _curSplit->getWeight() <= params->stableSplitThreshold) {
+        if (_curSplit == nullptr || _curSplit->getWeight() <= params->stableSplitThreshold) {
             answer = true;
         } else { // add a stable branch with a certain probability
             double rndDbl = random_double();
@@ -1584,7 +1584,7 @@ void IQTree::getNNIBranches(SplitIntMap &tabuSplits, SplitIntMap &candSplits,Bra
                 if (params->fixStableSplits) {
                     Split *curSplit;
                     Split *sp = (*it)->split;
-                    ASSERT(sp != NULL);
+                    ASSERT(sp != nullptr);
                     curSplit = new Split(*sp);
                     if (curSplit->shouldInvert())
                         curSplit->invert();
@@ -1614,13 +1614,13 @@ void IQTree::getStableBranches(SplitIntMap &candSplits, double supportValue, Bra
                 curBranch.second = node;
                 Split *curSplit;
                 Split *sp = (*it)->split;
-                ASSERT(sp != NULL);
+                ASSERT(sp != nullptr);
                 curSplit = new Split(*sp);
                 if (curSplit->shouldInvert())
                     curSplit->invert();
                 int occurences;
                 sp = candSplits.findSplit(curSplit, occurences);
-                if (sp != NULL) {
+                if (sp != nullptr) {
                     if ( sp->getWeight() >= supportValue) {
                         stableBranches.insert(
                                 pair<int, Branch>(pairInteger(curBranch.first->id, curBranch.second->id), curBranch));
@@ -2564,7 +2564,7 @@ void IQTree::refineBootTrees(){
         ((PhyloSuperTree *)this)->at(0)->getModelFactory()->site_rate->writeInfo(binfo);
     }
 
-    PhyloSuperTree *stree = (isSuperTree()) ? (PhyloSuperTree*)this : NULL;
+    PhyloSuperTree *stree = (isSuperTree()) ? (PhyloSuperTree*)this : nullptr;
 
     for(int sample = 0; sample < num_boot_rep; sample++){
         if ((sample+1) % 100 == 0)
@@ -2590,7 +2590,7 @@ void IQTree::refineBootTrees(){
             }
         }
 
-//        bootstrap_aln->createBootstrapAlignment(saved_aln_on_refine_btree, NULL, params->bootstrap_spec);
+//        bootstrap_aln->createBootstrapAlignment(saved_aln_on_refine_btree, nullptr, params->bootstrap_spec);
         ptn_freq_computed = false;
         computePtnFreq();
         if (isSuperTree()) {
@@ -2748,7 +2748,7 @@ void IQTree::refineBootTrees() {
             bootstrap_alignment = new SuperAlignment;
         else
             bootstrap_alignment = new Alignment;
-        bootstrap_alignment->createBootstrapAlignment(aln, NULL, params->bootstrap_spec);
+        bootstrap_alignment->createBootstrapAlignment(aln, nullptr, params->bootstrap_spec);
 
         // create bootstrap tree
         IQTree *boot_tree;
@@ -2841,7 +2841,7 @@ void IQTree::refineBootTrees() {
 
 
         // delete memory
-        //boot_tree->setModelFactory(NULL);
+        //boot_tree->setModelFactory(nullptr);
         boot_tree->save_all_trees = 2;
 
         bootstrap_alignment = boot_tree->aln;
@@ -2948,7 +2948,7 @@ double IQTree::doTreePerturbation() {
             bootstrap_alignment = new SuperAlignment;
         else
             bootstrap_alignment = new Alignment;
-        bootstrap_alignment->createBootstrapAlignment(aln, NULL, params->bootstrap_spec);
+        bootstrap_alignment->createBootstrapAlignment(aln, nullptr, params->bootstrap_spec);
         setAlignment(bootstrap_alignment);
         initializeAllPartialLh();
         clearAllPartialLH();
@@ -3115,12 +3115,12 @@ pair<int, int> IQTree::optimizeNNI(bool speedNNI) {
                 bool stable = false;
                 if (!tabuSplits.empty()) {
                     int value;
-                    if (tabuSplits.findSplit(curSplit, value) != NULL)
+                    if (tabuSplits.findSplit(curSplit, value) != nullptr)
                         tabu = true;
                 }
                 if (!candidateTrees.getCandSplits().empty()) {
                     int value;
-                    if (candidateTrees.getCandSplits().findSplit(curSplit, value) != NULL)
+                    if (candidateTrees.getCandSplits().findSplit(curSplit, value) != nullptr)
                         stable = true;
 
                 }
@@ -3294,9 +3294,9 @@ void IQTree::pllLogBootSamples(int** pll_boot_samples, int nsamples, int npatter
 }
 
 void IQTree::pllInitUFBootData(){
-    if(pllUFBootDataPtr == NULL){
+    if(pllUFBootDataPtr == nullptr){
         pllUFBootDataPtr = (pllUFBootData *) malloc(sizeof(pllUFBootData));
-        pllUFBootDataPtr->boot_samples = NULL;
+        pllUFBootDataPtr->boot_samples = nullptr;
         pllUFBootDataPtr->candidate_trees_count = 0;
 
         if(params->online_bootstrap && params->gbo_replicates > 0){
@@ -3355,7 +3355,7 @@ void IQTree::pllInitUFBootData(){
 void IQTree::pllDestroyUFBootData(){
     if(pll2iqtree_pattern_index){
         delete [] pll2iqtree_pattern_index;
-        pll2iqtree_pattern_index = NULL;
+        pll2iqtree_pattern_index = nullptr;
     }
 
     if(params->online_bootstrap && params->gbo_replicates > 0){
@@ -3379,7 +3379,7 @@ void IQTree::pllDestroyUFBootData(){
 
     }
     free(pllUFBootDataPtr);
-    pllUFBootDataPtr = NULL;
+    pllUFBootDataPtr = nullptr;
 }
 
 
@@ -3392,7 +3392,7 @@ void IQTree::doNNIs(vector<NNIMove> &compatibleNNIs, bool changeBran) {
         }
     }
     // 2015-10-14: has to reset this pointer when read in
-    current_it = current_it_back = NULL;
+    current_it = current_it_back = nullptr;
 
 }
 
@@ -3478,7 +3478,7 @@ void IQTree::setDelete(int _delete) {
 
 void IQTree::evaluateNNIs(Branches &nniBranches, vector<NNIMove>  &positiveNNIs) {
     for (Branches::iterator it = nniBranches.begin(); it != nniBranches.end(); it++) {
-        NNIMove nni = getBestNNIForBran((PhyloNode*) it->second.first, (PhyloNode*) it->second.second, NULL);
+        NNIMove nni = getBestNNIForBran((PhyloNode*) it->second.first, (PhyloNode*) it->second.second, nullptr);
         if (nni.newloglh > curScore) {
             positiveNNIs.push_back(nni);
         }
@@ -3541,7 +3541,7 @@ void IQTree::evalNNIsSort(bool approx_nni) {
     for (vector<IntBranchInfo>::iterator it = int_branches.begin(); it != int_branches.end(); it++)
         if (it->lh_contribution >= 0.0) // evaluate NNI if branch contribution is big enough
                 {
-            NNIMove myMove = getBestNNIForBran(it->node1, it->node2, NULL, approx_nni, it->lh_contribution);
+            NNIMove myMove = getBestNNIForBran(it->node1, it->node2, nullptr, approx_nni, it->lh_contribution);
             if (myMove.newloglh > curScore) {
                 addPositiveNNIMove(myMove);
                 if (!estimate_nni_cutoff)
@@ -3764,7 +3764,7 @@ void IQTree::summarizeBootstrap(Params &params, MTreeSet &trees) {
      else
      trees.convertSplits(taxname, sg, hash_ss, SW_COUNT, -1, false);
      */
-    trees.convertSplits(taxname, sg, hash_ss, SW_COUNT, -1, NULL, false); // do not sort taxa
+    trees.convertSplits(taxname, sg, hash_ss, SW_COUNT, -1, nullptr, false); // do not sort taxa
 
     if (verbose_mode >= VB_MED)
     	cout << sg.size() << " splits found" << endl;
@@ -3788,7 +3788,7 @@ void IQTree::summarizeBootstrap(Params &params, MTreeSet &trees) {
 //    mytree.readTree(tree_stream, rooted);
 //    mytree.assignLeafID();
     assignLeafNameByID();
-    createBootstrapSupport(taxname, trees, hash_ss, NULL);
+    createBootstrapSupport(taxname, trees, hash_ss, nullptr);
 
     // now write resulting tree with supports
 //    tree_stream.seekp(0, ios::beg);
@@ -3888,7 +3888,7 @@ void IQTree::summarizeBootstrap(SplitGraph &sg) {
      else
      trees.convertSplits(taxname, sg, hash_ss, SW_COUNT, -1, false);
      */
-    trees.convertSplits(taxname, sg, hash_ss, SW_COUNT, -1, NULL, false); // do not sort taxa
+    trees.convertSplits(taxname, sg, hash_ss, SW_COUNT, -1, nullptr, false); // do not sort taxa
 }
 
 void IQTree::computeRootstrap(MTreeSet &trees, bool use_taxid) {
@@ -4014,7 +4014,7 @@ void IQTree::computeRootstrapUnrooted(MTreeSet &trees, const char* outgroup, boo
     unordered_set<string> outgroup_set;
     for (auto it = outgroup_vec.begin(); it != outgroup_vec.end(); it++)
         outgroup_set.insert(*it);
-    pair<Node*,Neighbor*> outgroup_branch = {NULL, NULL};
+    pair<Node*,Neighbor*> outgroup_branch = {nullptr, nullptr};
     // move the root
     root = findLeafName(outgroup_vec[0]);
     if (!root)
@@ -4324,7 +4324,7 @@ void IQTree::printPhylolibTree(const char* suffix) {
 
 void IQTree::printIntermediateTree(int brtype) {
     setRootNode(params->root);
-    double *pattern_lh = NULL;
+    double *pattern_lh = nullptr;
     double logl = curScore;
 
     if (params->print_tree_lh) {

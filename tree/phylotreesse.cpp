@@ -129,16 +129,16 @@ void PhyloTree::setLikelihoodKernel(LikelihoodKernel lk) {
 #if INSTRSET < 2
         computeLikelihoodBranchPointer = &PhyloTree::computeLikelihoodBranchGenericSIMD<Vec1d, SAFE_LH>;
         computeLikelihoodDervPointer = &PhyloTree::computeLikelihoodDervGenericSIMD<Vec1d, SAFE_LH>;
-        computeLikelihoodDervMixlenPointer = NULL;
+        computeLikelihoodDervMixlenPointer = nullptr;
         computePartialLikelihoodPointer = &PhyloTree::computePartialLikelihoodGenericSIMD<Vec1d, SAFE_LH>;
         computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d, SAFE_LH>;
         sse = LK_386;
 #else
-        computeLikelihoodBranchPointer = NULL;
-        computeLikelihoodDervPointer = NULL;
-        computeLikelihoodDervMixlenPointer = NULL;
-        computePartialLikelihoodPointer = NULL;
-        computeLikelihoodFromBufferPointer = NULL;
+        computeLikelihoodBranchPointer = nullptr;
+        computeLikelihoodDervPointer = nullptr;
+        computeLikelihoodDervMixlenPointer = nullptr;
+        computePartialLikelihoodPointer = nullptr;
+        computeLikelihoodFromBufferPointer = nullptr;
         sse = LK_386;
 #endif
         return;
@@ -148,7 +148,7 @@ void PhyloTree::setLikelihoodKernel(LikelihoodKernel lk) {
 //        computeLikelihoodBranchPointer = &PhyloTree::computeNonrevLikelihoodBranch;
 //        computeLikelihoodDervPointer = &PhyloTree::computeNonrevLikelihoodDerv;
 //        computePartialLikelihoodPointer = &PhyloTree::computeNonrevPartialLikelihood;
-//        computeLikelihoodFromBufferPointer = NULL;
+//        computeLikelihoodFromBufferPointer = nullptr;
 //        return;        
 //    }    
 
@@ -186,15 +186,15 @@ void PhyloTree::setLikelihoodKernel(LikelihoodKernel lk) {
     //--- naive (no SIMD) kernel ---
     computeLikelihoodBranchPointer = &PhyloTree::computeLikelihoodBranchGenericSIMD<Vec1d, SAFE_LH>;
     computeLikelihoodDervPointer = &PhyloTree::computeLikelihoodDervGenericSIMD<Vec1d, SAFE_LH>;
-    computeLikelihoodDervMixlenPointer = NULL;
+    computeLikelihoodDervMixlenPointer = nullptr;
     computePartialLikelihoodPointer = &PhyloTree::computePartialLikelihoodGenericSIMD<Vec1d, SAFE_LH>;
     computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d, SAFE_LH>;
 #else
-    computeLikelihoodBranchPointer = NULL;
-    computeLikelihoodDervPointer = NULL;
-    computeLikelihoodDervMixlenPointer = NULL;
-    computePartialLikelihoodPointer = NULL;
-    computeLikelihoodFromBufferPointer = NULL;
+    computeLikelihoodBranchPointer = nullptr;
+    computeLikelihoodDervPointer = nullptr;
+    computeLikelihoodDervMixlenPointer = nullptr;
+    computePartialLikelihoodPointer = nullptr;
+    computeLikelihoodFromBufferPointer = nullptr;
 #endif
 }
 
@@ -666,7 +666,7 @@ void PhyloTree::computePartialLikelihoodEigen(PhyloNeighbor *dad_branch, PhyloNo
     dad_branch->lh_scale_factor = 0.0;
 
 	// internal node
-	PhyloNeighbor *left = NULL, *right = NULL; // left & right are two neighbors leading to 2 subtrees
+	PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
     int num_leaves = 0;
 	FOR_NEIGHBOR_IT(node, dad, it) {
         PhyloNeighbor *nei = (PhyloNeighbor*)*it;
@@ -686,8 +686,8 @@ void PhyloTree::computePartialLikelihoodEigen(PhyloNeighbor *dad_branch, PhyloNo
             if (backnei->partial_lh) {
                 dad_branch->partial_lh = backnei->partial_lh;
                 dad_branch->scale_num = backnei->scale_num;
-                backnei->partial_lh = NULL;
-                backnei->scale_num = NULL;
+                backnei->partial_lh = nullptr;
+                backnei->scale_num = nullptr;
                 backnei->partial_lh_computed &= ~1; // clear bit
                 done = true;
                 break;
@@ -701,7 +701,7 @@ void PhyloTree::computePartialLikelihoodEigen(PhyloNeighbor *dad_branch, PhyloNo
 
     // precompute buffer to save times
     double *echildren = new double[block*nstates*(node->degree()-1)];
-    double *partial_lh_leaves = NULL;
+    double *partial_lh_leaves = nullptr;
     if (num_leaves > 0)
         partial_lh_leaves = new double[(aln->STATE_UNKNOWN+1)*block*num_leaves];
     double *echild = echildren;
@@ -1537,7 +1537,7 @@ void PhyloTree::endMarginalAncestralState(bool orig_kernel_nonrev, double* &ptn_
     aligned_free(ptn_ancestral_prob);
 
     aligned_free(_pattern_lh_cat_state);
-    _pattern_lh_cat_state = NULL;
+    _pattern_lh_cat_state = nullptr;
 }
 
 /*
@@ -1688,10 +1688,10 @@ void PhyloTree::computeJointAncestralSequences(int *ancestral_seqs) {
     // step 1-3 of the dynamic programming algorithm of Pupko et al. 2000, MBE 17:890-896
     ASSERT(root->isLeaf());
     int *C = new int[(size_t)getAlnNPattern()*model->num_states*leafNum];
-    computeAncestralLikelihood((PhyloNeighbor*)root->neighbors[0], NULL, C);
+    computeAncestralLikelihood((PhyloNeighbor*)root->neighbors[0], nullptr, C);
     
     // step 4-5 of the dynamic programming algorithm of Pupko et al. 2000, MBE 17:890-896
-    computeAncestralState((PhyloNeighbor*)root->neighbors[0], NULL, C, ancestral_seqs);
+    computeAncestralState((PhyloNeighbor*)root->neighbors[0], nullptr, C, ancestral_seqs);
     
     clearAllPartialLH();
     
@@ -1723,8 +1723,8 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
             if (backnei->partial_lh) {
                 dad_branch->partial_lh = backnei->partial_lh;
                 dad_branch->scale_num = backnei->scale_num;
-                backnei->partial_lh = NULL;
-                backnei->scale_num = NULL;
+                backnei->partial_lh = nullptr;
+                backnei->scale_num = nullptr;
                 backnei->partial_lh_computed &= ~1; // clear bit
                 done = true;
                 break;
@@ -1738,7 +1738,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
     size_t nstatesqr = nstates*nstates;
     size_t parent, child;
     double *trans_mat = new double[nstatesqr];
-    double *lh_leaves = NULL;
+    double *lh_leaves = nullptr;
     if (num_leaves > 0) {
         lh_leaves = new double[(aln->STATE_UNKNOWN+1)*nstates*num_leaves];
     }

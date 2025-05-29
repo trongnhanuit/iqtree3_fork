@@ -964,16 +964,16 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
                 lmap_quartet_info[qid].logl[k] = quartet_tree->optimizeAllBranches(10, 0.1);
             }
             // reset model & rate so that they are not deleted
-            quartet_tree->setModel(NULL);
-            quartet_tree->setModelFactory(NULL);
-            quartet_tree->setRate(NULL);
+            quartet_tree->setModel(nullptr);
+            quartet_tree->setModelFactory(nullptr);
+            quartet_tree->setRate(nullptr);
 
             if (isSuperTree()) {
                 PhyloSuperTree *quartet_super_tree = (PhyloSuperTree*)quartet_tree;
                 for (size_t i = 0; i < quartet_super_tree->size(); i++) {
-                    quartet_super_tree->at(i)->setModelFactory(NULL);
-                    quartet_super_tree->at(i)->setModel(NULL);
-                    quartet_super_tree->at(i)->setRate(NULL);
+                    quartet_super_tree->at(i)->setModelFactory(nullptr);
+                    quartet_super_tree->at(i)->setModel(nullptr);
+                    quartet_super_tree->at(i)->setRate(nullptr);
                 }
             }
             delete quartet_tree;
@@ -1376,7 +1376,7 @@ void PhyloTree::doLikelihoodMapping() {
     ofstream out;
     string filename;
     
-    if(params->lmap_cluster_file != NULL) {
+    if(params->lmap_cluster_file != nullptr) {
 	// cout << "YYY: test reading" << params->lmap_cluster_file << endl;
         readLikelihoodMappingGroups(params->lmap_cluster_file, LMGroups);
     } else {

@@ -68,12 +68,12 @@ Alignment::Alignment()
     num_states = 0;
     frac_const_sites = 0.0;
     frac_invariant_sites = 0.0;
-    codon_table = NULL;
-    genetic_code = NULL;
-    non_stop_codon = NULL;
+    codon_table = nullptr;
+    genetic_code = nullptr;
+    non_stop_codon = nullptr;
     seq_type = SEQ_UNKNOWN;
     STATE_UNKNOWN = 126;
-    pars_lower_bound = NULL;
+    pars_lower_bound = nullptr;
 }
 
 string &Alignment::getSeqName(int i) {
@@ -758,12 +758,12 @@ Alignment::Alignment(char *filename, char *sequence_type, InputType &intype, str
     num_states = 0;
     frac_const_sites = 0.0;
     frac_invariant_sites = 0.0;
-    codon_table = NULL;
-    genetic_code = NULL;
-    non_stop_codon = NULL;
+    codon_table = nullptr;
+    genetic_code = nullptr;
+    non_stop_codon = nullptr;
     seq_type = SEQ_UNKNOWN;
     STATE_UNKNOWN = 126;
-    pars_lower_bound = NULL;
+    pars_lower_bound = nullptr;
     double readStart = getRealTime();
     cout << "Reading alignment file " << filename << " ... ";
     intype = detectInputFile(filename);
@@ -838,12 +838,12 @@ Alignment::Alignment(NxsDataBlock *data_block, char *sequence_type, string model
     num_states = 0;
     frac_const_sites = 0.0;
     frac_invariant_sites = 0.0;
-    codon_table = NULL;
-    genetic_code = NULL;
-    non_stop_codon = NULL;
+    codon_table = nullptr;
+    genetic_code = nullptr;
+    non_stop_codon = nullptr;
     seq_type = SEQ_UNKNOWN;
     STATE_UNKNOWN = 126;
-    pars_lower_bound = NULL;
+    pars_lower_bound = nullptr;
     
     extractDataBlock(data_block);
     if (verbose_mode >= VB_DEBUG)
@@ -920,9 +920,9 @@ void Alignment::buildSeqStates(vector<vector<int> > &seq_states, bool add_unobs_
 int Alignment::readNexus(char *filename) {
     NxsTaxaBlock *taxa_block;
     NxsAssumptionsBlock *assumptions_block;
-    NxsDataBlock *data_block = NULL;
-    NxsTreesBlock *trees_block = NULL;
-    NxsCharactersBlock *char_block = NULL;
+    NxsDataBlock *data_block = nullptr;
+    NxsTreesBlock *trees_block = nullptr;
+    NxsCharactersBlock *char_block = nullptr;
 
     taxa_block = new NxsTaxaBlock();
     assumptions_block = new NxsAssumptionsBlock(taxa_block);
@@ -1014,7 +1014,7 @@ int getDataBlockMorphStates(NxsCharactersBlock *data_block) {
 void Alignment::extractDataBlock(NxsCharactersBlock *data_block) {
     int nseq = data_block->GetNTax();
     int nsite = data_block->GetNCharTotal();
-    char *symbols = NULL;
+    char *symbols = nullptr;
     //num_states = strlen(symbols);
     char char_to_state[NUM_CHAR];
     char state_to_char[NUM_CHAR];
@@ -1965,9 +1965,9 @@ string Alignment::getSeqTypeStr(SeqType sequence_type) {
 int Alignment::buildPattern(StrVector &sequences, char *sequence_type, int nseq, int nsite) {
     int seq_id;
     ostringstream err_str;
-    codon_table = NULL;
-    genetic_code = NULL;
-    non_stop_codon = NULL;
+    codon_table = nullptr;
+    genetic_code = nullptr;
+    non_stop_codon = nullptr;
 
     if (nseq != seq_names.size()) {
         throw "Different number of sequences than specified";
@@ -5114,7 +5114,7 @@ void Alignment::computeCodonFreq(StateFreqType freq, double *state_freq, double 
                 
                 // delete the cache
                 delete cache_ntfreq;
-                cache_ntfreq = NULL;
+                cache_ntfreq = nullptr;
             }
         }
         else
@@ -5235,7 +5235,7 @@ void Alignment::computeCodonFreq(StateFreqType freq, double *state_freq, double 
                 
                 // delete the cache
                 delete cache_ntfreq;
-                cache_ntfreq = NULL;
+                cache_ntfreq = nullptr;
             }
         }
         else
@@ -5943,7 +5943,7 @@ bool Alignment::readSiteStateFreq(const char* site_freq_file)
 			for (size_t i = 0; i < site_model.size(); ++i)
 				if (site_model[i] == -1)
 					site_model[i] = site_state_freq.size();
-			site_state_freq.push_back(NULL);
+			site_state_freq.push_back(nullptr);
 		}
 		in.clear();
 		// set the failbit again

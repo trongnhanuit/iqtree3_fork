@@ -924,10 +924,10 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
 
     PhyloNode *dad = info.dad, *node = (PhyloNode*)info.dad_branch->node;
     double *echild = echildren;
-    if (echild == NULL)
+    if (echild == nullptr)
         echild = info.echildren;
     double *partial_lh_leaf = partial_lh_leaves;
-    if (partial_lh_leaf == NULL)
+    if (partial_lh_leaf == nullptr)
         partial_lh_leaf = info.partial_lh_leaves;
 
     //----------- Non-reversible model --------------
@@ -1342,7 +1342,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
     size_t num_leaves = 0;
 
 	// internal node
-	PhyloNeighbor *left = NULL, *right = NULL; // left & right are two neighbors leading to 2 subtrees
+	PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
 	FOR_NEIGHBOR_IT(node, dad, it) {
         PhyloNeighbor *nei = (PhyloNeighbor*)(*it);
         // make sure that the partial_lh of children are different!
@@ -1355,12 +1355,12 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
     // precomputed buffer to save times
     size_t thread_buf_size        = (2*block+nstates)*VectorClass::size();
     double *buffer_partial_lh_ptr = buffer_partial_lh + (getBufferPartialLhSize() - thread_buf_size*num_packets);
-    double *echildren = NULL;
-    double *partial_lh_leaves = NULL;
+    double *echildren = nullptr;
+    double *partial_lh_leaves = nullptr;
 
     // pre-compute scaled branch length per category
     double len_children[ncat*(node->degree()-1)]; // +1 in case num_leaves = 0
-    double *len_left = NULL, *len_right = NULL;
+    double *len_left = nullptr, *len_right = nullptr;
 
     if (SITE_MODEL) {
         double *len_children_ptr = len_children;
@@ -1418,7 +1418,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
             for (size_t i = 0; i < block; i++){
                 partial_lh_all[i] = 1.0;
             }
-            UBYTE *scale_dad = NULL;
+            UBYTE *scale_dad = nullptr;
             if (SAFE_NUMERIC) {
                 scale_dad = dad_branch->scale_num + ptn*ncat_mix;
                 memset(scale_dad, 0, sizeof(UBYTE)*ncat_mix*VectorClass::size());
@@ -1439,7 +1439,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
             FOR_NEIGHBOR_IT(node, dad, it) {
                 if (SITE_MODEL) {
                     PhyloNeighbor *child = (PhyloNeighbor*)*it;
-                    UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + ptn*ncat_mix : NULL;
+                    UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + ptn*ncat_mix : nullptr;
                     VectorClass *partial_lh = partial_lh_all;
                     if (child->node->isLeaf()) {
                         // external node
@@ -1494,7 +1494,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
                     PhyloNeighbor *child = (PhyloNeighbor*)*it;
                     auto stateRow = this->getConvertedSequenceByNumber(child->node->id);
                     auto unknown  = aln->STATE_UNKNOWN;
-                    UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + ptn*ncat_mix : NULL;
+                    UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + ptn*ncat_mix : nullptr;
                     if (child->node->isLeaf()) {
                         // external node
                         // load data for tip
@@ -1608,7 +1608,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
             VectorClass *partial_lh_tmp = partial_lh_all;
             VectorClass *partial_lh = (VectorClass*)(dad_branch->partial_lh + ptn*block);
             VectorClass lh_max = 0.0;
-            double *inv_evec_ptr = SITE_MODEL ? &inv_evec[ptn*states_square] : NULL;
+            double *inv_evec_ptr = SITE_MODEL ? &inv_evec[ptn*states_square] : nullptr;
             for (size_t c = 0; c < ncat_mix; c++) {
                 if (SITE_MODEL) {
                     // compute dot-product with inv_eigenvector
@@ -2280,7 +2280,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
     bool ASC_Holder = (ASC_type == ASC_VARIANT_MISSING || ASC_type == ASC_INFORMATIVE_MISSING);
     bool ASC_Lewis = (ASC_type == ASC_VARIANT || ASC_type == ASC_INFORMATIVE);
 
-    double *const_df = NULL, *const_ddf = NULL;
+    double *const_df = nullptr, *const_ddf = nullptr;
 
     if (ASC_Holder) {
         const_df = aligned_alloc<double>(get_safe_upper_limit(nptn) - max_orig_nptn);
@@ -2305,9 +2305,9 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
 
 	ASSERT(theta_all);
 
-    double *val0 = NULL;
-    double *val1 = NULL;
-    double *val2 = NULL;
+    double *val0 = nullptr;
+    double *val1 = nullptr;
+    double *val2 = nullptr;
     double cat_rate[ncat];
     double cat_prop[ncat];
 
@@ -2367,8 +2367,8 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
     }
 
     double dad_length = dad_branch->length;
-    VectorClass *all_dfvec = NULL;
-    VectorClass *all_ddfvec = NULL;
+    VectorClass *all_dfvec = nullptr;
+    VectorClass *all_ddfvec = nullptr;
 
     size_t nmixlen = getMixlen(), nmixlen2 = nmixlen*nmixlen;
     if (isMixlen()) {
@@ -2769,7 +2769,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
 
     double* all_lh = new double[num_packets];
     memset(all_lh, 0, num_packets * sizeof(double));
-    double* all_prob = NULL;
+    double* all_prob = nullptr;
     if (ASC_Lewis) {
         all_prob = new double[num_packets];
         memset(all_prob, 0, num_packets * sizeof(double));
@@ -3147,7 +3147,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
         all_tree_lh += all_lh[k];
     delete[] all_lh;
 
-    if (all_prob != NULL) {
+    if (all_prob != nullptr) {
         for (int k = 0; k < num_packets; k++)
             all_prob_const += all_prob[k];
         delete[] all_prob;
@@ -3315,7 +3315,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
     double *eval = model->getEigenvalues();
     ASSERT(eval);
 
-    double *val0 = NULL;
+    double *val0 = nullptr;
     double cat_length[ncat];
     double cat_prop[ncat];
 
@@ -3360,7 +3360,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
     int nsize = nptn / VectorClass::size() + 1;
     double* all_lh = new double[nsize];
     memset(all_lh, 0, nsize * sizeof(double));
-    double* all_prob = NULL;
+    double* all_prob = nullptr;
     if (ASC_Lewis) {
         all_prob = new double[nsize];
         memset(all_prob, 0, nsize * sizeof(double));
@@ -3427,7 +3427,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
         all_tree_lh += all_lh[k];
     delete[] all_lh;
 
-    if (all_prob != NULL) {
+    if (all_prob != nullptr) {
         for (int k = 0; k < nsize; k++)
             all_prob_const += all_prob[k];
         delete[] all_prob;
@@ -3553,9 +3553,9 @@ void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch
 
 	ASSERT(theta_all);
 
-    double *val0 = NULL;
-    double *val1 = NULL;
-    double *val2 = NULL;
+    double *val0 = nullptr;
+    double *val1 = nullptr;
+    double *val2 = nullptr;
     double cat_rate[ncat];
     double cat_prop[ncat];
 

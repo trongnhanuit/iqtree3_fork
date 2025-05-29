@@ -26,7 +26,7 @@ ParsTree::~ParsTree() {
 //void ParsTree::initParsData(Params* pars_params) {
 //    if(!pars_params) return;
 //    initCostMatrixLinear();
-//    if(cost_matrix == NULL) loadCostMatrixFile(pars_params->sankoff_cost_file);
+//    if(cost_matrix == nullptr) loadCostMatrixFile(pars_params->sankoff_cost_file);
 //}
 
 void ParsTree::printPatternScore() {

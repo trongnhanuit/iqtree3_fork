@@ -19,7 +19,7 @@ CandidateSet::~CandidateSet() {
 }
 
 CandidateSet::CandidateSet() : CheckpointFactory() {
-    aln = NULL;
+    aln = nullptr;
     numStableSplits = 0;
     this->maxSize = Params::getInstance().maxCandidates;
 }
@@ -170,7 +170,7 @@ void CandidateSet::addCandidateSplits(string treeString) {
     for (SplitGraph::iterator splitIt = allSplits.begin(); splitIt != allSplits.end(); splitIt++) {
         int value;
         Split *sp = candSplits.findSplit(*splitIt, value);
-        if (sp != NULL) {
+        if (sp != nullptr) {
             sp->setWeight(value + 1);
             candSplits.setValue(sp, value + 1);
         } else {
@@ -424,7 +424,7 @@ int CandidateSet::computeSplitOccurences(double supportThreshold) {
         for (itg = splits.begin(); itg != splits.end(); itg++) {
             int value;
             Split *sp = candSplits.findSplit(*itg, value);
-            if (sp != NULL) {
+            if (sp != nullptr) {
                 int newHashWeight = value + 1;
                 double newSupport = (double) newHashWeight / (double) candSplits.getNumTree();
                 sp->setWeight(newSupport);

@@ -65,7 +65,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     size_t scale_size = SAFE_NUMERIC ? (ptn_upper-ptn_lower) * ncat_mix : (ptn_upper-ptn_lower);
     
     // internal node
-    PhyloNeighbor *left = NULL, *right = NULL; // left & right are two neighbors leading to 2 subtrees
+    PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
     FOR_NEIGHBOR_IT(node, dad, it) {
         if (!left) left = (PhyloNeighbor*)(*it); else right = (PhyloNeighbor*)(*it);
         if ((*it)->node->isLeaf())
@@ -112,7 +112,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
             VectorClass *partial_lh_all = (VectorClass*)(dad_branch->partial_lh + ptn*block);
             for (size_t i = 0; i < block; i++)
                 partial_lh_all[i] = 1.0;
-            UBYTE *scale_dad = NULL;
+            UBYTE *scale_dad = nullptr;
             if (SAFE_NUMERIC) {
                 scale_dad = dad_branch->scale_num + ptn*ncat_mix;
                 memset(scale_dad, 0, sizeof(UBYTE)*ncat_mix*VectorClass::size());
@@ -124,7 +124,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
             
             FOR_NEIGHBOR_IT(node, dad, it) {
                 PhyloNeighbor *child = (PhyloNeighbor*)*it;
-                UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + ptn*ncat_mix : NULL;
+                UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + ptn*ncat_mix : nullptr;
                 if (child->node->isLeaf()) {
                     // external node
                     // load data for tip

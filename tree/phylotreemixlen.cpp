@@ -25,7 +25,7 @@ PhyloTreeMixlen::PhyloTreeMixlen() : IQTree()
 {
 	mixlen = 1;
     cur_mixture = -1;
-//    relative_treelen = NULL;
+//    relative_treelen = nullptr;
     initializing_mixlen = false;
 }
 
@@ -36,7 +36,7 @@ PhyloTreeMixlen::PhyloTreeMixlen(Alignment *aln, int mixlen) : IQTree(aln)
 {
 //	cout << "Initializing heterotachy mixture branch lengths" << endl;
     cur_mixture = -1;
-//    relative_treelen = NULL;
+//    relative_treelen = nullptr;
     initializing_mixlen = false;
     setMixlen(mixlen);
 }

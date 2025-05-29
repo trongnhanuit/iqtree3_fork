@@ -121,7 +121,7 @@ void PhyloTree::computePartialLikelihoodEigenSIMD(PhyloNeighbor *dad_branch, Phy
 
     // internal node
     dad_branch->lh_scale_factor = 0.0;
-    PhyloNeighbor *left = NULL, *right = NULL; // left & right are two neighbors leading to 2 subtrees
+    PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
     int num_leaves = 0;
     FOR_NEIGHBOR_IT(node, dad, it) {
         PhyloNeighbor *nei = (PhyloNeighbor*)*it;
@@ -140,8 +140,8 @@ void PhyloTree::computePartialLikelihoodEigenSIMD(PhyloNeighbor *dad_branch, Phy
             if (backnei->partial_lh) {
                 dad_branch->partial_lh = backnei->partial_lh;
                 dad_branch->scale_num = backnei->scale_num;
-                backnei->partial_lh = NULL;
-                backnei->scale_num = NULL;
+                backnei->partial_lh = nullptr;
+                backnei->scale_num = nullptr;
                 backnei->partial_lh_computed &= ~1; // clear bit
                 done = true;
                 break;
@@ -163,7 +163,7 @@ void PhyloTree::computePartialLikelihoodEigenSIMD(PhyloNeighbor *dad_branch, Phy
 
 
     VectorClass *echildren = aligned_alloc<VectorClass>(block*nstates/VCSIZE*(node->degree()-1));
-    double *partial_lh_leaves = NULL;
+    double *partial_lh_leaves = nullptr;
     if (num_leaves > 0)
         partial_lh_leaves = aligned_alloc<double>((aln->STATE_UNKNOWN+1)*block*num_leaves);
     VectorClass *echild = echildren;
@@ -1486,7 +1486,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
         dad_branch->partial_pars[nstates*VCSIZE*nsites] = 0;
     } else if (node->isLeaf() && dad) {
         // external node
-        vector<Alignment*> *partitions = NULL;
+        vector<Alignment*> *partitions = nullptr;
         if (aln->isSuperAlignment())
             partitions = &((SuperAlignment*)aln)->partitions;
         else {
@@ -1679,7 +1679,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
     } else {
         // internal node
         ASSERT(node->degree() == 3); // it works only for strictly bifurcating tree
-        PhyloNeighbor *left = NULL, *right = NULL; // left & right are two neighbors leading to 2 subtrees
+        PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
         FOR_NEIGHBOR_IT(node, dad, it) {
             PhyloNeighbor* pit = (PhyloNeighbor*) (*it);
             if ((pit->partial_lh_computed & 2) == 0) {
@@ -1846,7 +1846,7 @@ void PhyloTree::computePartialParsimonySankoffSIMD(PhyloNeighbor *dad_branch, Ph
     memset(partial_pars, 0, sizeof(UINT)*pars_block_size);
     VectorClass *tip_buffer = aligned_alloc<VectorClass>(nstates*2);
     
-    PhyloNeighbor *left = NULL, *right = NULL;
+    PhyloNeighbor *left = nullptr, *right = nullptr;
     
     FOR_NEIGHBOR_IT(node, dad, it)
     if ((*it)->node->name != ROOT_NAME) {

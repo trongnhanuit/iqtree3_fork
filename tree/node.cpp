@@ -170,8 +170,7 @@ double Node::longestPath2(Node* &node1, Node* &node2) {
 }
 
 Neighbor *Node::findNeighbor(Node *node) {
-	int size = neighbors.size();
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < neighbors.size(); i++)
         if (neighbors[i]->node == node) return neighbors[i];
     /*
     for (NeighborVec::iterator it = neighbors.begin(); it != neighbors.end(); it ++)
@@ -183,8 +182,7 @@ Neighbor *Node::findNeighbor(Node *node) {
 }
 
 bool Node::isNeighbor(Node* node) {
-    int size = neighbors.size();
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < neighbors.size(); i++)
         if (neighbors[i]->node == node) return true;
     return false;
 }

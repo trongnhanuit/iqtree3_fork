@@ -119,7 +119,7 @@ void IQTree::saveUFBoot(Checkpoint *checkpoint) {
         int boot_splits_size = boot_splits.size();
         CKP_SAVE(boot_splits_size);
         checkpoint->startList(boot_samples.size());
-        for (int id = 0; id != boot_samples.size(); id++) {
+        for (size_t id = 0; id != boot_samples.size(); id++) {
             checkpoint->addListElement();
             stringstream ss;
             ss.precision(10);
@@ -498,7 +498,7 @@ void IQTree::createPLLPartition(Params &params, ostream &pllPartitionFileHandle)
             SeqType datatype[] = {SEQ_DNA, SEQ_CODON, SEQ_PROTEIN};
             PhyloSuperTree::iterator it;
             
-            for (int i = 0; i < sizeof(datatype)/sizeof(SeqType); i++) {
+            for (size_t i = 0; i < sizeof(datatype)/sizeof(SeqType); i++) {
                 bool first = true;
                 int startPos = 1;
                 for (it = siqtree->begin(); it != siqtree->end(); it++) 
@@ -1409,7 +1409,7 @@ void IQTree::reinsertLeavesByParsimony(PhyloNodeVector &del_leaves) {
         Node *node1 = NULL;
         Node *node2 = NULL;
         //Node *leaf;
-        for (int i = 0; i < 3; i++) {
+        for (size_t i = 0; i < 3; i++) {
             if (added_node->neighbors[i]->node->id == (*it_leaf)->id) {
                 //leaf = added_node->neighbors[i]->node;
             } else if (!node1) {
@@ -1787,7 +1787,7 @@ double* IQTree::getModelRatesFromPLL() {
     int numberOfRates = (pllPartitions->partitionData[0]->states * pllPartitions->partitionData[0]->states
             - pllPartitions->partitionData[0]->states) / 2;
     double* rate_params = new double[numberOfRates];
-    for (int i = 0; i < numberOfRates; i++) {
+    for (size_t i = 0; i < numberOfRates; i++) {
         rate_params[i] = pllPartitions->partitionData[0]->substRates[i];
     }
     return rate_params;
@@ -1796,7 +1796,7 @@ double* IQTree::getModelRatesFromPLL() {
 void IQTree::pllPrintModelParams() {
     cout.precision(6);
     cout << fixed;
-    for (int part = 0; part < pllPartitions->numberOfPartitions; part++) {
+    for (size_t part = 0; part < pllPartitions->numberOfPartitions; part++) {
         cout << "Alpha[" << part << "]" << ": " << pllPartitions->partitionData[part]->alpha << endl;
         if (aln->num_states == 4) {
             int states, rates;
@@ -1938,7 +1938,7 @@ void IQTree::pllBaseSubstitute (char *seq, int dataType)
     char  meaningAA[256];
     char * d;
 
-    for (int i = 0; i < 256; ++ i)
+    for (size_t i = 0; i < 256; ++ i)
     {
         meaningDNA[i] = -1;
         meaningAA[i]  = -1;
@@ -2041,7 +2041,7 @@ void IQTree::pllBaseSubstitute (char *seq, int dataType)
 
     d = (dataType == PLL_DNA_DATA) ? meaningDNA : meaningAA;
     int seq_len = strlen(seq);
-    for (int i = 0; i < seq_len; ++ i)
+    for (size_t i = 0; i < seq_len; ++ i)
     {
         seq[i] = d[(int)seq[i]];
     }
@@ -2083,7 +2083,7 @@ double IQTree::perturb(int times) {
         PhyloNode *taxon2;
         int *dists = new int[taxa.size()];
         int minDist = 1000000;
-        for (int i = 0; i < taxa.size(); i++) {
+        for (size_t i = 0; i < taxa.size(); i++) {
             if (i == taxonid1)
                 continue;
             taxon2 = (PhyloNode*) taxa[i];
@@ -2094,7 +2094,7 @@ double IQTree::perturb(int times) {
         }
 
         int taxonid2 = -1;
-        for (int i = 0; i < taxa.size(); i++) {
+        for (size_t i = 0; i < taxa.size(); i++) {
             if (dists[i] == minDist)
                 taxonid2 = i;
         }
@@ -3621,7 +3621,7 @@ void IQTree::saveCurrentTree(double cur_logl) {
     memset(pattern_lh, 0, maxnptn*sizeof(BootValType));
     double *pattern_lh_orig = aligned_alloc<double>(nptn);
     computePatternLikelihood(pattern_lh_orig, &cur_logl);
-    for (int i = 0; i < nptn; i++)
+    for (size_t i = 0; i < nptn; i++)
         pattern_lh[i] = (float)pattern_lh_orig[i];
 #else
     int maxnptn = get_safe_upper_limit(nptn);
@@ -3919,7 +3919,7 @@ void IQTree::computeRootstrap(MTreeSet &trees, bool use_taxid) {
             // change the taxon IDs to be the same as main tree
             NodeVector taxa;
             trees[i]->getTaxa(taxa);
-            for (int j = 0; j < taxa.size(); j++) {
+            for (size_t j = 0; j < taxa.size(); j++) {
                 auto id = tax2id.find(taxa[j]->name);
                 if (id == tax2id.end())
                     outError("Taxon " + taxa[j]->name + " in tree " + convertIntToString(i+1) + " not found in main tree");
@@ -4075,7 +4075,7 @@ void IQTree::computeRootstrapUnrooted(MTreeSet &trees, const char* outgroup, boo
             // change the taxon IDs to be the same as main tree
             NodeVector taxa;
             trees[i]->getTaxa(taxa);
-            for (int j = 0; j < taxa.size(); j++) {
+            for (size_t j = 0; j < taxa.size(); j++) {
                 auto id = tax2id.find(taxa[j]->name);
                 if (id == tax2id.end())
                     outError("Taxon " + taxa[j]->name + " in tree " + convertIntToString(i+1) + " not found in main tree");
@@ -4365,7 +4365,7 @@ void IQTree::printIntermediateTree(int brtype) {
 
 
 void IQTree::convertNNI2Splits(SplitIntMap &nniSplits, int numNNIs, vector<NNIMove> &compatibleNNIs) {
-    for (int i = 0; i < numNNIs; i++) {
+    for (size_t i = 0; i < numNNIs; i++) {
         Split *sp = new Split(*getSplit(compatibleNNIs[i].node1, compatibleNNIs[i].node2));
         if (sp->shouldInvert()) {
             sp->invert();

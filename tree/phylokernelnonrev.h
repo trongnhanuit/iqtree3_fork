@@ -725,7 +725,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,1) num_threads(num_threads) reduction(+:all_df,all_ddf,all_prob_const,all_df_const,all_ddf_const)
 #endif
-        for (int packet_id = 0; packet_id < num_packets; packet_id++) {
+        for (size_t packet_id = 0; packet_id < num_packets; packet_id++) {
             VectorClass my_df(0.0), my_ddf(0.0), vc_prob_const(0.0), vc_df_const(0.0), vc_ddf_const(0.0);
             size_t ptn_lower = limits[packet_id];
             size_t ptn_upper = limits[packet_id+1];
@@ -877,7 +877,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,1) num_threads(num_threads) reduction(+:all_df,all_ddf,all_prob_const,all_df_const,all_ddf_const)
 #endif
-        for (int packet_id = 0; packet_id < num_packets; packet_id++) {
+        for (size_t packet_id = 0; packet_id < num_packets; packet_id++) {
             VectorClass my_df(0.0), my_ddf(0.0), vc_prob_const(0.0);
             VectorClass vc_df_const(0.0), vc_ddf_const(0.0);
             size_t ptn_lower = limits[packet_id];
@@ -1180,7 +1180,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,1) num_threads(num_threads) reduction(+:all_tree_lh,all_prob_const)
 #endif
-        for (int packet_id = 0; packet_id < num_packets; packet_id++) {
+        for (size_t packet_id = 0; packet_id < num_packets; packet_id++) {
             VectorClass vc_tree_lh(0.0), vc_prob_const(0.0);
             size_t ptn_lower = limits[packet_id];
             size_t ptn_upper = limits[packet_id+1];
@@ -1330,7 +1330,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,1) num_threads(num_threads) reduction(+:all_tree_lh,all_prob_const)
 #endif
-        for (int packet_id = 0; packet_id < num_packets; packet_id++) {
+        for (size_t packet_id = 0; packet_id < num_packets; packet_id++) {
             VectorClass vc_tree_lh(0.0), vc_prob_const(0.0);
             size_t ptn_lower = limits[packet_id];
             size_t ptn_upper = limits[packet_id+1];

@@ -288,7 +288,7 @@ void PhyloSuperTreePlen::optimizeOneBranch(PhyloNode *node1, PhyloNode *node2, b
     #ifdef _OPENMP
     #pragma omp parallel for private(part) schedule(dynamic) if(num_threads > 1)
     #endif    
-    for (int partid = 0; partid < size(); partid++) {
+    for (size_t partid = 0; partid < size(); partid++) {
         part = part_order_by_nptn[partid];
         if (((SuperNeighbor*)current_it)->link_neighbors[part]) {
             part_info[part].cur_score = at(part)->computeLikelihoodFromBuffer();
@@ -296,7 +296,7 @@ void PhyloSuperTreePlen::optimizeOneBranch(PhyloNode *node1, PhyloNode *node2, b
     }
 
 	if(clearLH && current_len != current_it->length){
-		for (int part = 0; part < size(); part++) {
+		for (size_t part = 0; part < size(); part++) {
 			PhyloNeighbor *nei1_part = nei1->link_neighbors[part];
 			PhyloNeighbor *nei2_part = nei2->link_neighbors[part];
 			if(nei1_part){
@@ -621,7 +621,7 @@ double PhyloSuperTreePlen::swapNNIBranch(double cur_score, PhyloNode *node1, Phy
 	int i = 0, id = 0;
 	int part, ntrees = size();
     uint64_t total_block_size = 0, total_scale_block_size = 0;
-    for (int j = 0; j < ntrees; j++) {
+    for (size_t j = 0; j < ntrees; j++) {
         total_block_size += block_size[j];
         total_scale_block_size += scale_block_size[j];
     }
@@ -1546,7 +1546,7 @@ void PhyloSuperTreePlen::printMapInfo() {
 	for (iterator it = begin(); it != end(); it++, part++) {
 		cout << "Subtree for partition " << part << endl;
 		(*it)->drawTree(cout, WT_BR_SCALE | WT_INT_NODE | WT_TAXON_ID | WT_NEWLINE | WT_BR_LEN);
-		for (int i = 0; i < nodes1.size(); i++) {
+		for (size_t i = 0; i < nodes1.size(); i++) {
 			PhyloNeighbor *nei1 = ((SuperNeighbor*)nodes1[i]->findNeighbor(nodes2[i]))->link_neighbors[part];
 			PhyloNeighbor *nei2 = ((SuperNeighbor*)nodes2[i]->findNeighbor(nodes1[i]))->link_neighbors[part];
 			cout << nodes1[i]->findNeighbor(nodes2[i])->id << ":";
@@ -1576,7 +1576,7 @@ void PhyloSuperTreePlen::printMapInfo() {
 
 void PhyloSuperTreePlen::initPartitionInfo() {
 	//PhyloSuperTree::initPartitionInfo();
-	for (int part = 0; part < size(); part++){
+	for (size_t part = 0; part < size(); part++){
 		if(part_info[part].part_rate == 0.0) { part_info[part].part_rate = 1.0; }
 		part_info[part].cur_score = 0.0;
 	}
@@ -1835,7 +1835,7 @@ void PhyloSuperTreePlen::initializeAllPartialLh(double* &lh_addr, UBYTE* &scale_
         // assign a region in central_partial_lh to both Neihgbors (dad->node, and node->dad)
         SuperNeighbor *nei = (SuperNeighbor*) node->findNeighbor(dad);
 		SuperNeighbor *nei_back = (SuperNeighbor*) dad->findNeighbor(node);
-        for (int partid = 0; partid < size(); partid++) {
+        for (size_t partid = 0; partid < size(); partid++) {
             int part = part_order[partid];
         	PhyloNeighbor *nei_part = nei->link_neighbors[part];
         	if (!nei_part) continue;
@@ -1895,7 +1895,7 @@ void PhyloSuperTreePlen::initializeAllPartialLh(int &index, int &indexlh, PhyloN
 void PhyloSuperTreePlen::reorientPartialLh(PhyloNeighbor* dad_branch, Node *dad) {
     SuperNeighbor *sdad_branch = (SuperNeighbor*) dad_branch;
     SuperNeighbor *snode_branch = (SuperNeighbor*) dad_branch->node->findNeighbor(dad);
-    for (int part = 0; part < size(); part++)
+    for (size_t part = 0; part < size(); part++)
         if (sdad_branch->link_neighbors[part]) {
             at(part)->reorientPartialLh(sdad_branch->link_neighbors[part], snode_branch->link_neighbors[part]->node);
         }

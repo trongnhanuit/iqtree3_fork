@@ -108,10 +108,10 @@ void printPartitionLh(const char*filename, PhyloTree *tree, double *ptn_lh,
     
     double partition_lh[stree->size()];
     double *pattern_lh_ptr = pattern_lh;
-    for (int part = 0; part < stree->size(); part++) {
+    for (size_t part = 0; part < stree->size(); part++) {
         size_t nptn = stree->at(part)->getAlnNPattern();
         partition_lh[part] = 0.0;
-        for (int i = 0; i < nptn; i++)
+        for (size_t i = 0; i < nptn; i++)
             partition_lh[part] += pattern_lh_ptr[i] * stree->at(part)->ptn_freq[i];
         pattern_lh_ptr += nptn;
     }
@@ -131,7 +131,7 @@ void printPartitionLh(const char*filename, PhyloTree *tree, double *ptn_lh,
             out.width(10);
             out << left << linename;
         }
-        for (int i = 0; i < stree->size(); ++i) {
+        for (size_t i = 0; i < stree->size(); ++i) {
             out << " " << partition_lh[i];
         }
         out << endl;
@@ -620,7 +620,7 @@ public:
         d = x[1];
         c = x[2];
         double res = 0.0;
-        for (int k = 0; k < nscales; k++) {
+        for (size_t k = 0; k < nscales; k++) {
             double cdf = gsl_cdf_ugaussian_P(d*rr[k] + c*rr_inv[k]);
             res += bp[k] * log(1.0 - cdf) + (1.0-bp[k])*log(cdf);
         }
@@ -859,7 +859,7 @@ void performAUTest(Params &params, PhyloTree *tree, double *pattern_lhs, vector<
 #ifdef _OPENMP
 #pragma omp for schedule(dynamic)
 #endif
-    for (int k = 0; k < nscales; ++k) {
+    for (size_t k = 0; k < nscales; ++k) {
         string str = "SCALE=" + convertDoubleToString(r[k]);
         for (boot = 0; boot < nboot; boot++) {
             if (r[k] == 1.0 && boot == 0)

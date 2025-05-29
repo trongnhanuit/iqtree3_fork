@@ -662,7 +662,7 @@ void Terrace::printMapInfo(int partition){
             if((*it)->leafNum>2){
                 (*it)->drawTree(cout, WT_BR_SCALE | WT_INT_NODE | WT_TAXON_ID | WT_NEWLINE );
             }
-            for (int i = 0; i < nodes1.size(); i++) {
+            for (size_t i = 0; i < nodes1.size(); i++) {
                 if(((TerraceNeighbor*)nodes1[i]->findNeighbor(nodes2[i]))->link_neighbors.size()>0){
                     Neighbor *nei1 = ((TerraceNeighbor*)nodes1[i]->findNeighbor(nodes2[i]))->link_neighbors[part];
                     Neighbor *nei2 = ((TerraceNeighbor*)nodes2[i]->findNeighbor(nodes1[i]))->link_neighbors[part];
@@ -698,7 +698,7 @@ void Terrace::printMapInfo(int partition){
         if(induced_trees[part]->leafNum>2){
             induced_trees[part]->drawTree(cout, WT_BR_SCALE | WT_INT_NODE | WT_TAXON_ID | WT_NEWLINE );
         }
-        for (int i = 0; i < nodes1.size(); i++) {
+        for (size_t i = 0; i < nodes1.size(); i++) {
             if(((TerraceNeighbor*)nodes1[i]->findNeighbor(nodes2[i]))->link_neighbors.size()>0){
                 Neighbor *nei1 = ((TerraceNeighbor*)nodes1[i]->findNeighbor(nodes2[i]))->link_neighbors[part];
                 Neighbor *nei2 = ((TerraceNeighbor*)nodes2[i]->findNeighbor(nodes1[i]))->link_neighbors[part];

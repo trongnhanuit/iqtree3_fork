@@ -205,7 +205,7 @@ int computeTotalSequenceLengthAllPartitions(PhyloSuperTree *super_tree)
 {
     int total_length = 0;
     // browse partitions one by one
-    for (int i = 0; i < super_tree->size(); i++)
+    for (size_t i = 0; i < super_tree->size(); i++)
     {
         Alignment *aln = super_tree->at(i)->aln;
         total_length += (aln->seq_type == SEQ_CODON ? (aln->getNSite() * 3) : aln->getNSite());
@@ -490,7 +490,7 @@ void executeSimulation(Params& params, IQTree *&tree)
         alisimulator->tree->printTree(out);
         if (alisimulator->tree->isSuperTree() && params.partition_type == BRLEN_OPTIMIZE)
         {
-            for (int i = 1; i < ((PhyloSuperTree*) alisimulator->tree)->size(); i++)
+            for (size_t i = 1; i < ((PhyloSuperTree*) alisimulator->tree)->size(); i++)
             {
                 out << std::endl;
                 ((PhyloSuperTree*) alisimulator->tree)->at(i)->printTree(out);
@@ -550,7 +550,7 @@ void retrieveAncestralSequenceFromInputFile(AliSimulator *super_alisimulator, ve
     if (src_tree->isSuperTree())
     {
         // make sure all partitions are using the same sequence_type
-        for (int i = 1; i < ((PhyloSuperTree*) src_tree)->size(); i++)
+        for (size_t i = 1; i < ((PhyloSuperTree*) src_tree)->size(); i++)
             if (((PhyloSuperTree*) src_tree)->at(i)->aln->seq_type != ((PhyloSuperTree*) src_tree)->at(0)->aln->seq_type)
                 outError("To load ancestral sequence from a file, all partitions must use the same sequence_type.");
         
@@ -571,7 +571,7 @@ void retrieveAncestralSequenceFromInputFile(AliSimulator *super_alisimulator, ve
     delete aln;
 
     string sequence_str = "";
-    for (int i = 0; i < seq_names.size(); i++)
+    for (size_t i = 0; i < seq_names.size(); i++)
         if (!sequence_name.compare(seq_names[i]))
         {
             sequence_str = sequences[i];
@@ -614,7 +614,7 @@ void retrieveAncestralSequenceFromInputFile(AliSimulator *super_alisimulator, ve
     }
     else
     {
-        for (int i = 0; i < sequence_length; i++)
+        for (size_t i = 0; i < sequence_length; i++)
         {
             sequence[i] = src_tree->aln->convertState(sequence_str[i]);
         
@@ -919,7 +919,7 @@ void generateMultipleAlignmentsFromSingleTree(AliSimulator *super_alisimulator, 
                 super_alisimulator->refreshExpectedNumSites();
             }
             
-            for (int partition_index = 0; partition_index < super_tree->size(); partition_index++)
+            for (size_t partition_index = 0; partition_index < super_tree->size(); partition_index++)
             {
                 // update the alignment_id, taking into account the partition index, so that we use different random seed for each partition in each alignment
                 super_alisimulator->params->alignment_id = (i + 1) * 1000000 + partition_index;
@@ -962,7 +962,7 @@ void generateMultipleAlignmentsFromSingleTree(AliSimulator *super_alisimulator, 
                     ancestral_sequence_current_tree.resize(expected_num_states_current_tree);
                     
                     // extract sites one by one from the full ancestral_sequence
-                    for (int j = 0; j < ancestral_sequence_current_tree.size(); j++)
+                    for (size_t j = 0; j < ancestral_sequence_current_tree.size(); j++)
                         ancestral_sequence_current_tree[j] = ancestral_sequence[site_ids[j]];
                 }
                 
@@ -1137,7 +1137,7 @@ void copySequencesToSuperTree(IntVector &site_ids, int expected_num_states_super
         if (current_node)
         {
             // copy sites one by one from the current sequence to its position in the sequence of the super_node
-            for (int i = 0; i < site_ids.size(); i++)
+            for (size_t i = 0; i < site_ids.size(); i++)
                 node->sequence->sequence_chunks[0][site_ids[i]] = current_node->sequence->sequence_chunks[0][i];
         }
     }
@@ -1340,11 +1340,11 @@ void mergeAndWriteSequencesToFiles(string file_path, AliSimulator *alisimulator,
         int total_expected_num_states = super_tree->getAlnNSite();
         
         // merge phylotrees using the same alignment file and the same sequence_type and the same num_states (morph) with each other -> write sequences to the corresponding output files
-        for (int i = 0; i < super_tree->size(); i++)
+        for (size_t i = 0; i < super_tree->size(); i++)
         {
             // ignore the current phylotree if it has already merged
             bool already_merged = false;
-            for (int j = 0; j < i; j++)
+            for (size_t j = 0; j < i; j++)
                 if (!super_tree->at(i)->aln->aln_file.compare(super_tree->at(j)->aln->aln_file)
                     && super_tree->at(i)->aln->seq_type == super_tree->at(j)->aln->seq_type && super_tree->at(i)->aln->num_states == super_tree->at(j)->aln->num_states)
                 {
@@ -1603,7 +1603,7 @@ map<string,string> loadInputMSA(AliSimulator *alisimulator)
             outWarning("The sequence length of the input alignment is unequal to that of that simulated sequences. Thus, only gaps in the first MIN(input_sequence_length, simulated_sequence_length) sites are copied.");
         
         // return InputMSA;
-        for (int i = 0; i < seq_names.size(); i++)
+        for (size_t i = 0; i < seq_names.size(); i++)
             input_msa.insert(pair<string,string>(seq_names[i], sequences[i]));
         return input_msa;
     }

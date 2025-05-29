@@ -404,7 +404,7 @@ double PhyloHmm::computeBackLikeArray() {
         work = bwd_array + (i - 1) * ncat;
         transit_arr = modelHmm->getTransitLog(i);
         site_lh_arr += ncat;
-        for (int j = 0; j < ncat; j++) {
+        for (size_t j = 0; j < ncat; j++) {
             work[j] = logDotProd(transit_arr, pre_work, ncat) + site_lh_arr[j];
             transit_arr += ncat;
         }
@@ -430,7 +430,7 @@ double PhyloHmm::computeFwdLikeArray() {
         pre_work = work;
         work += ncat;
         transit_arr = modelHmm->getTransitLog(i);
-        for (int j = 0; j < ncat; j++) {
+        for (size_t j = 0; j < ncat; j++) {
             work[j] = logDotProd(transit_arr, pre_work, ncat) + site_lh_arr[j];
             transit_arr += ncat;
         }
@@ -476,7 +476,7 @@ void PhyloHmm::computeMarginalProb(ostream* out) {
         if (out != NULL)
             *out << i+1;
         score = logDotProd(f_array, b_array, ncat);
-        for (int j=0; j<ncat; j++) {
+        for (size_t j=0; j<ncat; j++) {
             mprob[j] = exp(f_array[j]+b_array[j]-score);
             if (out != NULL)
                 *out << "\t" << mprob[j];
@@ -510,7 +510,7 @@ void PhyloHmm::computeMarginalTransitProb() {
         // cout << "(" << i << "," << i+1 << ")";
         t_array = modelHmm->getTransitLog(i);
         k = 0;
-        for (int j1=0; j1<ncat; j1++) {
+        for (size_t j1=0; j1<ncat; j1++) {
             for (int j2=0; j2<ncat; j2++) {
                 t1[k] = f_array[j1] + catlike_array[j1];
                 t2[k] = b_array[j2] + t_array[k];

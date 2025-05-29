@@ -216,13 +216,13 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
                 UINT *y = right->partial_pars + offset;
                 UINT *z = dad_branch->partial_pars + offset;
                 
-                for (int i = 0; i < nstates; i++) {
+                for (size_t i = 0; i < nstates; i++) {
                     z[i] = x[i] & y[i];
                     w |= z[i];
                 }
                 w = ~w;
                 score += vml_popcnt(w);
-                for (int i = 0; i < nstates; i++) {
+                for (size_t i = 0; i < nstates; i++) {
                     z[i] |= w & (x[i] | y[i]);
                 }
             }
@@ -408,7 +408,7 @@ int PhyloTree::setParsimonyBranchLengths() {
     
     
     // walking down the tree to assign node states
-    for (int id = 1; id < nodes1.size(); id++) {
+    for (size_t id = 1; id < nodes1.size(); id++) {
         // arrange such that states of dad are known
         if (done[nodes1[id]->id]) {
             dad = (PhyloNode*)nodes1[id];
@@ -1080,7 +1080,7 @@ void getNeiBranches(NeighborVec &removed_nei, NodeVector &attached_node, NodeVec
         FOR_NEIGHBOR_IT(node, NULL, it) {
             if (node->id < (*it)->node->id) {
                 bool present = false;
-                for (int k = 0; k < nodes1.size(); k++)
+                for (size_t k = 0; k < nodes1.size(); k++)
                     if (node == nodes1[k] && (*it)->node == nodes2[k]) {
                         present = true;
                         break;
@@ -1090,7 +1090,7 @@ void getNeiBranches(NeighborVec &removed_nei, NodeVector &attached_node, NodeVec
                 nodes2.push_back((*it)->node);
             } else {
                 bool present = false;
-                for (int k = 0; k < nodes1.size(); k++)
+                for (size_t k = 0; k < nodes1.size(); k++)
                     if (node == nodes2[k] && (*it)->node == nodes1[k]) {
                         present = true;
                         break;
@@ -1214,7 +1214,7 @@ int PhyloTree::computeParsimonyTree(const char *out_prefix, Alignment *alignment
         added_node->addNeighbor((Node*) 1, -1.0);
         added_node->addNeighbor((Node*) 2, -1.0);
 
-        for (int nodeid = 0; nodeid < nodes1.size(); nodeid++) {
+        for (size_t nodeid = 0; nodeid < nodes1.size(); nodeid++) {
         
             int score = addTaxonMPFast(new_taxon, added_node, nodes1[nodeid], nodes2[nodeid]);
             if (score < best_pars_score) {

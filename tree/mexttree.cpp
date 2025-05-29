@@ -557,7 +557,7 @@ void MExtTree::generateConstrainedYuleHarding(Params &params, MTree* constraint_
     myleaves.clear();
     innodes.clear();
     getBranches(myleaves, innodes);
-    for (int i = 0; i < myleaves.size(); i++) {
+    for (size_t i = 0; i < myleaves.size(); i++) {
         double len = randomLen(params);
         myleaves[i]->findNeighbor(innodes[i])->length = len;
         innodes[i]->findNeighbor(myleaves[i])->length = len;
@@ -573,7 +573,7 @@ void MExtTree::generateStarTree(Params &params) {
 	generateYuleHarding(params);
 	NodeVector nodes, nodes2;
 	generateNNIBraches(nodes, nodes2);
-	for (int i = 0; i < nodes.size(); i++) {
+	for (size_t i = 0; i < nodes.size(); i++) {
 		nodes[i]->findNeighbor(nodes2[i])->length = 0.0;
 		nodes2[i]->findNeighbor(nodes[i])->length = 0.0;
 	}
@@ -592,7 +592,7 @@ void MExtTree::generateRandomBranchLengths(Params &params, Node *node, Node *dad
 
 
 void MExtTree::setLeavesName(NodeVector &myleaves) {
-	for (int i = 0; i < myleaves.size(); i++)
+	for (size_t i = 0; i < myleaves.size(); i++)
 	{
 		myleaves[i]->id = i;
 		stringstream str;
@@ -649,7 +649,7 @@ void MExtTree::collapseLowBranchSupport(DoubleVector &minsup, Node *node, Node *
             cout << "Branch with name " << node->name << " ignored" << endl;
             return;
         }
-        for (int i = 0; i < vec.size(); i++)
+        for (size_t i = 0; i < vec.size(); i++)
             if (vec[i] < minsup[i]) {
                 // support smaller than threshold, mark this branch for deletion
                 dad->findNeighbor(node)->length = -1.0;

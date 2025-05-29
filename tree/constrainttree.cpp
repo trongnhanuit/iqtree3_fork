@@ -211,7 +211,7 @@ bool ConstraintTree::isCompatible (MTree *tree) {
     StrVector taxset1, taxset2;
     
     // check that all internal branches are compatible with constraint
-    for (int i = 0; i < nodes1.size(); i++) {
+    for (size_t i = 0; i < nodes1.size(); i++) {
         taxset1.clear();
         taxset2.clear();
         getUnorderedTaxaName(taxset1, nodes1[i], nodes2[i]);

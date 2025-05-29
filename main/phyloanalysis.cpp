@@ -308,7 +308,7 @@ void reportModelSelection(ofstream &out, Params &params, ModelCheckpoint *model_
     PhyloSuperTree *stree = (tree->isSuperTree()) ? ((PhyloSuperTree*)tree) : NULL;
     if (tree->isSuperTree()) {
         SuperAlignment *saln = (SuperAlignment*)stree->aln;
-        for (int part = 0; part != stree->size(); part++) {
+        for (size_t part = 0; part != stree->size(); part++) {
             if (part != 0)
                 out << ",";
             out << saln->partitions[part]->model_name << ":" << saln->partitions[part]->name;
@@ -1653,7 +1653,7 @@ void reportPhyloAnalysis(Params &params, IQTree &tree, ModelCheckpoint &model_in
             out << "Run     logL" << endl;
             DoubleVector runLnL;
             tree.getCheckpoint()->getVector("runLnL", runLnL);
-            for (int run = 0; run < runLnL.size(); run++)
+            for (size_t run = 0; run < runLnL.size(); run++)
                 out << run+1 << "\t" << fixed << runLnL[run] << endl;
             out << endl;
         }
@@ -4258,7 +4258,7 @@ void computeLoglFromUserInputGAMMAInvar(Params &params, IQTree &iqtree) {
     aiFileResults.precision(4);
     DoubleVector lenvec;
     aiFileResults << "Alpha P_Invar Logl TreeLength\n";
-    for (int i = 0; i < alphas.size(); i++) {
+    for (size_t i = 0; i < alphas.size(); i++) {
         iqtree.saveBranchLengths(lenvec);
         aiFileResults << alphas.at(i) << " " << p_invars.at(i) << " ";
         site_rates->setGammaShape(alphas.at(i));
@@ -4307,7 +4307,7 @@ void searchGAMMAInvarByRestarting(IQTree &iqtree) {
     iqtree.getModel()->getStateFrequency(state_freqs);
     double *bestStateFreqs =  new double[numStates];
 
-    for (int i = 0; i < 10; i++) {
+    for (size_t i = 0; i < 10; i++) {
         cout << endl;
         cout << "Testing alpha: " << initAlphas[i] << endl;
         // Initialize model parameters
@@ -5002,7 +5002,7 @@ void doSymTest(Alignment *alignment, Params &params) {
     
     if (alignment->isSuperAlignment()) {
         SuperAlignment *saln = (SuperAlignment*)alignment;
-        for (int part = 0; part < saln->partitions.size(); part++)
+        for (size_t part = 0; part < saln->partitions.size(); part++)
             out << saln->partitions[part]->name << ','
                 << sym[part] << ',' << marsym[part] << ','  << intsym[part] << endl;
     } else {
@@ -5010,7 +5010,7 @@ void doSymTest(Alignment *alignment, Params &params) {
     }
 
     if (params.symtest_shuffle > 1) {
-        for (int part = num_parts; part < sym.size(); part++) {
+        for (size_t part = num_parts; part < sym.size(); part++) {
             sym[part].pvalue_perm = marsym[part].pvalue_perm = intsym[part].pvalue_perm = -1.0;
             out << part % num_parts << ','
             << sym[part] << ',' << marsym[part] << ','  << intsym[part] << endl;

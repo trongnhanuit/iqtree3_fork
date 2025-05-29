@@ -95,7 +95,7 @@ inline void dotProductVec(Numeric *A, VectorClass *B, VectorClass &X, size_t N)
     if (N==cruft) {
         X = 0;
         //IF cruft==N, N must be 0, 1, 2, or 3
-        for (int i=0; i<cruft; ++i) {
+        for (size_t i=0; i<cruft; ++i) {
             X = mul_add(A[i], B[i], X);
         }
         return;
@@ -969,7 +969,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
                 //vector<int>::iterator it;
                 if (nstates % VectorClass::size() == 0) {
                     // vectorized version
-                    for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                    for (size_t state = 0; state <= aln->STATE_UNKNOWN; state++) {
                         VectorClass *this_tip_partial_lh = (VectorClass*)&tip_partial_lh[state*nstates];
                         double *this_partial_lh_leaf = &partial_lh_leaf[state*block];
                         VectorClass *echild_ptr = (VectorClass*)echild;
@@ -983,7 +983,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
                     }
                 } else {
                     // non-vectorized version
-                    for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                    for (size_t state = 0; state <= aln->STATE_UNKNOWN; state++) {
                         double *this_tip_partial_lh = &tip_partial_lh[state*nstates];
                         double *this_partial_lh_leaf = &partial_lh_leaf[state*block];
                         double *echild_ptr = echild;
@@ -2836,7 +2836,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
 #ifdef _OPENMP
 #pragma omp parallel for  schedule(dynamic,1) num_threads(num_threads) // reduction(+:all_tree_lh,all_prob_const)
 #endif
-        for (int packet_id = 0; packet_id < num_packets; packet_id++) {
+        for (size_t packet_id = 0; packet_id < num_packets; packet_id++) {
             // cout << "packet_id = " << packet_id << " ptn_lower = " << limits[packet_id] << " ptn_upper = " << limits[packet_id+1] << endl;
             VectorClass vc_tree_lh(0.0);
             VectorClass vc_prob_const(0.0);
@@ -3003,7 +3003,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,1) num_threads(num_threads) // reduction(+:all_tree_lh,all_prob_const)
 #endif
-        for (int packet_id = 0; packet_id < num_packets; packet_id++) {
+        for (size_t packet_id = 0; packet_id < num_packets; packet_id++) {
             size_t ptn_lower = limits[packet_id];
             size_t ptn_upper = limits[packet_id+1];
 
@@ -3593,7 +3593,7 @@ void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic,1) num_threads(num_threads) reduction(+:all_df,all_ddf,all_prob_const,all_df_const,all_ddf_const)
 #endif
-    for (int packet_id = 0; packet_id < num_packets; packet_id++) {
+    for (size_t packet_id = 0; packet_id < num_packets; packet_id++) {
         VectorClass my_df(0.0), my_ddf(0.0), vc_prob_const(0.0), vc_df_const(0.0), vc_ddf_const(0.0);
         size_t ptn_lower = limits[packet_id];
         size_t ptn_upper = limits[packet_id+1];

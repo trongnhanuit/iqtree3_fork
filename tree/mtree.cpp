@@ -211,7 +211,7 @@ Node* MTree::copyTree(MTree *tree, string &taxa_set, double &len, Node *node, No
     }
     Node* int_node = newNode(nodeNum++, node->name.c_str());
     len = 0.0;
-    for (int i = 0; i < new_nodes.size(); i++) {
+    for (size_t i = 0; i < new_nodes.size(); i++) {
         int_node->addNeighbor(new_nodes[i], new_lens[i], branchNum);
         new_nodes[i]->addNeighbor(int_node, new_lens[i], branchNum);
         branchNum++;
@@ -678,7 +678,7 @@ void MTree::printTaxa(ostream &out, Node *node, Node *dad)
 }
 
 void MTree::printTaxa(ostream &out, NodeVector &subtree) {
-    for (int i = 0; i < leafNum; i++)
+    for (size_t i = 0; i < leafNum; i++)
         if (subtree[i] != NULL) {
             out << subtree[i]->name << endl;
         }
@@ -2857,7 +2857,7 @@ void MTree::insertTaxa(StrVector &new_taxa, StrVector &existing_taxa) {
 	// randomize order before reinsert back into tree
 	my_random_shuffle(id.begin(), id.end());
 
-	for (int i = 0; i < new_taxa.size(); i++) {
+	for (size_t i = 0; i < new_taxa.size(); i++) {
 		Node *old_taxon = findLeafName(existing_taxa[id[i]]);
 		ASSERT(old_taxon);
 		double len = old_taxon->neighbors[0]->length;

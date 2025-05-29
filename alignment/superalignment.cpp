@@ -1294,7 +1294,7 @@ void SuperAlignment::doSymTest(size_t vecid, vector<SymTestResult> &vec_sym, vec
             partitions[i]->doSymTest(vecid + i, vec_sym, vec_marsym, vec_intsym, rstream);
     }
     if (stats) {
-        for (int i = 0; i < nparts; i++)
+        for (size_t i = 0; i < nparts; i++)
             stats->insert(stats->end(), all_stats[i].begin(), all_stats[i].end());
     }
 }
@@ -1416,7 +1416,7 @@ void SuperAlignment::createBootstrapAlignment(Alignment *aln, IntVector* pattern
         // resampling whole genes
         IntVector gene_freq;
         random_resampling(super_aln->partitions.size(), gene_freq);
-        for (int i = 0; i < gene_freq.size(); i++)
+        for (size_t i = 0; i < gene_freq.size(); i++)
             if (gene_freq[i] > 0) {
                 Alignment *boot_aln = new Alignment;
                 boot_aln->copyAlignment(super_aln->partitions[i]);
@@ -1436,7 +1436,7 @@ void SuperAlignment::createBootstrapAlignment(Alignment *aln, IntVector* pattern
         // resampling whole genes then sites within resampled genes
         IntVector gene_freq;
         random_resampling(super_aln->partitions.size(), gene_freq);
-        for (int i = 0; i < gene_freq.size(); i++)
+        for (size_t i = 0; i < gene_freq.size(); i++)
             for (int rep = 0; rep < gene_freq[i]; rep++) {
             Alignment *boot_aln = new Alignment;
             boot_aln->createBootstrapAlignment(super_aln->partitions[i]);
@@ -1479,7 +1479,7 @@ void SuperAlignment::createBootstrapAlignment(int *pattern_freq, const char *spe
 		memset(pattern_freq, 0, nptn * sizeof(int));
         IntVector gene_freq;
         random_resampling(partitions.size(), gene_freq, rstream);
-		for (int part = 0; part < partitions.size(); part++)
+		for (size_t part = 0; part < partitions.size(); part++)
         for (int rep = 0; rep < gene_freq[part]; rep++){
 			Alignment *aln = partitions[part];
 			if (strncmp(spec,"GENESITE",8) == 0) {
@@ -1492,7 +1492,7 @@ void SuperAlignment::createBootstrapAlignment(int *pattern_freq, const char *spe
 					pattern_freq[ptn_id + part_pos[part]]++;
 				}
 			} else {
-				for (int ptn = 0; ptn < aln->getNPattern(); ptn++)
+				for (size_t ptn = 0; ptn < aln->getNPattern(); ptn++)
 					pattern_freq[ptn + part_pos[part]] += aln->at(ptn).frequency;
 			}
 		}
@@ -1688,7 +1688,7 @@ Alignment *SuperAlignment::concatenateAlignments(set<int> &ids) {
         taxa_set.insert(taxa_set.begin(), taxa_pat.begin(), taxa_pat.end());
 		nsites += partitions[id]->getNSite();
 		if (it == ids.begin()) union_taxa = taxa_set; else {
-			for (int j = 0; j < union_taxa.length(); j++)
+			for (size_t j = 0; j < union_taxa.length(); j++)
 				if (taxa_set[j] == 1) union_taxa[j] = 1;
 		}
 	}
@@ -1733,7 +1733,7 @@ Alignment *SuperAlignment::concatenateAlignments(set<int> &ids) {
         for (Alignment::iterator it = partitions[id]->begin(); it != partitions[id]->end(); it++) {
     		Pattern pat;
     		//int part_seq = 0;
-    		for (int seq = 0; seq < union_taxa.size(); seq++)
+    		for (size_t seq = 0; seq < union_taxa.size(); seq++)
     			if (union_taxa[seq] == 1) {
     				StateType ch = aln->STATE_UNKNOWN;
                     int seq_part = taxa_index[seq][id];
@@ -1768,9 +1768,9 @@ Alignment *SuperAlignment::concatenateAlignments() {
     vector<SeqType> seq_types;
     vector<char*> genetic_codes;
     vector<set<int> > ids;
-    for (int i = 0; i < partitions.size(); i++) {
+    for (size_t i = 0; i < partitions.size(); i++) {
         bool found = false;
-        for (int j = 0; j < seq_types.size(); j++)
+        for (size_t j = 0; j < seq_types.size(); j++)
             if (partitions[i]->seq_type == seq_types[j] && partitions[i]->genetic_code == genetic_codes[j]) {
                 ids[j].insert(i);
                 found = true;

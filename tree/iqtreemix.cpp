@@ -2727,7 +2727,7 @@ void IQTreeMix::drawTree(ostream &out, int brtype, double zero_epsilon) {
         @return ID of the taxon with smallest ID
  */
 void IQTreeMix::printTree(ostream & out, int brtype) {
-    for (int i=0; i<size(); i++) {
+    for (size_t i=0; i<size(); i++) {
         at(i)->printTree(out, brtype);
     }
 }

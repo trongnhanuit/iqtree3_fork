@@ -59,7 +59,7 @@ void PhyloTreeMixlen::saveCheckpoint() {
         if (this->relative_treelen.size() > 0) {
             ASSERT(mixlen == this->relative_treelen.size());
             double relative_treelen[mixlen];
-            for (int i = 0; i < mixlen; i++)
+            for (size_t i = 0; i < mixlen; i++)
                 relative_treelen[i] = this->relative_treelen[i];
             CKP_ARRAY_SAVE(mixlen, relative_treelen);
         }
@@ -77,7 +77,7 @@ void PhyloTreeMixlen::restoreCheckpoint() {
         double relative_treelen[mixlen];
         if (CKP_ARRAY_RESTORE(mixlen, relative_treelen)) {
             this->relative_treelen.resize(mixlen);
-            for (int i = 0; i < mixlen; i++)
+            for (size_t i = 0; i < mixlen; i++)
                 this->relative_treelen[i] = relative_treelen[i];
         }
         endCheckpoint();

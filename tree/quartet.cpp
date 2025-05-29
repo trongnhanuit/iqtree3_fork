@@ -909,7 +909,7 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
                 
         if (kept_partitions.size() == 0) {
             // nothing kept
-            for (int k = 0; k < 3; k++) {
+            for (size_t k = 0; k < 3; k++) {
                 lmap_quartet_info[qid].logl[k] = -1.0;
             }
         } else {
@@ -938,7 +938,7 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
             if (isSuperTree()) {
                 PhyloSuperTree *quartet_super_tree = (PhyloSuperTree*)quartet_tree;
                 PhyloSuperTree *super_tree = (PhyloSuperTree*)this;
-                for (int i = 0; i < quartet_super_tree->size(); i++) {
+                for (size_t i = 0; i < quartet_super_tree->size(); i++) {
                     quartet_super_tree->at(i)->setModelFactory(super_tree->at(kept_partitions[i])->getModelFactory());
                     quartet_super_tree->at(i)->setModel(super_tree->at(kept_partitions[i])->getModel());
                     quartet_super_tree->at(i)->setRate(super_tree->at(kept_partitions[i])->getRate());
@@ -953,7 +953,7 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
             
             
             // loop over 3 quartets to compute likelihood
-            for (int k = 0; k < 3; k++) {
+            for (size_t k = 0; k < 3; k++) {
                 string quartet_tree_str;
                 quartet_tree_str = "(" + quartet_aln->getSeqName(qc[k*4]) + "," + quartet_aln->getSeqName(qc[k*4+1]) + ",(" + 
                     quartet_aln->getSeqName(qc[k*4+2]) + "," + quartet_aln->getSeqName(qc[k*4+3]) + "));";
@@ -970,7 +970,7 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
 
             if (isSuperTree()) {
                 PhyloSuperTree *quartet_super_tree = (PhyloSuperTree*)quartet_tree;
-                for (int i = 0; i < quartet_super_tree->size(); i++) {
+                for (size_t i = 0; i < quartet_super_tree->size(); i++) {
                     quartet_super_tree->at(i)->setModelFactory(NULL);
                     quartet_super_tree->at(i)->setModel(NULL);
                     quartet_super_tree->at(i)->setRate(NULL);

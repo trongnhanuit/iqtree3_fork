@@ -1285,7 +1285,7 @@ double PhyloTree::computeLikelihood(double *pattern_lh, bool save_log_value) {
     if (pattern_lh && current_it->lh_scale_factor < 0.0 && save_log_value) {
         int nptn = aln->getNPattern();
         //double check_score = 0.0;
-        for (int i = 0; i < nptn; i++) {
+        for (size_t i = 0; i < nptn; i++) {
             pattern_lh[i] += max(current_it->scale_num[i], UBYTE(0)) * LOG_SCALING_THRESHOLD;
             //check_score += (pattern_lh[i] * (aln->at(i).frequency));
         }
@@ -1824,8 +1824,8 @@ double PhyloTree::optimizeOneBranchLS(PhyloNode *node1, PhyloNode *node2) {
     if (!subTreeDistComputed) {
         if (params->ls_var_type == WLS_PAUPLIN) {
             computeNodeBranchDists();
-            for (int i = 0; i < leafNum; i++)
-                for (int j = 0; j < leafNum; j++)
+            for (size_t i = 0; i < leafNum; i++)
+                for (size_t j = 0; j < leafNum; j++)
                     var_matrix[i*leafNum+j] = pow(2.0,nodeBranchDists[i*nodeNum+j]);
         }
         computeSubtreeDists();
@@ -2178,8 +2178,8 @@ set<int> PhyloTree::computeNodeBranchDists(Node *node, Node *dad) {
             nodeBranchDists[(*i)*nodeNum + dad->id] = nodeBranchDists[(dad->id)*nodeNum + (*i)] =
                 nodeBranchDists[(*i)*nodeNum + node->id] + 1;
         // sanity check that all distances are filled
-        for (int x = 0; x < nodeNum; x++)
-            for (int y = 0; y < nodeNum; y++)
+        for (size_t x = 0; x < nodeNum; x++)
+            for (size_t y = 0; y < nodeNum; y++)
                 if (x != y)
                     ASSERT(nodeBranchDists[x*nodeNum+y] != 0);
                 else
@@ -2410,7 +2410,7 @@ double PhyloTree::correctBranchLengthF81(double observedBran, double alpha) {
         return JukesCantorCorrection(observedBran, alpha);
     double H = 0.0;
     double correctedBranLen;
-    for (int i = 0; i < model->num_states; i++) {
+    for (size_t i = 0; i < model->num_states; i++) {
         H += model->state_freq[i] * (1 - model->state_freq[i]);
     }
     observedBran = 1.0 - observedBran / H;
@@ -2740,7 +2740,7 @@ double PhyloTree::optimizeAllBranches(int my_iterations, double tolerance, int m
 //            printTree(cout, WT_BR_LEN+WT_NEWLINE);
 //        }
 
-        for (int j = 0; j < nodes.size(); j++) {
+        for (size_t j = 0; j < nodes.size(); j++) {
             optimizeOneBranch((PhyloNode*)nodes[j], (PhyloNode*)nodes2[j]);
             if (verbose_mode >= VB_MAX) {
                 hideProgress();
@@ -5638,7 +5638,7 @@ void PhyloTree::removeIdenticalSeqs(Params &params) {
     }
     if (removed_seqs.size() > 0) {
         cout << "NOTE: " << removed_seqs.size() << " identical sequences (see below) will be ignored for subsequent analysis" << endl;
-        for (int i = 0; i < removed_seqs.size(); i++) {
+        for (size_t i = 0; i < removed_seqs.size(); i++) {
             if (!params.suppress_duplicate_sequence_warnings) {
                 cout << "NOTE: " << removed_seqs[i] << " (identical to " << twin_seqs[i] << ") is ignored but added at the end" << endl;
             }

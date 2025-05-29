@@ -959,7 +959,7 @@ void printGainMatrix(char *filename, mmatrix(double) &delta_gain, int start_k) {
         int k = start_k;
         for (mmatrix(double)::iterator it = delta_gain.begin(); it != delta_gain.end(); it++, k++) {
             out << k;
-            for (int i = 0; i < (*it).size(); i++)
+            for (size_t i = 0; i < (*it).size(); i++)
                 out << "  " << (*it)[i];
             out << endl;
         }
@@ -1523,7 +1523,7 @@ void branchStats(Params &params){
         ofstream out;
         out.exceptions(ios::failbit | ios::badbit);
         out.open(output.c_str());
-        for (int i = 0; i < nodes1.size(); i++)
+        for (size_t i = 0; i < nodes1.size(); i++)
             out << nodes1[i]->findNeighbor(nodes2[i])->length << " ";
         out << endl;
     } catch (ios::failure) {
@@ -1589,7 +1589,7 @@ void compare(Params &params){
         for ( int treeID = 0; treeID < numTree; treeID++ )
         {
             out << treeID << "  ";
-            for (int nodeID = 0; nodeID < numNode; nodeID++ )
+            for (size_t nodeID = 0; nodeID < numNode; nodeID++ )
                 if ( brMatrix[treeID][nodeID] != -2 )
                     out << brMatrix[treeID][nodeID] << "  ";
             out << RFs[treeID] << "  " << BSDs[treeID] << endl;

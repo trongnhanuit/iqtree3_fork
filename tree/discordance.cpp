@@ -101,7 +101,7 @@ void Alignment::computeQuartetSupports(IntVector &quartet, vector<int64_t> &supp
     for (auto pat = begin(); pat != end(); pat++) {
         if (!pat->isInformative()) continue;
         bool informative = true;
-        for (int j = 0; j < quartet.size(); j++)
+        for (size_t j = 0; j < quartet.size(); j++)
             if (pat->at(quartet[j]) >= num_states) {
                 informative = false;
                 break;
@@ -117,7 +117,7 @@ void Alignment::computeQuartetSupports(IntVector &quartet, vector<int64_t> &supp
 }
 
 void SuperAlignment::computeQuartetSupports(IntVector &quartet, vector<int64_t> &support) {
-    for (int part = 0; part < partitions.size(); part++) {
+    for (size_t part = 0; part < partitions.size(); part++) {
         IntVector part_quartet;
         for (auto i = quartet.begin(); i != quartet.end(); i++) {
             if (taxa_index[*i][part] >= 0)
@@ -131,7 +131,7 @@ void SuperAlignment::computeQuartetSupports(IntVector &quartet, vector<int64_t> 
             vector<int64_t> part_support;
             part_support.resize(3, 0);
             partitions[part]->computeQuartetSupports(part_quartet, part_support);
-            for (int j = 0; j < 3; j++) if (part_support[j] > 0) {
+            for (size_t j = 0; j < 3; j++) if (part_support[j] > 0) {
                 ASSERT(support[part*3+3+j] >= 0);
                 support[part*3+3+j] += part_support[j];
                 support[j] += part_support[j];
@@ -793,7 +793,7 @@ void PhyloTree::computeGeneConcordance(MTreeSet &trees, map<string,string> &mean
         
     }
     
-    for (int i = 0; i < branches.size(); i++) {
+    for (size_t i = 0; i < branches.size(); i++) {
         if (decisive_counts[i] == 0)
             continue;
         Neighbor *nei = branches[i].second->findNeighbor(branches[i].first);
@@ -913,7 +913,7 @@ double PhyloTree::computeQuartetConcordance(Branch &branch, MTreeSet &trees) {
     double sum_support = 0.0;
     int num_quartets = Params::getInstance().site_concordance; // TODO: change name
     for (int i = 0; i < num_quartets; i++) {
-        int j;
+        size_t j;
         // get a random quartet
         IntVector quartet;
         quartet.resize(taxa.size());

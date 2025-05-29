@@ -384,8 +384,8 @@ void Terrace::linkBranch(int part, TerraceNeighbor *nei, TerraceNeighbor *dad_ne
                 part_vec[1]=child_part_vec[1];
                 child_part_vec[1]=nei_aux;
             }else{
-                for(int i=0; i<part_vec.size(); i++){
-                    for(int j=0; j<child_part_vec.size(); j++){
+                for(size_t i=0; i<part_vec.size(); i++){
+                    for(size_t j=0; j<child_part_vec.size(); j++){
                         if(part_vec[i]->node == child_part_vec[j]->node and part_vec[1-i]->node != child_part_vec[1-j]->node){
                             nei_aux = part_vec[i];
                             part_vec[i] = child_part_vec[1-j];
@@ -1513,7 +1513,7 @@ void Terrace::renameTaxa(){
     NodeVector taxa;
     getTaxa(taxa);
     
-    for(int i=0; i<taxa_num; i++){
+    for(size_t i=0; i<taxa_num; i++){
         stringstream ss;
         ss << i;
         string name = "t" + ss.str();
@@ -1523,7 +1523,7 @@ void Terrace::renameTaxa(){
                 break;
             }
         }
-        for(int j=0; j<taxa_num; j++){
+        for(size_t j=0; j<taxa_num; j++){
             if(matrix->taxa_names[j] == taxa_names_orgn[i]){
                 matrix->taxa_names[j] = name;
                 break;
@@ -1539,7 +1539,7 @@ bool Terrace::check_two_trees(MTree* query_tree){
     
     vector<string> trees, taxa_names;
     
-    for(int part=0; part<part_num; part++){
+    for(size_t part=0; part<part_num; part++){
         
         trees.clear();
         trees.push_back(getTreeTopologyString(induced_trees[part]));

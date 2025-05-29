@@ -1952,10 +1952,10 @@ void PhyloTree::computePartialParsimonySankoffSIMD(PhyloNeighbor *dad_branch, Ph
             UINT *cost_matrix_ptr = cost_matrix;
             VectorClass right_contrib;
             
-            for(int i = 0; i < nstates; i++){
+            for(size_t i = 0; i < nstates; i++){
                 // min(j->i) from child_branch
                 right_contrib = right_ptr[0] + cost_matrix_ptr[0];
-                for(int j = 1; j < nstates; j++) {
+                for(size_t j = 1; j < nstates; j++) {
                     right_contrib = min(right_ptr[j] + cost_matrix_ptr[j], right_contrib);
                 }
                 partial_pars_ptr[i] = tip_buffer[i] + right_contrib;
@@ -2070,7 +2070,7 @@ int PhyloTree::computeParsimonyBranchSankoffSIMD(PhyloNeighbor *dad_branch, Phyl
                 // min(j->i) from node_branch
                 VectorClass min_score = node_branch_ptr[0] + cost_matrix_ptr[0];
                 VectorClass branch_score = cost_matrix_ptr[0];
-                for(int j = 1; j < nstates; j++) {
+                for(size_t j = 1; j < nstates; j++) {
                     VectorClass value = node_branch_ptr[j] + cost_matrix_ptr[j];
                     branch_score = select(value < min_score, cost_matrix_ptr[j], branch_score);
                     min_score = min(value, min_score);                    

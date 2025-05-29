@@ -1180,7 +1180,7 @@ void Optimization::lbfgsb(int n, int m, double *x, double *l, double *u, int *nb
 
 	/* shut up gcc -Wall in 4.6.x */
 
-	for(int i = 0; i < 4; i++) lsave[i] = 0;
+	for(size_t i = 0; i < 4; i++) lsave[i] = 0;
 
 	if(n == 0) { /* not handled in setulb */
 		*fncount = 1;

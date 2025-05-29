@@ -1353,7 +1353,7 @@ void ModelMixture::initMixture(string orig_model_name, string model_name, string
 		cur_pos = pos+1;
 		ModelMarkov* model;
 		if (freq == FREQ_MIXTURE) {
-			for(int f = 0; f != freq_vec.size(); f++) {
+			for(size_t f = 0; f != freq_vec.size(); f++) {
                 if (freq_vec[f] == nxs_freq_empirical)
 					model = (ModelMarkov*)createModel(this_name, models_block, FREQ_EMPIRICAL, "", tree);
                 else if (freq_vec[f] == nxs_freq_optimize)
@@ -2293,7 +2293,7 @@ double ModelMixture::optimizeParameters(double gradient_epsilon) {
 				double *matrix = new double[nrate];
 				at(0)->getRateMatrix(matrix);
 				double div = matrix[nrate-1];
-				for(int i=0; i<nrate; i++){
+				for(size_t i=0; i<nrate; i++){
 					matrix[i] = matrix[i] / div;
 				}
 				for (iterator it = begin(); it != end(); it++) {
@@ -2556,7 +2556,7 @@ void ModelMixture::setBounds(double *lower_bound, double *upper_bound, bool *bou
         (*it)->freq_type=freq;
         //manually set these params for the restartParameters method; TODO: properly fix this -JD
         if(phylo_tree->aln->seq_type == SEQ_PROTEIN){
-            for(int i=1; i<=ndim; i++){
+            for(size_t i=1; i<=ndim; i++){
                 bound_check[i] = true;
                 upper_bound[i] = 100;
             }
@@ -2576,7 +2576,7 @@ void ModelMixture::setBounds(double *lower_bound, double *upper_bound, bool *bou
                 (*it)->freq_type=FREQ_USER_DEFINED;
                 int m = (*it)->getNDim();
                 (*it)->freq_type=freq;
-                for(int i=1; i<=m; i++){
+                for(size_t i=1; i<=m; i++){
                     bound_check[i] = true;
                     upper_bound[i] = 100;
                 }

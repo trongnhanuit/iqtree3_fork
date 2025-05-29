@@ -507,8 +507,8 @@ void PhyloTree::loadCostMatrixFile(char * file_name){
     if(strcmp(file_name, "fitch") == 0 || strcmp(file_name, "e") == 0) { // uniform cost
         cost_nstates = aln->num_states;
         cost_matrix = aligned_alloc<unsigned int>(cost_nstates * cost_nstates);
-        for(int i = 0; i < cost_nstates; i++)
-            for(int j = 0; j < cost_nstates; j++){
+        for(size_t i = 0; i < cost_nstates; i++)
+            for(size_t j = 0; j < cost_nstates; j++){
                 if(j == i) cost_matrix[i * cost_nstates + j] = 0;
                 else cost_matrix[i * cost_nstates + j] = 1;
             }

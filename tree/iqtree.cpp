@@ -1891,7 +1891,7 @@ void IQTree::pllBuildIQTreePatternIndex(){
     int pos;
     for(int i = 0; i < pllAlignment->sequenceCount; i++){
         pos = 0;
-        for(int model = 0; model < pllPartitions->numberOfPartitions; model++){
+        for(size_t model = 0; model < pllPartitions->numberOfPartitions; model++){
             memcpy(&pll_aln[i][pos],
                     &pllAlignment->sequenceData[i + 1][pllPartitions->partitionData[model]->lower],
                     pllPartitions->partitionData[model]->width);
@@ -1901,14 +1901,14 @@ void IQTree::pllBuildIQTreePatternIndex(){
 
     char * pll_site = new char[pllAlignment->sequenceCount + 1];
     char * site = new char[pllAlignment->sequenceCount + 1];
-    for(int i = 0; i < pllAlignment->sequenceLength; i++){
+    for(size_t i = 0; i < pllAlignment->sequenceLength; i++){
         for(int j = 0; j < pllAlignment->sequenceCount; j++)
             pll_site[j]= pll_aln[j][i];
         pll_site[pllAlignment->sequenceCount] = '\0';
 
         site[pllAlignment->sequenceCount] = '\0';
         for(int k = 0; k < aln->size(); k++){
-            for(int p = 0; p < pllAlignment->sequenceCount; p++)
+            for(size_t p = 0; p < pllAlignment->sequenceCount; p++)
                 site[p] = aln->convertStateBack(aln->at(k)[p]);
             pllBaseSubstitute(site, pllPartitions->partitionData[0]->dataType);
             if(memcmp(pll_site,site, pllAlignment->sequenceCount) == 0){
@@ -3273,7 +3273,7 @@ void IQTree::pllLogBootSamples(int** pll_boot_samples, int nsamples, int npatter
     ofstream bfile("boot_samples.log");
     bfile << "Original freq:" << endl;
     int sum = 0;
-    for(int i = 0; i < pllAlignment->sequenceLength; i++){
+    for(size_t i = 0; i < pllAlignment->sequenceLength; i++){
         bfile << setw(4) << pllInst->aliaswgt[i];
         sum += pllInst->aliaswgt[i];
     }
@@ -3281,9 +3281,9 @@ void IQTree::pllLogBootSamples(int** pll_boot_samples, int nsamples, int npatter
 
     bfile << "Bootstrap freq:" << endl;
 
-    for(int i = 0; i < nsamples; i++){
+    for(size_t i = 0; i < nsamples; i++){
         sum = 0;
-        for(int j = 0; j < npatterns; j++){
+        for(size_t j = 0; j < npatterns; j++){
             bfile << setw(4) << pll_boot_samples[i][j];
             sum += pll_boot_samples[i][j];
         }
@@ -3320,11 +3320,11 @@ void IQTree::pllInitUFBootData(){
             pllUFBootDataPtr->boot_samples =
                 (int **) malloc(params->gbo_replicates * sizeof(int *));
             if(!pllUFBootDataPtr->boot_samples) outError("Not enough dynamic memory!");
-            for(int i = 0; i < params->gbo_replicates; i++){
+            for(size_t i = 0; i < params->gbo_replicates; i++){
                 pllUFBootDataPtr->boot_samples[i] =
                     (int *) malloc(pllAlignment->sequenceLength * sizeof(int));
                 if(!pllUFBootDataPtr->boot_samples[i]) outError("Not enough dynamic memory!");
-                for(int j = 0; j < pllAlignment->sequenceLength; j++){
+                for(size_t j = 0; j < pllAlignment->sequenceLength; j++){
                     pllUFBootDataPtr->boot_samples[i][j] =
                         boot_samples[i][pll2iqtree_pattern_index[j]];
                 }
@@ -3364,7 +3364,7 @@ void IQTree::pllDestroyUFBootData(){
         free(pllUFBootDataPtr->treels_logl);
 
 
-        for(int i = 0; i < pllUFBootDataPtr->treels_size; i++)
+        for(size_t i = 0; i < pllUFBootDataPtr->treels_size; i++)
             if(pllUFBootDataPtr->treels_ptnlh[i])
                 free(pllUFBootDataPtr->treels_ptnlh[i]);
         free(pllUFBootDataPtr->treels_ptnlh);

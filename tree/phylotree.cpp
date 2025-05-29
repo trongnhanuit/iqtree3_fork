@@ -6206,7 +6206,7 @@ void PhyloTree::gen_all_nni_trees(){
     NodeVector nodes1, nodes2;
     generateNNIBraches(nodes1,nodes2);
     
-    for(int i=0; i<nodes1.size();i++){
+    for(size_t i=0; i<nodes1.size();i++){
         
         NNIMove move;
         move.node1=(PhyloNode*)nodes1[i];

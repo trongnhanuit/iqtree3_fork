@@ -7112,14 +7112,14 @@ int random_int_lav(double a, int m)
     }
     
     // normalize totald_vec
-    for(int i = 0; i < totald_vec.size(); i++)
+    for(size_t i = 0; i < totald_vec.size(); i++)
     {
         totald_vec[i] /= totald;
     }
     
     // init random int
     double random_num = random_double();
-    for(int i = 0; i < totald_vec.size(); i++)
+    for(size_t i = 0; i < totald_vec.size(); i++)
         if (random_num < totald_vec.at(i))
             return i+1;
 

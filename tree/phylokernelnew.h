@@ -1036,7 +1036,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             if (child->node->isLeaf()) {
                 //vector<int>::iterator it;
 
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *this_partial_lh_leaf = partial_lh_leaf + state*block;
                     VectorClass *echild_ptr = (VectorClass*)echild;
                     for (c = 0; c < ncat_mix; c++) {
@@ -1085,7 +1085,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             // pre compute information for tip
             if (child->node->isLeaf()) {
                 //vector<int>::iterator it;
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *this_partial_lh_leaf = partial_lh_leaf + state*block;
                     double *echild_ptr = echild;
                     for (c = 0; c < ncat_mix; c++) {
@@ -1136,7 +1136,7 @@ inline void computeBounds(int threads, int packets, size_t elements, vector<size
     }
     limits.push_back(elements);
     
-    if (limits.size() != packets+1) {
+    if (limits.size() != static_cast<size_t>(packets+1)) {
         if (Params::getInstance().num_threads == 0)
             outError("Too many threads may slow down analysis [-nt option]. Reduce threads");
         else
@@ -2796,7 +2796,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
             // precompute information from one tip
             if (nstates % VectorClass::size() == 0) {
                 // vectorized version
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *lh_node = partial_lh_node + state*block;
                     double *lh_tip = tip_partial_lh + state*tip_block;
                     double *vc_val_tmp = val;
@@ -2811,7 +2811,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
                 }
             } else {
                 // non-vectorized version
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *lh_node = partial_lh_node +state*block;
                     double *val_tmp = val;
                     double *this_tip_partial_lh = tip_partial_lh + state*tip_block;
@@ -3228,7 +3228,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
         double *const_lh = _pattern_lh + max_orig_nptn;
         size_t step_unobserved_ptns = model_factory->unobserved_ptns.size() / nstates;
         double *const_lh_next = const_lh + step_unobserved_ptns;
-        for (int step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
+        for (size_t step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
             #ifdef _OPENMP
             #pragma omp parallel for
             #endif
@@ -3453,7 +3453,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
         double *const_lh = _pattern_lh + max_orig_nptn;
         size_t step_unobserved_ptns = model_factory->unobserved_ptns.size() / nstates;
         double *const_lh_next = const_lh + step_unobserved_ptns;
-        for (int step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
+        for (size_t step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
             for (size_t ptn = 0; ptn < orig_nptn; ptn+=VectorClass::size())
                 (VectorClass().load_a(&const_lh[ptn]) + VectorClass().load_a(&const_lh_next[ptn])).store_a(&const_lh[ptn]);
         }

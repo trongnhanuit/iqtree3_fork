@@ -154,7 +154,7 @@ public:
     bool restoreCheckpointRminus1(Checkpoint *ckp, CandidateModel *model) {
         size_t posR;
         const char *rates[] = {"+R", "*R", "+H", "*H"};
-        for (int i = 0; i < sizeof(rates)/sizeof(char*); i++) {
+        for (int i = 0; static_cast<unsigned long>(i) < sizeof(rates)/sizeof(char*); i++) {
             if ((posR = model->rate_name.find(rates[i])) != string::npos) {
                 int cat = convert_int(model->rate_name.substr(posR+2).c_str());
                 subst_name = model->subst_name;
@@ -276,7 +276,7 @@ public:
     int getLowerKModel(int model) {
         size_t posR;
         const char *rates[] = {"+R", "*R", "+H", "*H"};
-        for (int i = 0; i < sizeof(rates)/sizeof(char*); i++) {
+        for (int i = 0; static_cast<unsigned long>(i) < sizeof(rates)/sizeof(char*); i++) {
             if ((posR = at(model).rate_name.find(rates[i])) == string::npos)
                 continue;
             int cat = convert_int(at(model).rate_name.substr(posR+2).c_str());
@@ -295,13 +295,13 @@ public:
     int getHigherKModel(int model) {
         size_t posR;
         const char *rates[] = {"+R", "*R", "+H", "*H"};
-        for (int i = 0; i < sizeof(rates)/sizeof(char*); i++) {
+        for (int i = 0; static_cast<unsigned long>(i) < sizeof(rates)/sizeof(char*); i++) {
             if ((posR = at(model).rate_name.find(rates[i])) == string::npos)
                 continue;
             size_t this_posR = at(model).rate_name.find(rates[i]);
             ASSERT(this_posR != string::npos);
             int cat = convert_int(at(model).rate_name.substr(this_posR+2).c_str());
-            for (int next_model = model+1; next_model < size(); next_model++, cat++) {
+            for (int next_model = model+1; static_cast<unsigned long>(next_model) < size(); next_model++, cat++) {
 //                if (at(next_model).name.substr(0, posR) != orig_name.substr(0, posR))
 //                    break;
                 string rate_name = at(model).rate_name.substr(posR, 2) + convertIntToString(cat+1);

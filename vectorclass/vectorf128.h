@@ -184,7 +184,7 @@ public:
     bool operator [] (uint32_t index) const {
         return extract(index);
     }
-    static int size() {
+    static size_t size() {
         return 4;
     }
 };
@@ -354,7 +354,7 @@ public:
     bool operator [] (uint32_t index) const {
         return extract(index);
     }
-    static int size() {
+    static size_t size() {
         return 2;
     }
 };
@@ -584,7 +584,7 @@ public:
     float operator [] (uint32_t index) const {
         return extract(index);
     }
-    static int size() {
+    static size_t size() {
         return 4;
     }
 };
@@ -1610,7 +1610,7 @@ public:
     double operator [] (uint32_t index) const {
         return extract(index);
     }
-    static int size() {
+    static size_t size() {
         return 2;
     }
 };

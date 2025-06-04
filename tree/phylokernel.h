@@ -1698,7 +1698,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
             #pragma omp parallel for private (site) reduction(+: score) if(nsites>num_threads*10)
             #endif
             for (site = 0; site<nsites; site++) {
-                size_t offset = entry_size*site;
+                size_t offset = static_cast<size_t>(entry_size*site);
                 VectorClass *x = (VectorClass*)(left->partial_pars + offset);
                 VectorClass *y = (VectorClass*)(right->partial_pars + offset);
                 VectorClass *z = (VectorClass*)(dad_branch->partial_pars + offset);
@@ -1721,7 +1721,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
             #pragma omp parallel for private (site) reduction(+: score) if(nsites>num_threads*10)
             #endif
             for (site = 0; site<nsites; site++) {
-                size_t offset = entry_size*site;
+                size_t offset = static_cast<size_t>(entry_size*site);
                 VectorClass *x = (VectorClass*)(left->partial_pars + offset);
                 VectorClass *y = (VectorClass*)(right->partial_pars + offset);
                 VectorClass *z = (VectorClass*)(dad_branch->partial_pars + offset);
@@ -1777,7 +1777,7 @@ int PhyloTree::computeParsimonyBranchFastSIMD(PhyloNeighbor *dad_branch, PhyloNo
         #pragma omp parallel for reduction(+: score) if(nsites>num_threads*10)
         #endif
         for (int site = 0; site < nsites; site++) {
-            size_t offset = entry_size*site;
+            size_t offset = static_cast<size_t>(entry_size*site);
             VectorClass *x = (VectorClass*)(dad_branch->partial_pars + offset);
             VectorClass *y = (VectorClass*)(node_branch->partial_pars + offset);
             VectorClass w = (x[0] & y[0]) | (x[1] & y[1]) | (x[2] & y[2]) | (x[3] & y[3]);
@@ -1794,7 +1794,7 @@ int PhyloTree::computeParsimonyBranchFastSIMD(PhyloNeighbor *dad_branch, PhyloNo
         #pragma omp parallel for reduction(+: score) if(nsites>num_threads*10)
         #endif
         for (int site = 0; site < nsites; ++site) {
-            size_t offset = entry_size*site;
+            size_t offset = static_cast<size_t>(entry_size*site);
             VectorClass *x = (VectorClass*)(dad_branch->partial_pars + offset);
             VectorClass *y = (VectorClass*)(node_branch->partial_pars + offset);
             VectorClass w = x[0] & y[0];

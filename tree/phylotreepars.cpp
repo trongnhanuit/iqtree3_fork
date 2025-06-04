@@ -189,7 +189,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
             #endif
 			for (site = 0; site<nsites; site++) {
 				UINT w;
-                size_t offset = nstates*site;
+                size_t offset = static_cast<size_t>(nstates*site);
                 UINT *x = left->partial_pars + offset;
                 UINT *y = right->partial_pars + offset;
                 UINT *z = dad_branch->partial_pars + offset;
@@ -212,7 +212,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
             #endif
             for (site = 0; site<nsites; site++) {
                 UINT w = 0;
-                size_t offset = nstates*site;
+                size_t offset = static_cast<size_t>(nstates*site);
                 UINT *x = left->partial_pars + offset;
                 UINT *y = right->partial_pars + offset;
                 UINT *z = dad_branch->partial_pars + offset;
@@ -263,7 +263,7 @@ int PhyloTree::computeParsimonyBranchFast(PhyloNeighbor *dad_branch, PhyloNode *
         #pragma omp parallel for reduction(+: score) if(nsites>200)
         #endif
 		for (int site = 0; site < nsites; ++site) {
-            size_t offset = 4*site;
+            size_t offset = static_cast<size_t>(4*site);
             UINT *x = dad_branch->partial_pars + offset;
             UINT *y = node_branch->partial_pars + offset;
 			UINT w = (x[0] & y[0]) | (x[1] & y[1]) | (x[2] & y[2]) | (x[3] & y[3]);
@@ -280,7 +280,7 @@ int PhyloTree::computeParsimonyBranchFast(PhyloNeighbor *dad_branch, PhyloNode *
         #pragma omp parallel for reduction(+: score) if(nsites > 800/nstates)
         #endif
 		for (int site = 0; site < nsites; ++site) {
-            size_t offset = nstates * site;
+            size_t offset = static_cast<size_t>(nstates * site);
             UINT *x = dad_branch->partial_pars + offset;
             UINT *y = node_branch->partial_pars + offset;
 			int i;
@@ -367,7 +367,7 @@ int PhyloTree::setParsimonyBranchLengths() {
     int subst = 0;
     
     for (site = 0, real_site = 0; site < nsites; site++) {
-        size_t offset = nstates*site;
+        size_t offset = static_cast<size_t>(nstates*site);
         UINT *x = dad_branch->partial_pars + offset;
         UINT *y = node_branch->partial_pars + offset;
         UINT w = x[0] & y[0];
@@ -425,7 +425,7 @@ int PhyloTree::setParsimonyBranchLengths() {
         node_branch = (PhyloNeighbor*)node->findNeighbor(dad);
         subst = 0;
         for (site = 0, real_site = 0; site < nsites; site++) {
-            size_t offset = nstates*site;
+            size_t offset = static_cast<size_t>(nstates*site);
             UINT *x = dad_branch->partial_pars + offset;
             //UINT *y = node_branch->partial_pars + offset;
             int state;

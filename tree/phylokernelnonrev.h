@@ -59,7 +59,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     size_t orig_nptn = aln->size();
     size_t max_orig_nptn = roundUpToMultiple(orig_nptn, VectorClass::size());
     size_t nptn = max_orig_nptn+model_factory->unobserved_ptns.size();
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
     size_t block = nstates * ncat_mix;
     size_t num_leaves = 0;
@@ -1091,7 +1091,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     size_t nstatesqr = nstates*nstates;
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
     size_t denom = (model_factory->fused_mix_rate) ? 1 : ncat;
 

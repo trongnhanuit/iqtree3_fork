@@ -1341,7 +1341,7 @@ void PhyloTree::transformPatternLhCat() {
 
     size_t nptn = ((aln->size()+vector_size-1)/vector_size)*vector_size;
 //    size_t nstates = aln->num_states;
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     if (!model_factory->fused_mix_rate) ncat *= model->getNMixtures();
 
     double *mem = aligned_alloc<double>(nptn*ncat);
@@ -1659,7 +1659,7 @@ int PhyloTree::computePatternCategories(IntVector *pattern_ncat) {
     }
     
     size_t npattern = aln->getNPattern();
-    size_t ncat = getRate()->getNRate();
+    size_t ncat = static_cast<size_t>(getRate()->getNRate());
     size_t nmixture;
     if (getModel()->isMixture() && !getModelFactory()->fused_mix_rate)
         nmixture = getModel()->getNMixtures();
@@ -6085,7 +6085,7 @@ void PhyloTree::writeSiteLh(ostream &out, SiteLoglType wsl, int partid) {
         }
     }
     size_t nsites = getAlnNSite();
-    size_t ncat = getNumLhCat(wsl);
+    size_t ncat = static_cast<size_t>(getNumLhCat(wsl));
     double *pattern_lh, *pattern_lh_cat;
     pattern_lh = aligned_alloc<double>(getAlnNPattern());
     pattern_lh_cat = aligned_alloc<double>(getAlnNPattern()*ncat);

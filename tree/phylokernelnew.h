@@ -905,7 +905,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
 #endif
 
     size_t c, i, x;
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
     size_t block = nstates * ncat_mix;
     size_t tip_block = nstates * model->getNMixtures();
@@ -1325,7 +1325,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
 		return;
 	}
     
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
     size_t mix_addr_nstates_malign[ncat_mix], mix_addr_malign[ncat_mix];
     size_t denom = (model_factory->fused_mix_rate) ? 1 : ncat;
@@ -2071,7 +2071,7 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
     size_t orig_nptn = aln->size();
     size_t max_orig_nptn = roundUpToMultiple(orig_nptn,VectorClass::size());
     size_t nptn = max_orig_nptn+model_factory->unobserved_ptns.size();
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
     size_t block = ncat_mix * nstates;
     size_t tip_block = nstates * model->getNMixtures();
@@ -2269,7 +2269,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
     ASSERT(aln->num_states >= 0);
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
 
     size_t block = ncat_mix * nstates;
@@ -2691,7 +2691,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
     ASSERT(aln->num_states >= 0);
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
 
     size_t block = ncat_mix * nstates;
@@ -3300,7 +3300,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
     ASSERT(aln->num_states >= 0);
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
 
     size_t block = ncat_mix * nstates;

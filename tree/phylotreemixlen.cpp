@@ -768,7 +768,7 @@ void PhyloTreeMixlen::computeFuncDerv(double value, double &df, double &ddf) {
 
     ASSERT(aln->num_states >= 0);
     size_t nstates = static_cast<size_t>(aln->num_states);
-    size_t ncat = site_rate->getNRate();
+    size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t nmixture = model->getNMixtures();
 
     size_t block = ncat * nstates * nmixture;

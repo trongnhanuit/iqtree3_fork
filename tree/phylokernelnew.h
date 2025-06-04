@@ -1017,7 +1017,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             VectorClass *echild_ptr = (VectorClass*)echild;
             // precompute information buffer
             for (c = 0; c < ncat_mix; c++) {
-                VectorClass len_child = site_rate->getRate(static_cast<int>(cat_id[c])) * child->getLength(cat_id[c]);
+                VectorClass len_child = site_rate->getRate(static_cast<int>(cat_id[c])) * child->getLength(static_cast<int>(cat_id[c]));
                 double *eval_ptr = eval + mix_addr_nstates_malign[c];
                 double *evec_ptr = evec + mix_addr_malign[c];
                 for (i = 0; i < nstates/VectorClass::size(); i++) {
@@ -1069,7 +1069,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             // precompute information buffer
             double *echild_ptr = echild;
             for (c = 0; c < ncat_mix; c++) {
-                double len_child = site_rate->getRate(static_cast<int>(cat_id[c])) * child->getLength(cat_id[c]);
+                double len_child = site_rate->getRate(static_cast<int>(cat_id[c])) * child->getLength(static_cast<int>(cat_id[c]));
                 double *eval_ptr = eval + mix_addr_nstates_malign[c];
                 double *evec_ptr = evec + mix_addr_malign[c];
                 for (i = 0; i < nstates; i++) {

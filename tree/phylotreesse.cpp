@@ -271,7 +271,7 @@ void PhyloTree::computeTipPartialLikelihood() {
             auto stateRow = getConvertedSequenceByNumber(nodeid);
             double *partial_lh = tip_partial_lh + tip_block_size*nodeid;
             for (size_t ptn = 0; ptn < nptn; ptn+=vector_size, partial_lh += nstates*vector_size) {
-                double *inv_evec = &model->getInverseEigenvectors()[ptn*nstates*nstates];
+                double *inv_evec = &model->getInverseEigenvectors()[ptn*static_cast<size_t>(nstates*nstates)];
                 for (size_t v = 0; v < vector_size; v++) {
                     int state = 0;
                     if (ptn+v < nptn) {

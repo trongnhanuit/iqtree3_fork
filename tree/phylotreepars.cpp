@@ -165,7 +165,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
         ASSERT(site == aln->num_parsimony_sites);
         // add dummy states
         if (site < max_sites)
-            dad_branch->partial_pars[(site/UINT_BITS)*nstates] |= ~((1<<(site%UINT_BITS)) - 1);
+            dad_branch->partial_pars[(site/UINT_BITS)*static_cast<size_t>(nstates)] |= ~((1<<(site%UINT_BITS)) - 1);
     } else {
         // internal node
         ASSERT(node->degree() == 3); // it works only for strictly bifurcating tree
@@ -609,7 +609,7 @@ void PhyloTree::computeTipPartialParsimony() {
             break;
         case SEQ_PROTEIN:
             for (state = 0; state < sizeof(ambi_aa)/sizeof(int); state++) {
-                this_tip_partial_pars = &tip_partial_pars[(state+20)*nstates];
+                this_tip_partial_pars = &tip_partial_pars[(state+20)*static_cast<size_t>(nstates)];
                 for (i = 0; i < nstates; i++) {
                     if (ambi_aa[static_cast<size_t>(state)] & (1 << i))
                         this_tip_partial_pars[i] = 0;
@@ -690,7 +690,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
             FOR_NEIGHBOR_IT(node, dad, it) if ((*it)->node->name != ROOT_NAME) {
                 if ((*it)->node->isLeaf()) {
                     // leaf node
-                    UINT *partial_pars_child_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][(*it)->node->id]*nstates];
+                    UINT *partial_pars_child_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][(*it)->node->id]*static_cast<size_t>(nstates)];
                 
                     for(i = 0; i < static_cast<UINT>(nstates); i++){
                         partial_pars_ptr[i] += partial_pars_child_ptr[i];
@@ -720,8 +720,8 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
             //if (aln->at(ptn).isConst()) continue;
             int ptn_start_index = static_cast<int>(ptn)*nstates;
             
-            UINT *left_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][left->node->id]*nstates];
-            UINT *right_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][right->node->id]*nstates];
+            UINT *left_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][left->node->id]*static_cast<size_t>(nstates)];
+            UINT *right_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][right->node->id]*static_cast<size_t>(nstates)];
             UINT *partial_pars_ptr = &partial_pars[ptn_start_index];
             
             for (i = 0; i < static_cast<UINT>(nstates); i++){
@@ -736,7 +736,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
             //if (aln->at(ptn).isConst()) continue;
             int ptn_start_index = static_cast<int>(ptn)*nstates;
             
-            UINT *left_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][left->node->id]*nstates];
+            UINT *left_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][left->node->id]*static_cast<size_t>(nstates)];
             UINT *right_ptr = &right->partial_pars[ptn_start_index];
             UINT *partial_pars_ptr = &partial_pars[ptn_start_index];
             UINT *cost_matrix_ptr = cost_matrix;
@@ -833,7 +833,7 @@ int PhyloTree::computeParsimonyBranchSankoff(PhyloNeighbor *dad_branch, PhyloNod
         // external node
         for (ptn = 0; ptn < aln->ordered_pattern.size(); ptn++){
             int ptn_start_index = ptn * nstates;
-            UINT *node_branch_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][dad->id]*nstates];
+            UINT *node_branch_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][dad->id]*static_cast<size_t>(nstates)];
             UINT *dad_branch_ptr = &dad_branch->partial_pars[ptn_start_index];
             UINT min_ptn_pars = node_branch_ptr[0] + dad_branch_ptr[0];
             UINT br_ptn_pars = node_branch_ptr[0];
@@ -932,7 +932,7 @@ UINT PhyloTree::computeParsimonyOutOfTreeSankoff(UINT* ptn_scores) {
         // external node
         for (ptn = 0; ptn < aln->ordered_pattern.size(); ptn++){
             int ptn_start_index = ptn * nstates;
-            UINT *node_branch_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][dad->id]*nstates];
+            UINT *node_branch_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][dad->id]*static_cast<size_t>(nstates)];
             UINT *dad_branch_ptr = &dad_branch->partial_pars[ptn_start_index];
             UINT min_ptn_pars = node_branch_ptr[0] + dad_branch_ptr[0];
             UINT br_ptn_pars = node_branch_ptr[0];

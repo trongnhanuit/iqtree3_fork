@@ -389,7 +389,7 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
             } else {
                 state = (aln->at(ptn))[dad_branch->node->id];
             }
-            double *state_lh = &tip_partial_lh[state*nstates];
+            double *state_lh = &tip_partial_lh[static_cast<size_t>(state)*nstates];
             memcpy(&ptn_ancestral_prob[ptn*nstates], state_lh, sizeof(double)*nstates);
 
         }

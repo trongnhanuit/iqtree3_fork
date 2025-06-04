@@ -69,7 +69,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
             case SEQ_DNA:
                 for (int patid = start_pos; patid != end_pos; patid++) {
                     Alignment::iterator pat = aln->ordered_pattern.begin()+ patid;
-                    int state = pat->at(leafid);
+                    int state = static_cast<int>(pat->at(leafid));
                     int freq = pat->frequency;
                     if (state < 4) {
                         for (int j = 0; j < freq; j++, site++) {
@@ -104,7 +104,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
             case SEQ_PROTEIN:
                 for (int patid = start_pos; patid != end_pos; patid++) {
                     Alignment::iterator pat = aln->ordered_pattern.begin()+ patid;
-                    int state = pat->at(leafid);
+                    int state = static_cast<int>(pat->at(leafid));
                     int freq = pat->frequency;
                     if (state < 20) {
                         for (int j = 0; j < freq; j++, site++) {
@@ -136,7 +136,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
             default:
                 for (int patid = start_pos; patid != end_pos; patid++) {
                     Alignment::iterator pat = aln->ordered_pattern.begin()+ patid;
-                    int state = pat->at(leafid);
+                    int state = static_cast<int>(pat->at(leafid));
                     int freq = pat->frequency;
                     if (aln->seq_type == SEQ_POMO && state >= (*alnit)->num_states && state < static_cast<int>((*alnit)->STATE_UNKNOWN)) {
                         state = (*alnit)->convertPomoState(state);

@@ -684,7 +684,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
     if (node->degree() > 3) {
         // multifurcating node
         for (ptn = 0; ptn < aln->ordered_pattern.size(); ptn++) {
-            int ptn_start_index = ptn*nstates;
+            int ptn_start_index = static_cast<int>(ptn)*nstates;
             UINT *partial_pars_ptr = &partial_pars[ptn_start_index];
 
             FOR_NEIGHBOR_IT(node, dad, it) if ((*it)->node->name != ROOT_NAME) {
@@ -718,7 +718,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
         for (ptn = 0; ptn < aln->ordered_pattern.size(); ptn++){
             // ignore const ptn because it does not affect pars score
             //if (aln->at(ptn).isConst()) continue;
-            int ptn_start_index = ptn*nstates;
+            int ptn_start_index = static_cast<int>(ptn)*nstates;
             
             UINT *left_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][left->node->id]*nstates];
             UINT *right_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][right->node->id]*nstates];
@@ -734,7 +734,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
         for (ptn = 0; ptn < aln->ordered_pattern.size(); ptn++){
             // ignore const ptn because it does not affect pars score
             //if (aln->at(ptn).isConst()) continue;
-            int ptn_start_index = ptn*nstates;
+            int ptn_start_index = static_cast<int>(ptn)*nstates;
             
             UINT *left_ptr = &tip_partial_pars[aln->ordered_pattern[ptn][left->node->id]*nstates];
             UINT *right_ptr = &right->partial_pars[ptn_start_index];
@@ -757,7 +757,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
         for (ptn = 0; ptn < aln->ordered_pattern.size(); ptn++){
             // ignore const ptn because it does not affect pars score
             //if (aln->at(ptn).isConst()) continue;
-            int ptn_start_index = ptn*nstates;
+            int ptn_start_index = static_cast<int>(ptn)*nstates;
             
             UINT *left_ptr = &left->partial_pars[ptn_start_index];
             UINT *right_ptr = &right->partial_pars[ptn_start_index];

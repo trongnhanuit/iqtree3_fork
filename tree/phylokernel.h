@@ -1871,7 +1871,7 @@ void PhyloTree::computePartialParsimonySankoffSIMD(PhyloNeighbor *dad_branch, Ph
     if (node->degree() > 3) {
         // multifurcating node
         for (size_t ptn = 0; ptn < aln->ordered_pattern.size(); ptn+=VectorClass::size()) {
-            int ptn_start_index = ptn*nstates;
+            int ptn_start_index = static_cast<int>(ptn)*nstates;
             VectorClass *partial_pars_ptr = (VectorClass*)&partial_pars[ptn_start_index];
             
             FOR_NEIGHBOR_IT(node, dad, it) if ((*it)->node->name != ROOT_NAME) {
@@ -1969,7 +1969,7 @@ void PhyloTree::computePartialParsimonySankoffSIMD(PhyloNeighbor *dad_branch, Ph
         for (size_t ptn = 0; ptn < aln->ordered_pattern.size(); ptn+=VectorClass::size()){
             // ignore const ptn because it does not affect pars score
             //if (aln->at(ptn).isConst()) continue;
-            int ptn_start_index = ptn*nstates;
+            int ptn_start_index = static_cast<int>(ptn)*nstates;
             
             VectorClass *left_ptr = (VectorClass*)&left->partial_pars[ptn_start_index];
             VectorClass *right_ptr = (VectorClass*)&right->partial_pars[ptn_start_index];

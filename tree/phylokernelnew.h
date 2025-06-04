@@ -942,7 +942,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
                 // transpose probability matrix
                 double mat[nstatesqr];
                 for (c = 0; c < ncat_mix; c++) {
-                    double len_child = site_rate->getRate(c%ncat) * child->length;
+                    double len_child = site_rate->getRate(static_cast<int>(c%ncat)) * child->length;
                     model_factory->computeTransMatrix(len_child, mat, c/denom);
                     double *echild_ptr = &echild[c*nstatesqr];
                     for (i = 0; i < nstates; i++) {
@@ -953,7 +953,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
                 }
             } else {
                 for (c = 0; c < ncat_mix; c++) {
-                    double len_child = site_rate->getRate(c%ncat) * child->length;
+                    double len_child = site_rate->getRate(static_cast<int>(c%ncat)) * child->length;
                     model_factory->computeTransMatrix(len_child, &echild[c*nstatesqr], c/denom);
                 }
             }
@@ -1017,7 +1017,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             VectorClass *echild_ptr = (VectorClass*)echild;
             // precompute information buffer
             for (c = 0; c < ncat_mix; c++) {
-                VectorClass len_child = site_rate->getRate(cat_id[c]) * child->getLength(cat_id[c]);
+                VectorClass len_child = site_rate->getRate(static_cast<int>(cat_id[c])) * child->getLength(cat_id[c]);
                 double *eval_ptr = eval + mix_addr_nstates_malign[c];
                 double *evec_ptr = evec + mix_addr_malign[c];
                 for (i = 0; i < nstates/VectorClass::size(); i++) {
@@ -1069,7 +1069,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             // precompute information buffer
             double *echild_ptr = echild;
             for (c = 0; c < ncat_mix; c++) {
-                double len_child = site_rate->getRate(cat_id[c]) * child->getLength(cat_id[c]);
+                double len_child = site_rate->getRate(static_cast<int>(cat_id[c])) * child->getLength(cat_id[c]);
                 double *eval_ptr = eval + mix_addr_nstates_malign[c];
                 double *evec_ptr = evec + mix_addr_malign[c];
                 for (i = 0; i < nstates; i++) {
@@ -1366,7 +1366,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
         double *len_children_ptr = len_children;
         FOR_NEIGHBOR_IT(node, dad, it3) {
             for (size_t c = 0; c < ncat; c++) {
-                len_children_ptr[c] = site_rate->getRate(c) * (*it3)->length;
+                len_children_ptr[c] = site_rate->getRate(static_cast<int>(c)) * (*it3)->length;
             }
             if (!len_left) {
                 len_left = len_children_ptr;
@@ -2313,7 +2313,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
 
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; c++) {
-            cat_rate[c] = site_rate->getRate(c);
+            cat_rate[c] = site_rate->getRate(static_cast<int>(c));
             cat_prop[c] = site_rate->getProp(c);
         }
     } else {
@@ -2723,7 +2723,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
     double cat_prop[ncat];
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; c++) {
-            cat_length[c] = site_rate->getRate(c) * dad_branch->length;
+            cat_length[c] = site_rate->getRate(static_cast<int>(c)) * dad_branch->length;
             cat_prop[c] = site_rate->getProp(c);
         }
     } else {
@@ -3321,7 +3321,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
 
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; ++c) {
-            cat_length[c] = site_rate->getRate(c) * current_it->length;
+            cat_length[c] = site_rate->getRate(static_cast<int>(c)) * current_it->length;
             cat_prop[c] = site_rate->getProp(c);
         }
     } else {
@@ -3563,7 +3563,7 @@ void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch
 
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; c++) {
-            cat_rate[c] = site_rate->getRate(c);
+            cat_rate[c] = site_rate->getRate(static_cast<int>(c));
             cat_prop[c] = site_rate->getProp(c);
         }
     } else {

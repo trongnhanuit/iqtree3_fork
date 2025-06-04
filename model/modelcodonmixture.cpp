@@ -52,23 +52,25 @@ ModelCodonMixture::ModelCodonMixture(string orig_model_name, string model_name,
     } else {
         // user inputs the parameter values for CMIX model
         if (cmix_type == "1a" && vec.size() != 2 && vec.size() != 4)
-            outError("Error! There should be 2 or 4 parameters inside CMIX1a{} stating the omega value (and the weight) of each class");
+            outError("Error! There should be 2 (or 4) parameters inside CMIX1a{} stating the omega value (and the weight) of each class");
         else if (cmix_type == "2a" && vec.size() != 3 && vec.size() != 6)
-            outError("Error! There should be 3 or 6 parameters inside CMIX2a{} stating the omega value (and the weight) of each class.");
+            outError("Error! There should be 3 (or 6) parameters inside CMIX2a{} stating the omega value (and the weight) of each class.");
         else if (cmix_type == "3" && vec.size() != 3 && vec.size() != 6)
-            outError("Error! There should be 3 or 6 parameters inside CMIX3{} stating the omega value (and the weight) of each class.");
+            outError("Error! There should be 3 (or 6) parameters inside CMIX3{} stating the omega value (and the weight) of each class.");
         if (vec.size() >= 4) {
             // with both omega and weight
             for (int i = 0; i < vec.size(); i+=2) {
-                if (i > 0)
+                if (i > 0) {
                     model_list += ",";
+                }
                 model_list += model_name + "{" + vec[i] + ",1.0}:1.0:" + vec[i+1];
             }
         } else {
             // only omega
             for (int i = 0; i < vec.size(); i++) {
-                if (i > 0)
+                if (i > 0) {
                     model_list += ",";
+                }
                 model_list += model_name + "{" + vec[i] + ",1.0}";
             }
         }

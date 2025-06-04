@@ -452,13 +452,12 @@ void ModelCodon::init(const char *model_name, string model_params, StateFreqType
         // parse kappa
         if (model_params.length() > 0)
         {
+            pos = model_params.find(delimiter);
             // check if the model allow users to specify this parameter or not?
             // skip the kappa information if the kappa is predefined (for example, GY0K model).
             if (!fix_kappa)
             {
-                pos = model_params.find(delimiter);
                 kappa = convert_double_with_distribution(model_params.substr(0, pos).c_str(), true);
-                cout << "[ModelCodon::init] kappa = " << kappa << endl;
                 if (kappa < 0)
                     outError("Kappa cannot be negative!");
                 if (!Params::getInstance().optimize_from_given_params)

@@ -2600,7 +2600,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
         double *const_lh_next = const_lh + step_unobserved_ptns;
         double *const_df_next = const_df + step_unobserved_ptns;
         double *const_ddf_next = const_ddf + step_unobserved_ptns;
-        for (int step = 1; step < nstates; step++) {
+        for (size_t step = 1; step < nstates; step++) {
             for (size_t ptn = 0; ptn < orig_nptn; ptn+=VectorClass::size()) {
                 (VectorClass().load_a(&const_lh[ptn]) + VectorClass().load_a(&const_lh_next[ptn])).store_a(&const_lh[ptn]);
                 (VectorClass().load_a(&const_df[ptn]) + VectorClass().load_a(&const_df_next[ptn])).store_a(&const_df[ptn]);
@@ -3228,7 +3228,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
         double *const_lh = _pattern_lh + max_orig_nptn;
         size_t step_unobserved_ptns = model_factory->unobserved_ptns.size() / nstates;
         double *const_lh_next = const_lh + step_unobserved_ptns;
-        for (int step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
+        for (size_t step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
             #ifdef _OPENMP
             #pragma omp parallel for
             #endif
@@ -3453,7 +3453,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
         double *const_lh = _pattern_lh + max_orig_nptn;
         size_t step_unobserved_ptns = model_factory->unobserved_ptns.size() / nstates;
         double *const_lh_next = const_lh + step_unobserved_ptns;
-        for (int step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
+        for (size_t step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
             for (size_t ptn = 0; ptn < orig_nptn; ptn+=VectorClass::size())
                 (VectorClass().load_a(&const_lh[ptn]) + VectorClass().load_a(&const_lh_next[ptn])).store_a(&const_lh[ptn]);
         }

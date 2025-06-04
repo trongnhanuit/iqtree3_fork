@@ -1463,7 +1463,7 @@ void PhyloTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, PhyloNo
     ASSERT(model->num_states >= 0);
     size_t nstates = static_cast<size_t>(model->num_states);
     size_t nstates_vector = nstates * vector_size;
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures();
+    size_t ncat_mix = static_cast<size_t>((model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures());
     double state_freq[nstates];
     model->getStateFrequency(state_freq);
 

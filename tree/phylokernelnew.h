@@ -906,7 +906,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
 
     size_t c, i, x;
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
+    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : static_cast<size_t>(ncat*model->getNMixtures());
     size_t block = nstates * ncat_mix;
     size_t tip_block = nstates * model->getNMixtures();
     size_t cat_id[ncat_mix], mix_addr_nstates[ncat_mix], mix_addr[ncat_mix];
@@ -1162,7 +1162,7 @@ void PhyloTree::computeTraversalInfo(PhyloNode *node, PhyloNode *dad, bool compu
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     // reserve beginning of buffer_partial_lh for other purpose
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures();
+    size_t ncat_mix = static_cast<size_t>((model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures());
     size_t block = aln->num_states * ncat_mix;
     double *buffer = buffer_partial_lh + block*VectorClass::size()*num_packets + get_safe_upper_limit(block)*(aln->STATE_UNKNOWN+2);
 
@@ -1326,7 +1326,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
 	}
     
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
+    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
     size_t mix_addr_nstates_malign[ncat_mix], mix_addr_malign[ncat_mix];
     size_t denom = (model_factory->fused_mix_rate) ? 1 : ncat;
     for (size_t c = 0; c < ncat_mix; c++) {
@@ -2072,7 +2072,7 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
     size_t max_orig_nptn = roundUpToMultiple(orig_nptn,VectorClass::size());
     size_t nptn = max_orig_nptn+model_factory->unobserved_ptns.size();
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
+    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
     size_t block = ncat_mix * nstates;
     size_t tip_block = nstates * model->getNMixtures();
     size_t mix_addr_nstates[ncat_mix], mix_addr[ncat_mix];
@@ -2270,7 +2270,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
+    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
 
     size_t block = ncat_mix * nstates;
 //    size_t tip_block = nstates * model->getNMixtures();
@@ -2692,7 +2692,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
+    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
 
     size_t block = ncat_mix * nstates;
     size_t tip_block = nstates * model->getNMixtures();
@@ -3301,7 +3301,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
+    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
 
     size_t block = ncat_mix * nstates;
     size_t orig_nptn = aln->size();

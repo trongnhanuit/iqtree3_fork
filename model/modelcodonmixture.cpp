@@ -35,6 +35,7 @@ ModelCodonMixture::ModelCodonMixture(string orig_model_name, string model_name,
     }
     
     string model_list = "";
+    bool user_input_param = false;
     /* setting fix_kappa for class 2 and 3 */
     if (vec.size() == 0) {
         if (cmix_type == "1a") {
@@ -51,6 +52,7 @@ ModelCodonMixture::ModelCodonMixture(string orig_model_name, string model_name,
         }
     } else {
         // user inputs the parameter values for CMIX model
+        user_input_param = true;
         if (cmix_type == "1a" && vec.size() != 2 && vec.size() != 4)
             outError("Error! There should be 2 (or 4) parameters inside CMIX1a{} stating the omega value (and the weight) of each class");
         else if (cmix_type == "2a" && vec.size() != 3 && vec.size() != 6)
@@ -78,6 +80,11 @@ ModelCodonMixture::ModelCodonMixture(string orig_model_name, string model_name,
     initMixture(orig_model_name, model_name, model_list, models_block,
                 freq, freq_params, tree, optimize_weights);
     
+    // impose restrictions on the omega values if user inputs the parameters
+    if (user_input_param) {
+        restrict_omega_values(cmix_type);
+    }
+
     // show the initial parameters
     cout << "Initial parameters in the Codon Mixture:" << endl;
     writeInfo(cout);
@@ -104,4 +111,37 @@ bool ModelCodonMixture::getVariables(double *variables) {
 
 void ModelCodonMixture::setVariables(double *variables) {
     ModelMixture::setVariables(variables);
+}
+
+// Impose restrictions on the omega values
+// This function is needed only when user inputs parameters
+void ModelCodonMixture::restrict_omega_values(string cmix_type) {
+    ModelCodon *model;
+    // M1a neural model with 2 classes, or
+    // M2a selection model with 3 classes
+    if (cmix_type == "1a" || cmix_type == "2a") {
+        ASSERT(size() >= 2);
+        // omega1 is resticted to < 1 for both M1a and M2a models
+        model = (ModelCodon*)at(0);
+        model->max_omega = 0.999; // for the option -optfromgiven
+        if (model->omega > model->max_omega) {
+            outError("Omega1 has to be smaller than 1");
+        }
+        // omega2 is resticted to 1.0 for both M1a and M2a models
+        model = (ModelCodon*)at(1);
+        model->min_omega = model->max_omega = 1.0; // for the option -optfromgiven
+        if (model->omega != model->min_omega) {
+            outError("Omega2 has to be 1");
+        }
+
+        if (cmix_type == "2a") {
+            ASSERT(size() == 3);
+            // omega3 is resticted to > 1 for M2a model
+            model = (ModelCodon*)at(2);
+            model->min_omega = 1.001; // for the option -optfromgiven
+            if (model->omega < model->min_omega) {
+                outError("Omega3 has to be greater than 1");
+            }
+        }
+    }
 }

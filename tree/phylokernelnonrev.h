@@ -627,7 +627,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
 
     for (size_t c = 0; c < ncat_mix; c++) {
         int  mycat = c%ncat;
-        size_t  m = c/denom;
+        int  m = static_cast<int>(c/denom);
         double  cat_rate = site_rate->getRate(mycat);
         double  len = cat_rate * dad_branch->length;
         double  prop = site_rate->getProp(mycat) * model->getMixtureWeight(m);
@@ -679,7 +679,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
                 double *lh_node = partial_lh_node + c*nstates;
                 double *lh_derv1 = partial_lh_derv1 + c*nstates;
                 double *lh_derv2 = partial_lh_derv2 + c*nstates;
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 model->getStateFrequency(lh_node, m);
                 double prop = site_rate->getProp(static_cast<int>(c%ncat)) * model->getMixtureWeight(m);
                 for (size_t i = 0; i < nstates; i++) {
@@ -1110,7 +1110,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
     
 	for (size_t c = 0; c < ncat_mix; c++) {
         int mycat = c%ncat;
-        size_t m = c/denom;
+        int m = static_cast<int>(c/denom);
 		double len = site_rate->getRate(mycat) * dad_branch->length;
 		double prop = site_rate->getProp(mycat) * model->getMixtureWeight(m);
         double *this_trans_mat = &trans_mat[c*nstatesqr];
@@ -1150,7 +1150,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
         if (isRootLeaf(dad)) {
             for (size_t c = 0; c < ncat_mix; c++) {
                 double *lh_node = partial_lh_node + c*nstates;
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 model->getStateFrequency(lh_node, m);
                 double prop = site_rate->getProp(static_cast<int>(c%ncat)) * model->getMixtureWeight(m);
                 for (size_t i = 0; i < nstates; i++)

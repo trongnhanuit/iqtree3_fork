@@ -2328,7 +2328,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
 
             size_t loop_size = nstates/VectorClass::size();
             for (size_t c = 0; c < ncat_mix; c++) {
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 int mycat = c%ncat;
                 double len = dad_branch->getLength(mycat);
                 VectorClass *eval_ptr = (VectorClass*)(eval + mix_addr_nstates_malign[c]);
@@ -2348,7 +2348,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
             }
         } else {
             for (size_t c = 0; c < ncat_mix; c++) {
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 double *eval_ptr = eval + mix_addr_nstates_malign[c];
                 int mycat = c%ncat;
                 double prop = site_rate->getProp(mycat) * model->getMixtureWeight(m);
@@ -2733,7 +2733,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
             size_t loop_size = nstates / VectorClass::size();
             for (size_t c = 0; c < ncat_mix; c++) {
                 int mycat = c%ncat;
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 mix_addr_nstates[c] = m*nstates;
                 mix_addr_nstates_malign[c] = m * get_safe_upper_limit(nstates);
                 mix_addr[c] = mix_addr_nstates[c]*nstates;
@@ -2749,7 +2749,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
         } else {
             for (size_t c = 0; c < ncat_mix; c++) {
                 int mycat = c%ncat;
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 mix_addr_nstates[c] = m*nstates;
                 mix_addr_nstates_malign[c] = m * get_safe_upper_limit(nstates);
                 mix_addr[c] = mix_addr_nstates[c]*nstates;
@@ -3330,7 +3330,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
             VectorClass *vc_val0 = (VectorClass*)val0;
             size_t loop_size = nstates / VectorClass::size();
             for (size_t c = 0; c < ncat_mix; ++c) {
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 VectorClass *eval_ptr = (VectorClass*)(eval + mix_addr_nstates_malign[c]);
                 int mycat = c%ncat;
                 double prop = site_rate->getProp(mycat) * model->getMixtureWeight(m);
@@ -3342,7 +3342,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
             }
         } else {
             for (size_t c = 0; c < ncat_mix; ++c) {
-                size_t m = c/denom;
+                int m = static_cast<int>(c/denom);
                 double *eval_ptr = eval + mix_addr_nstates_malign[c];
                 int mycat = c%ncat;
                 double prop = site_rate->getProp(mycat) * model->getMixtureWeight(m);

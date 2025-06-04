@@ -144,4 +144,14 @@ void ModelCodonMixture::restrict_omega_values(string cmix_type) {
             }
         }
     }
+    // M3 model with 3 classes with no constraint
+    else if (cmix_type == "3") {
+        for (size_t i = 0; i < size(); i++) {
+            model = (ModelCodon*)at(i);
+            model->min_omega = 0.001;
+            if (model->omega < model->min_omega) {
+                outError("Omega" + convertIntToString(i+1) + " cannot be 0 or the value is too small");
+            }
+        }
+    }
 }

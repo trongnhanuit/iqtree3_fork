@@ -692,7 +692,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
 //            IntVector states_dad = model->seq_states[dad->id];
 //            states_dad.push_back(aln->STATE_UNKNOWN);
             // precompute information from one tip
-            for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+            for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                 double *lh_node  = partial_lh_node +state*block;
                 double *lh_derv1 = partial_lh_derv1 +state*block;
                 double *lh_derv2 = partial_lh_derv2 +state*block;
@@ -1160,7 +1160,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
 //            IntVector states_dad = model->seq_states[dad->id];
 //            states_dad.push_back(aln->STATE_UNKNOWN);
             // precompute information from one tip
-            for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+            for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                 double *lh_node = partial_lh_node + state*block;
                 double *lh_tip = tip_partial_lh + state*nstates;
                 double *trans_mat_tmp = trans_mat;

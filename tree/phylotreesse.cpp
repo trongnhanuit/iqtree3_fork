@@ -283,7 +283,7 @@ void PhyloTree::computeTipPartialLikelihood() {
                     if (state < nstates) {
                         for (size_t i = 0; i < nstates; i++)
                             partial_lh[i*vector_size+v] = inv_evec[(i*nstates+state)*vector_size+v];
-                    } else if (state == aln->STATE_UNKNOWN) {
+                    } else if (state == static_cast<int>(aln->STATE_UNKNOWN)) {
                         // special treatment for unknown char
                         for (size_t i = 0; i < nstates; i++) {
                             double lh_unknown = 0.0;
@@ -365,7 +365,7 @@ void PhyloTree::computeTipPartialLikelihood() {
     }
 
     // assign tip_partial_lh for all admissible states
-    for (state = 0; state <= aln->STATE_UNKNOWN; state++) {
+    for (state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
         double *state_partial_lh = &tip_partial_lh[state*nstates*nmixtures];
         getModel()->computeTipLikelihood(state, state_partial_lh);
         if (getModel()->useRevKernel()) {
@@ -1502,7 +1502,7 @@ void PhyloTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, PhyloNo
         // best state must exceed its equilibrium frequency!
         if (state_prob[state_best] < params->min_ancestral_prob ||
             state_prob[state_best] <= state_freq[state_best]+MIN_FREQUENCY_DIFF)
-            state_best = aln->STATE_UNKNOWN;
+            state_best = static_cast<int>(aln->STATE_UNKNOWN);
         ptn_ancestral_seq[ptn] = state_best;
     }
 

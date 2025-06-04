@@ -1036,7 +1036,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             if (child->node->isLeaf()) {
                 //vector<int>::iterator it;
 
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *this_partial_lh_leaf = partial_lh_leaf + state*block;
                     VectorClass *echild_ptr = (VectorClass*)echild;
                     for (c = 0; c < ncat_mix; c++) {
@@ -1085,7 +1085,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             // pre compute information for tip
             if (child->node->isLeaf()) {
                 //vector<int>::iterator it;
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *this_partial_lh_leaf = partial_lh_leaf + state*block;
                     double *echild_ptr = echild;
                     for (c = 0; c < ncat_mix; c++) {
@@ -2796,7 +2796,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
             // precompute information from one tip
             if (nstates % VectorClass::size() == 0) {
                 // vectorized version
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *lh_node = partial_lh_node + state*block;
                     double *lh_tip = tip_partial_lh + state*tip_block;
                     double *vc_val_tmp = val;
@@ -2811,7 +2811,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
                 }
             } else {
                 // non-vectorized version
-                for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
+                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
                     double *lh_node = partial_lh_node +state*block;
                     double *val_tmp = val;
                     double *this_tip_partial_lh = tip_partial_lh + state*tip_block;

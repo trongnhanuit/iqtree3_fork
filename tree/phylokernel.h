@@ -1519,7 +1519,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                             }
                             x[state*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
                         }
-                    } else if (state == (*alnit)->STATE_UNKNOWN) {
+                    } else if (state == static_cast<int>((*alnit)->STATE_UNKNOWN)) {
                         for (int j = 0; j < freq; j++, site++) {
                             if (site == NUM_BITS) {
                                 x += nstates*VCSIZE;
@@ -1562,7 +1562,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                             }
                             x[state*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
                         }
-                    } else if (state == (*alnit)->STATE_UNKNOWN) {
+                    } else if (state == static_cast<int>((*alnit)->STATE_UNKNOWN)) {
                         for (int j = 0; j < freq; j++, site++) {
                             if (site == NUM_BITS) {
                                 x += nstates*VCSIZE;
@@ -1596,7 +1596,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                 int state = pat->at(leafid);
                 int freq = pat->frequency;
                 if (aln->seq_type == SEQ_POMO && state >= nstates 
-                    && state < aln->STATE_UNKNOWN) {
+                    && state < static_cast<int>(aln->STATE_UNKNOWN)) {
                     state -= nstates;
                     ASSERT(state < aln->pomo_sampled_states.size());
                     int id1 = aln->pomo_sampled_states[state] & 3;
@@ -1631,7 +1631,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                     }
                     */
                     state = real_state;
-                    ASSERT(state < 4 || state == (*alnit)->STATE_UNKNOWN);
+                    ASSERT(state < 4 || state == static_cast<int>((*alnit)->STATE_UNKNOWN));
 //                    assert(state < nstates);
                 }
                 if (state < (*alnit)->num_states) {
@@ -1642,7 +1642,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                         }
                         x[state*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
                     }
-                } else if (state == (*alnit)->STATE_UNKNOWN) {
+                } else if (state == static_cast<int>((*alnit)->STATE_UNKNOWN)) {
                     for (int j = 0; j < freq; j++, site++) {
                         if (site == NUM_BITS) {
                             x += nstates*VCSIZE;

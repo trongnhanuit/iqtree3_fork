@@ -1450,7 +1450,8 @@ void PhyloTree::initMarginalAncestralState(ostream &out, bool &orig_kernel_nonre
     _pattern_lh_cat_state = newPartialLh();
 
     size_t nptn = getAlnNPattern();
-    size_t nstates = model->num_states;
+    ASSERT(model->num_states >= 0);
+    size_t nstates = static_cast<size_t>(model->num_states);
 
     ptn_ancestral_prob = aligned_alloc<double>(nptn*nstates);
     ptn_ancestral_seq = aligned_alloc<int>(nptn);
@@ -1459,7 +1460,8 @@ void PhyloTree::initMarginalAncestralState(ostream &out, bool &orig_kernel_nonre
 void PhyloTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad,
     double *ptn_ancestral_prob, int *ptn_ancestral_seq) {
     size_t nptn = getAlnNPattern();
-    size_t nstates = model->num_states;
+    ASSERT(model->num_states >= 0);
+    size_t nstates = static_cast<size_t>(model->num_states);
     size_t nstates_vector = nstates * vector_size;
     size_t ncat_mix = (model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures();
     double state_freq[nstates];
@@ -1511,7 +1513,8 @@ void PhyloTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, PhyloNo
 
 void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq) {
     size_t nsites = aln->getNSite();
-    size_t nstates = model->num_states;
+    ASSERT(model->num_states >= 0);
+    size_t nstates = static_cast<size_t>(model->num_states);
     for (size_t site = 0; site < nsites; ++site) {
         int ptn = aln->getPatternID(site);
         out << node->name << "\t" << site+1 << "\t";
@@ -1735,7 +1738,8 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
     }
     
     size_t nptn = aln->getNPattern();
-    size_t nstates = model->num_states;
+    ASSERT(model->num_states >= 0);
+    size_t nstates = static_cast<size_t>(model->num_states);
     size_t nstatesqr = nstates*nstates;
     size_t parent, child;
     double *trans_mat = new double[nstatesqr];
@@ -1882,9 +1886,10 @@ void PhyloTree::computeAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad,
     PhyloNode *node = (PhyloNode*)dad_branch->node;
     if (node->isLeaf())
         return;
-
+    
     size_t nptn = aln->getNPattern();
-    size_t nstates = model->num_states;
+    ASSERT(model->num_states >= 0);
+    size_t nstates = static_cast<size_t>(model->num_states);
 
     int *C_node = C + (node->id-leafNum)*nptn*nstates;
     int *ancestral_seqs_node = ancestral_seqs + (node->id-leafNum)*nptn; 

@@ -46,7 +46,8 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     //    assert(dad_branch->direction != UNDEFINED_DIRECTION);
     
 #ifndef KERNEL_FIX_STATES
-    size_t nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     
     if (node->isLeaf()) {
@@ -609,7 +610,8 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
 #endif
 
 #ifndef KERNEL_FIX_STATES
-    size_t nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     size_t  nstatesqr = nstates*nstates;
     size_t  ncat = site_rate->getNRate();
@@ -1085,7 +1087,8 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
 
     double tree_lh = 0.0;
 #ifndef KERNEL_FIX_STATES
-    size_t nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     size_t nstatesqr = nstates*nstates;
     size_t ncat = site_rate->getNRate();

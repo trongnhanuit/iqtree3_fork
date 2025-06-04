@@ -766,7 +766,8 @@ void PhyloTreeMixlen::computeFuncDerv(double value, double &df, double &ddf) {
     ASSERT((dad_branch->partial_lh_computed & 1) || node->isLeaf());
     ASSERT((node_branch->partial_lh_computed & 1) || dad->isLeaf());
 
-    size_t nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = static_cast<size_t>(aln->num_states);
     size_t ncat = site_rate->getNRate();
     size_t nmixture = model->getNMixtures();
 

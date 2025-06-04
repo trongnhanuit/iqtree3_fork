@@ -364,7 +364,8 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
     double *ptn_ancestral_prob, int *ptn_ancestral_seq)
 {
     size_t nptn = getAlnNPattern();
-    size_t nstates = model->num_states;
+    ASSERT(model->num_states >= 0);
+    size_t nstates = static_cast<size_t>(model->num_states);
     size_t nstates_vector = nstates * vector_size;
     size_t ncat_mix = (model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures();
     //double state_freq[nstates];
@@ -444,13 +445,15 @@ double* PhyloTree::newAncestralProb() {
         size_t total_size = 0;
         for (auto it = stree->begin(); it != stree->end(); it++) {
             size_t nptn = (*it)->getAlnNPattern();
-            size_t nstates = (*it)->model->num_states;
+            ASSERT((*it)->model->num_states >= 0);
+            size_t nstates = static_cast<size_t>((*it)->model->num_states);
             total_size += nptn*nstates;
         }
         return aligned_alloc<double>(total_size);
     } else {
         size_t nptn = getAlnNPattern();
-        size_t nstates = model->num_states;
+        ASSERT(model->num_states >= 0);
+        size_t nstates = static_cast<size_t>(model->num_states);
         return aligned_alloc<double>(nptn*nstates);
     }
 }
@@ -553,7 +556,8 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
             size_t start_pos_seq = 0;
             for (auto it = stree->begin(); it != stree->end(); it++) {
                 size_t nptn = (*it)->getAlnNPattern();
-                size_t nstates = (*it)->model->num_states;
+                ASSERT((*it)->model->num_states >= 0);
+                size_t nstates = static_cast<size_t>((*it)->model->num_states);
                 for (size_t ptn = 0; ptn < nptn; ptn++) {
                     // FIX sCFL: ignore sites if at least one subtree shows all gap/ambiguitity
                     if (first_ancestral_seq[first_id0][start_pos_seq + ptn] >= nstates ||
@@ -581,7 +585,8 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
             }
         } else {
             size_t nptn = getAlnNPattern();
-            size_t nstates = model->num_states;
+            ASSERT(model->num_states >= 0);
+            size_t nstates = static_cast<size_t>(model->num_states);
             for (size_t ptn = 0; ptn < nptn; ptn++) {
                 if (first_ancestral_seq[first_id0][ptn] >= nstates ||
                     first_ancestral_seq[first_id1][ptn] >= nstates ||

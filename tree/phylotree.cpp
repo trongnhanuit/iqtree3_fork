@@ -1427,7 +1427,8 @@ void PhyloTree::computePatternStateFreq(double *ptn_state_freq) {
     size_t nptn = getAlnNPattern();
     size_t nmixture = getModel()->getNMixtures();
     double *ptn_freq = ptn_state_freq;
-    size_t nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = static_cast<size_t>(aln->num_states);
 //    ModelMixture *models = (ModelMixture*)model;
     
     if (params->print_site_state_freq == WSF_POSTERIOR_MEAN) {
@@ -2343,7 +2344,7 @@ double PhyloTree::computeBayesianBranchLength(PhyloNeighbor *dad_branch, PhyloNo
 //        computePartialLikelihood(node_branch, node);
     // now combine likelihood at the branch
     ASSERT(aln->num_states >= 0);
-    size_t nstates = aln->num_states;
+    size_t nstates = static_cast<size_t>(aln->num_states);
     int numCat = site_rate->getNRate();
     size_t block = numCat * nstates;
     size_t nptn = aln->size();
@@ -5612,7 +5613,7 @@ void PhyloTree::printTransMatrices(Node *node, Node *dad) {
     if (!node)
         node = root;
     ASSERT(aln->num_states >= 0);
-    size_t nstates = aln->num_states;
+    size_t nstates = static_cast<size_t>(aln->num_states);
 
     if (dad) {
         double *trans_cat = new double[nstates * nstates];
@@ -5958,7 +5959,8 @@ void PhyloTree::reorientPartialLh(PhyloNeighbor* dad_branch, Node *dad) {
 
 bool PhyloTree::computeTraversalInfo(PhyloNeighbor *dad_branch, PhyloNode *dad, double* &buffer) {
 
-    size_t nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = static_cast<size_t>(aln->num_states);
     PhyloNode *node = (PhyloNode*)dad_branch->node;
 
     if ((dad_branch->partial_lh_computed & 1) || node->isLeaf()) {

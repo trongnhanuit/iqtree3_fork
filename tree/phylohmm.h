@@ -22,15 +22,16 @@ inline double logDotProd(double* ln_x, double* ln_y, int n) {
     size_t i;
     double* w;
     double ans;
+    ASSERT(n >= 0);
     
     w = new double[n];
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < static_cast<size_t>(n); i++) {
         w[i] = ln_x[i] + ln_y[i];
     }
     // find the max
     max = w[0];
     max_i = 0;
-    for (i = 1; i < n; i++) {
+    for (i = 1; i < static_cast<size_t>(n); i++) {
         if (max < w[i]) {
             max = w[i];
             max_i = i;
@@ -42,7 +43,7 @@ inline double logDotProd(double* ln_x, double* ln_y, int n) {
         ans += exp(w[i] - max);
     }
     ans += 1.0;
-    for (i = max_i+1; i < n; i++) {
+    for (i = max_i+1; i < static_cast<size_t>(n); i++) {
         ans += exp(w[i] - max);
     }
     delete[] w;

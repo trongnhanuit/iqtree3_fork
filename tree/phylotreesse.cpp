@@ -259,6 +259,7 @@ void PhyloTree::computeTipPartialLikelihood() {
 //        ModelSet *models = (ModelSet*)model;
         size_t nptn = aln->getNPattern(), max_nptn = ((nptn+vector_size-1)/vector_size)*vector_size, tip_block_size = max_nptn * aln->num_states;
         int nstates = aln->num_states;
+        ASSERT(nstates >= 0);
         size_t nseq = aln->getNSeq();
         ASSERT(vector_size > 0);
         
@@ -281,11 +282,11 @@ void PhyloTree::computeTipPartialLikelihood() {
                         }
                     }
                     if (state < nstates) {
-                        for (size_t i = 0; i < nstates; i++)
+                        for (size_t i = 0; i < static_cast<size_t>(nstates); i++)
                             partial_lh[i*vector_size+v] = inv_evec[(i*nstates+state)*vector_size+v];
                     } else if (state == static_cast<int>(aln->STATE_UNKNOWN)) {
                         // special treatment for unknown char
-                        for (size_t i = 0; i < nstates; i++) {
+                        for (size_t i = 0; i < static_cast<size_t>(nstates); i++) {
                             double lh_unknown = 0.0;
                             for (int x = 0; x < nstates; x++) {
                                 lh_unknown += inv_evec[(i*nstates+x)*vector_size+v];
@@ -304,7 +305,7 @@ void PhyloTree::computeTipPartialLikelihood() {
                         case SEQ_DNA:
                             {
                                 int cstate = state-nstates+1;
-                                for (size_t i = 0; i < nstates; i++) {
+                                for (size_t i = 0; i < static_cast<size_t>(nstates); i++) {
                                     lh_ambiguous = 0.0;
                                     for (int x = 0; x < nstates; x++)
                                         if ((cstate) & (1 << x))
@@ -318,7 +319,7 @@ void PhyloTree::computeTipPartialLikelihood() {
                             //map[(unsigned char)'Z'] = 32+64+19; // Q or E
                             {
                                 int cstate = state-nstates;
-                                for (size_t i = 0; i < nstates; i++) {
+                                for (size_t i = 0; i < static_cast<size_t>(nstates); i++) {
                                     lh_ambiguous = 0.0;
                                     for (int x = 0; x < 11; x++)
                                         if (ambi_aa[cstate] & (1 << x))

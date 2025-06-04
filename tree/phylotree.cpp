@@ -2342,7 +2342,8 @@ double PhyloTree::computeBayesianBranchLength(PhyloNeighbor *dad_branch, PhyloNo
 //    if ((node_branch->partial_lh_computed & 1) == 0)
 //        computePartialLikelihood(node_branch, node);
     // now combine likelihood at the branch
-    int nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = aln->num_states;
     int numCat = site_rate->getNRate();
     size_t block = numCat * nstates;
     size_t nptn = aln->size();
@@ -5610,7 +5611,8 @@ void PhyloTree::randomizeNeighbors(Node *node, Node *dad) {
 void PhyloTree::printTransMatrices(Node *node, Node *dad) {
     if (!node)
         node = root;
-    int nstates = aln->num_states;
+    ASSERT(aln->num_states >= 0);
+    size_t nstates = aln->num_states;
 
     if (dad) {
         double *trans_cat = new double[nstates * nstates];

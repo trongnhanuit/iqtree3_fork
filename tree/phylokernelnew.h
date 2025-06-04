@@ -2854,7 +2854,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
 
             // first compute partial_lh
             for (vector<TraversalInfo>::iterator it = traversal_info.begin(); it != traversal_info.end(); it++) {
-                computePartialLikelihood(*it, ptn_lower, ptn_upper, packet_id);
+                computePartialLikelihood(*it, ptn_lower, ptn_upper, static_cast<int>(packet_id));
             }
             double *vec_tip = buffer_partial_lh_ptr + block*VectorClass::size() * packet_id;
 
@@ -3018,7 +3018,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
 
             // first compute partial_lh
             for (auto it = traversal_info.begin(); it != traversal_info.end(); it++) {
-                computePartialLikelihood(*it, ptn_lower, ptn_upper, packet_id);
+                computePartialLikelihood(*it, ptn_lower, ptn_upper, static_cast<int>(packet_id));
             }
 
             VectorClass vc_tree_lh(0.0);

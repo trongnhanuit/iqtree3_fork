@@ -733,7 +733,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
             size_t ptn_upper = limits[packet_id+1];
             // first compute partial_lh
             for (auto it = traversal_info.begin(); it != traversal_info.end(); it++) {
-                computePartialLikelihood(*it, ptn_lower, ptn_upper, packet_id);
+                computePartialLikelihood(*it, ptn_lower, ptn_upper, static_cast<int>(packet_id));
             }
             double *vec_tip = buffer_partial_lh_ptr + block*3*VectorClass::size() * packet_id;
             auto dadStateRow  = this->getConvertedSequenceByNumber(dad->id);
@@ -886,7 +886,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
             size_t ptn_upper = limits[packet_id+1];
             // first compute partial_lh
             for (auto it = traversal_info.begin(); it != traversal_info.end(); it++) {
-                computePartialLikelihood(*it, ptn_lower, ptn_upper, packet_id);
+                computePartialLikelihood(*it, ptn_lower, ptn_upper, static_cast<int>(packet_id));
             }
             for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {
                 VectorClass lh_ptn(0.0), df_ptn(0.0), ddf_ptn(0.0);
@@ -1189,7 +1189,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
             size_t ptn_upper = limits[packet_id+1];
             // first compute partial_lh
             for (auto it = traversal_info.begin(); it != traversal_info.end(); it++) {
-                computePartialLikelihood(*it, ptn_lower, ptn_upper, packet_id);
+                computePartialLikelihood(*it, ptn_lower, ptn_upper, static_cast<int>(packet_id));
             }
             // reset memory for _pattern_lh_cat
             memset(_pattern_lh_cat+ptn_lower*ncat_mix, 0, sizeof(double)*(ptn_upper-ptn_lower)*ncat_mix);
@@ -1339,7 +1339,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
             size_t ptn_upper = limits[packet_id+1];
             // first compute partial_lh
             for (vector<TraversalInfo>::iterator it = traversal_info.begin(); it != traversal_info.end(); it++)
-                computePartialLikelihood(*it, ptn_lower, ptn_upper, packet_id);
+                computePartialLikelihood(*it, ptn_lower, ptn_upper, static_cast<int>(packet_id));
 
             // reset memory for _pattern_lh_cat
             memset(_pattern_lh_cat+ptn_lower*ncat_mix, 0, (ptn_upper-ptn_lower)*ncat_mix*sizeof(double));

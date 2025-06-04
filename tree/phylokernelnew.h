@@ -944,7 +944,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
                 double mat[nstatesqr];
                 for (c = 0; c < ncat_mix; c++) {
                     double len_child = site_rate->getRate(static_cast<int>(c%ncat)) * child->length;
-                    model_factory->computeTransMatrix(len_child, mat, c/denom);
+                    model_factory->computeTransMatrix(len_child, mat, static_cast<int>(c/denom));
                     double *echild_ptr = &echild[c*nstatesqr];
                     for (i = 0; i < nstates; i++) {
                         for (x = 0; x < nstates; x++)
@@ -955,7 +955,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             } else {
                 for (c = 0; c < ncat_mix; c++) {
                     double len_child = site_rate->getRate(static_cast<int>(c%ncat)) * child->length;
-                    model_factory->computeTransMatrix(len_child, &echild[c*nstatesqr], c/denom);
+                    model_factory->computeTransMatrix(len_child, &echild[c*nstatesqr], static_cast<int>(c/denom));
                 }
             }
 

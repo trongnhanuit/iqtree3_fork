@@ -681,7 +681,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
                 double *lh_derv2 = partial_lh_derv2 + c*nstates;
                 size_t m = c/denom;
                 model->getStateFrequency(lh_node, m);
-                double prop = site_rate->getProp(c%ncat) * model->getMixtureWeight(m);
+                double prop = site_rate->getProp(static_cast<int>(c%ncat)) * model->getMixtureWeight(m);
                 for (size_t i = 0; i < nstates; i++) {
                     lh_node[i] *= prop;
                     lh_derv1[i] *= prop;
@@ -1152,7 +1152,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
                 double *lh_node = partial_lh_node + c*nstates;
                 size_t m = c/denom;
                 model->getStateFrequency(lh_node, m);
-                double prop = site_rate->getProp(c%ncat) * model->getMixtureWeight(m);
+                double prop = site_rate->getProp(static_cast<int>(c%ncat)) * model->getMixtureWeight(m);
                 for (size_t i = 0; i < nstates; i++)
                     lh_node[i] *= prop;
             }

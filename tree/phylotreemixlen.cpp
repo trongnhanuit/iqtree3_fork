@@ -827,7 +827,7 @@ void PhyloTreeMixlen::computeFuncDerv(double value, double &df, double &ddf) {
     double *val1 = new double[statecat];
     double *val2 = new double[statecat];
     for (size_t c = 0; c < ncat; c++) {
-        double prop = site_rate->getProp(c);
+        double prop = site_rate->getProp(static_cast<int>(c));
         for (size_t i = 0; i < nstates; i++) {
             double cof = eval[cur_mixture*nstates+i]*site_rate->getRate(static_cast<int>(c));
             // length for heterotachy model

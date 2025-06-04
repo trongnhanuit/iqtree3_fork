@@ -2314,7 +2314,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; c++) {
             cat_rate[c] = site_rate->getRate(static_cast<int>(c));
-            cat_prop[c] = site_rate->getProp(c);
+            cat_prop[c] = site_rate->getProp(static_cast<int>(c));
         }
     } else {
         val0 = buffer_partial_lh_ptr;
@@ -2724,7 +2724,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; c++) {
             cat_length[c] = site_rate->getRate(static_cast<int>(c)) * dad_branch->length;
-            cat_prop[c] = site_rate->getProp(c);
+            cat_prop[c] = site_rate->getProp(static_cast<int>(c));
         }
     } else {
         val = buffer_partial_lh_ptr;
@@ -3322,7 +3322,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; ++c) {
             cat_length[c] = site_rate->getRate(static_cast<int>(c)) * current_it->length;
-            cat_prop[c] = site_rate->getProp(c);
+            cat_prop[c] = site_rate->getProp(static_cast<int>(c));
         }
     } else {
         val0 = buffer_partial_lh;
@@ -3564,7 +3564,7 @@ void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; c++) {
             cat_rate[c] = site_rate->getRate(static_cast<int>(c));
-            cat_prop[c] = site_rate->getProp(c);
+            cat_prop[c] = site_rate->getProp(static_cast<int>(c));
         }
     } else {
         val0 = buffer_partial_lh_ptr;

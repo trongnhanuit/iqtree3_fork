@@ -1517,7 +1517,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                                 x += nstates*VCSIZE;
                                 site = 0;
                             }
-                            x[state*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
+                            x[static_cast<size_t>(state)*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
                         }
                     } else if (state == static_cast<int>((*alnit)->STATE_UNKNOWN)) {
                         for (int j = 0; j < freq; j++, site++) {
@@ -1560,7 +1560,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                                 x += nstates*VCSIZE;
                                 site = 0;
                             }
-                            x[state*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
+                            x[static_cast<size_t>(state)*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
                         }
                     } else if (state == static_cast<int>((*alnit)->STATE_UNKNOWN)) {
                         for (int j = 0; j < freq; j++, site++) {
@@ -1584,8 +1584,8 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                             UINT *p = x + ((site/UINT_BITS));
                             UINT bit1 = (1 << (site%UINT_BITS));
 
-                            p[ambi_aa[state]*VCSIZE] |= bit1;
-                            p[ambi_aa[state+1]*VCSIZE] |= bit1;
+                            p[ambi_aa[static_cast<size_t>(state)]*VCSIZE] |= bit1;
+                            p[ambi_aa[static_cast<size_t>(state)+1]*VCSIZE] |= bit1;
                         }
                     }
                 }
@@ -1599,10 +1599,10 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                     && state < static_cast<int>(aln->STATE_UNKNOWN)) {
                     state -= nstates;
                     ASSERT(state < aln->pomo_sampled_states.size());
-                    int id1 = aln->pomo_sampled_states[state] & 3;
-                    int id2 = (aln->pomo_sampled_states[state] >> 16) & 3;
-                    int value1 = (aln->pomo_sampled_states[state] >> 2) & 16383;
-                    int value2 = aln->pomo_sampled_states[state] >> 18;
+                    int id1 = aln->pomo_sampled_states[static_cast<size_t>(state)] & 3;
+                    int id2 = (aln->pomo_sampled_states[static_cast<size_t>(state)] >> 16) & 3;
+                    int value1 = (aln->pomo_sampled_states[static_cast<size_t>(state)] >> 2) & 16383;
+                    int value2 = aln->pomo_sampled_states[static_cast<size_t>(state)] >> 18;
                     double weight1 = ((double)value1)/(value1+value2);
 //                    int N = aln->virtual_pop_size;
 //                    int M = value1 + value2;
@@ -1640,7 +1640,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                             x += nstates*VCSIZE;
                             site = 0;
                         }
-                        x[state*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
+                        x[static_cast<size_t>(state)*VCSIZE + site/UINT_BITS] |= (1 << (site % UINT_BITS));
                     }
                 } else if (state == static_cast<int>((*alnit)->STATE_UNKNOWN)) {
                     for (int j = 0; j < freq; j++, site++) {

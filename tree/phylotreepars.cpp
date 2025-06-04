@@ -123,8 +123,8 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
                         for (int j = 0; j < freq; j++, site++) {
                             UINT *p = dad_branch->partial_pars+((site/UINT_BITS)*nstates);
                             UINT bit1 = (1 << (site%UINT_BITS));
-                            p[ambi_aa[state]] |= bit1;
-                            p[ambi_aa[state+1]] |= bit1;
+                            p[ambi_aa[static_cast<size_t>(state)]] |= bit1;
+                            p[ambi_aa[static_cast<size_t>(state)+1]] |= bit1;
                         }
                     }
                 }
@@ -373,14 +373,14 @@ int PhyloTree::setParsimonyBranchLengths() {
         UINT w = x[0] & y[0];
         int state;
         for (state = 1; state < nstates; state++) {
-            w |= x[state] & y[state];
+            w |= x[static_cast<size_t>(state)] & y[static_cast<size_t>(state)];
         }
         UINT bit = 1;
         for (int s = 0; s < UINT_BITS && real_site < aln->num_parsimony_sites; s++, bit = bit << 1, real_site++)
         if (w & bit) {
             // intersection is non-empty
             for (state = 0; state < nstates; state++)
-                if ((x[state] & bit) && (y[state] & bit)) {
+                if ((x[static_cast<size_t>(state)] & bit) && (y[static_cast<size_t>(state)] & bit)) {
                     // assign the first state in the intersection
                     sequences[node->id][real_site] = sequences[dad->id][real_site] = state;
                     break;
@@ -389,13 +389,13 @@ int PhyloTree::setParsimonyBranchLengths() {
             // intersection is empty
             subst++;
             for (state = 0; state < nstates; state++)
-                if (x[state] & bit) {
+                if (x[static_cast<size_t>(state)] & bit) {
                     // assign the first admissible state
                     sequences[node->id][real_site] = state;
                     break;
                 }
             for (state = 0; state < nstates; state++)
-                if (y[state] & bit) {
+                if (y[static_cast<size_t>(state)] & bit) {
                     // assign the first admissible state
                     sequences[dad->id][real_site] = state;
                     break;
@@ -441,7 +441,7 @@ int PhyloTree::setParsimonyBranchLengths() {
                     // different state from dad
                     subst++;
                     for (state = 0; state < nstates; state++)
-                        if (x[state] & bit) {
+                        if (x[static_cast<size_t>(state)] & bit) {
                             // assign the first admissible state
                             sequences[node->id][real_site] = state;
                             break;
@@ -594,7 +594,7 @@ void PhyloTree::computeTipPartialParsimony() {
         case SEQ_DNA:
             for (state = 4; state < 18; state++) {
                 int cstate = state-nstates+1;
-                this_tip_partial_pars = &tip_partial_pars[state*nstates];
+                this_tip_partial_pars = &tip_partial_pars[static_cast<size_t>(state*nstates)];
                 for (i = 0; i < nstates; i++) {
                     if ((cstate) & (1 << i))
                         this_tip_partial_pars[i] = 0;
@@ -611,12 +611,12 @@ void PhyloTree::computeTipPartialParsimony() {
             for (state = 0; state < sizeof(ambi_aa)/sizeof(int); state++) {
                 this_tip_partial_pars = &tip_partial_pars[(state+20)*nstates];
                 for (i = 0; i < nstates; i++) {
-                    if (ambi_aa[state] & (1 << i))
+                    if (ambi_aa[static_cast<size_t>(state)] & (1 << i))
                         this_tip_partial_pars[i] = 0;
                     else {
                         this_tip_partial_pars[i] = UINT_MAX;
                         for (int j = 0; j < nstates; j++)
-                            if (ambi_aa[state] & (1 << j))
+                            if (ambi_aa[static_cast<size_t>(state)] & (1 << j))
                                 this_tip_partial_pars[i] = min(this_tip_partial_pars[i], cost_matrix[i*nstates+j]);
                     }
                 }

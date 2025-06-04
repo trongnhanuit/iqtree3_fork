@@ -367,7 +367,7 @@ void PhyloTree::computeTipPartialLikelihood() {
 
     // assign tip_partial_lh for all admissible states
     for (state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
-        double *state_partial_lh = &tip_partial_lh[state*nstates*nmixtures];
+        double *state_partial_lh = &tip_partial_lh[static_cast<size_t>(state)*nstates*nmixtures];
         getModel()->computeTipLikelihood(state, state_partial_lh);
         if (getModel()->useRevKernel()) {
             // transform to inner product of tip likelihood and inverse-eigenvector
@@ -1804,7 +1804,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
                     for (parent = 0; parent < nstates; parent++) {
                         double sumlh = 0.0;                
                         for (child = 0; child < nstates; child++) {
-                            if (ambi_aa[state] & (1 << child))
+                            if (ambi_aa[static_cast<size_t>(state)] & (1 << child))
                                 sumlh += trans_leaf[parent*nstates+child];
                         }
                         this_lh_leaf[parent] = log(sumlh);

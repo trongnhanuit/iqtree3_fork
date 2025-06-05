@@ -5,6 +5,8 @@
 #include "MPIHelper.h"
 #include "timeutil.h"
 
+using namespace std;
+
 /**
  *  Initialize the single getInstance of MPIHelper
  */

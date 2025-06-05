@@ -25,8 +25,6 @@
 #include "utils/tools.h"
 #include "split.h"
 
-using namespace std;
-
 class SplitGraph;
 
 #ifdef USE_HASH_MAP

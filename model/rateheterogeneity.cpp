@@ -21,6 +21,7 @@
 #include "tree/phylotree.h"
 #include "rateheterogeneity.h"
 
+using namespace std;
 
 RateHeterogeneity::RateHeterogeneity()
  : Optimization(), CheckpointFactory()

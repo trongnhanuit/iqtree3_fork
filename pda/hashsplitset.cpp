@@ -20,6 +20,8 @@
 #include "hashsplitset.h"
 #include "splitgraph.h"
 
+using namespace std;
+
 Split *SplitIntMap::findSplit(Split *sp) {
     iterator ass_it = find(sp);
     if (ass_it != end()) {

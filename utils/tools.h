@@ -125,8 +125,6 @@ inline void _my_assert(const char* expression, const char *func, const char* fil
 	#include <set>
 #endif
 
-using namespace std;
-
 
 #if	defined(USE_HASH_MAP) && GCC_VERSION < 40300 && !defined(_MSC_VER) && !defined(__clang__)
 /*
@@ -237,7 +235,7 @@ public:
 
         // calculate the averages of arrays x and y
         double xa = 0, ya = 0;
-        for (size_t i = 0; i < n; i++) {
+        for (size_t i = 0; i < static_cast<size_t>(n); i++) {
             xa += x[i];
             ya += y[i];
         }
@@ -246,7 +244,7 @@ public:
 
         // calculate auxiliary sums
         double xx = 0, yy = 0, xy = 0;
-        for (size_t i = 0; i < n; i++) {
+        for (size_t i = 0; i < static_cast<size_t>(n); i++) {
             double tmpx = x[i] - xa, tmpy = y[i] - ya;
             xx += tmpx * tmpx;
             yy += tmpy * tmpy;
@@ -3656,7 +3654,7 @@ void quicksort(T1* arr, int left, int right, T2* arr2 = nullptr) {
 */
 inline uint32_t popcount_lauradoux(unsigned *buf, int n) {
   const uint64_t* data = (uint64_t*) buf;
-  uint32_t size = n/(sizeof(uint64_t)/sizeof(int));
+  uint32_t size = static_cast<unsigned long>(n)/(sizeof(uint64_t)/sizeof(int));
   const uint64_t m1  = (0x5555555555555555ULL);
   const uint64_t m2  = (0x3333333333333333ULL);
   const uint64_t m4  = (0x0F0F0F0F0F0F0F0FULL);

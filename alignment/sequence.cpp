@@ -1,5 +1,7 @@
 #include "sequence.h"
 
+using namespace std;
+ 
 Sequence::Sequence() {
     nums_children_done_simulation.resize(1);
     sequence_chunks.resize(1);

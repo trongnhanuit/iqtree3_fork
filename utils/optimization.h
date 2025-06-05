@@ -211,7 +211,7 @@ public:
     virtual double optimGradient(int nvar, double *vars, double *gradient);
     
 
-    ~Optimization();
+    virtual ~Optimization();
 
 	/**
 		original numerical recipes method

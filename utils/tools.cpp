@@ -59,6 +59,8 @@ extern void printCopyright(ostream &out);
 #include <sstream>
 #endif
 
+using namespace std;
+
 /********************************************************
         Miscellaneous
  ********************************************************/

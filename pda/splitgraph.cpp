@@ -28,6 +28,7 @@
 #include "tree/mtree.h"
 #include "tree/mtreeset.h"
 
+using namespace std;
 
 bool compareSplit(Split* sp1, Split* sp2) {
     if (sp1->countTaxa() != sp2->countTaxa())

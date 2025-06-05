@@ -14,6 +14,8 @@
 const char* CKP_HEADER =     "--- # IQ-TREE Checkpoint ver >= 1.6";
 const char* CKP_HEADER_OLD = "--- # IQ-TREE Checkpoint";
 
+using namespace std;
+
 Checkpoint::Checkpoint() {
 	filename = "";
     prev_dump_time = 0;

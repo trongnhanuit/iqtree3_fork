@@ -18,8 +18,6 @@
 #include "utils/checkpoint.h"
 #include "phylo-yaml/statespace.h"
 
-using namespace std;
-
 const char OPEN_BRACKET = '{';
 const char CLOSE_BRACKET = '}';
 
@@ -382,7 +380,7 @@ public:
      * @return memory size required in bytes
      */
     virtual uint64_t getMemoryRequired() {
-    	return num_states*sizeof(double);
+    	return static_cast<size_t>(num_states)*sizeof(double);
     }
     
     /** @return true if model is a mixture model and it's fused with site_rate */

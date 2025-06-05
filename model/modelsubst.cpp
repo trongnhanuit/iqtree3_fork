@@ -12,6 +12,8 @@
 #include "modelsubst.h"
 #include "utils/tools.h"
 
+using namespace std;
+
 ModelSubst::ModelSubst(int nstates) : Optimization(), CheckpointFactory()
 {
 	num_states = nstates;

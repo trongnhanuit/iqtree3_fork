@@ -44,7 +44,7 @@ MSetsBlock::~MSetsBlock()
 
 void MSetsBlock::Report(ostream &out)
 {
-	int nsets = getNSets();
+	size_t nsets = getNSets();
 	out << "Number of sets: " << nsets << endl;
 	for (TaxaSetNameVector::iterator i = sets.begin(); i != sets.end(); i++) {
 		out << "Set " << (*i)->name << " contains: ";
@@ -313,6 +313,6 @@ CharSet *MSetsBlock::findCharSet(string name) {
 
 int MSetsBlock::findArea(string &name) {
 	for (size_t i = 0; i < sets.size(); i++)
-		if (sets[i]->name == name) return i;
+		if (sets[i]->name == name) return static_cast<int>(i);
 	return -1;
 }

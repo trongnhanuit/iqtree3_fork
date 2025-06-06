@@ -108,7 +108,9 @@ void IQTree::saveUFBoot(Checkpoint *checkpoint) {
         CKP_SAVE(sample_end);
         checkpoint->startList(boot_samples.size());
         checkpoint->setListElement(sample_start-1);
-        for (int id = sample_start; id != sample_end; id++) {
+        ASSERT(sample_start >= 0);
+        ASSERT(sample_end >= 0);
+        for (size_t id = static_cast<size_t>(sample_start); id != static_cast<size_t>(sample_end); id++) {
             checkpoint->addListElement();
             stringstream ss;
             ss.precision(10);
@@ -156,13 +158,16 @@ void IQTree::saveCheckpoint() {
 void IQTree::restoreUFBoot(Checkpoint *checkpoint) {
     checkpoint->startStruct("UFBoot");
     // save boot_samples and boot_trees
-    int id;
+    // NHANLT: id is always >= 0: starting at sample_start (non-negative) and increasing
+    size_t id;
     checkpoint->startList(params->gbo_replicates);
     int sample_start, sample_end;
     CKP_RESTORE(sample_start);
     CKP_RESTORE(sample_end);
     checkpoint->setListElement(sample_start-1);
-    for (id = sample_start; id != sample_end; id++) {
+    ASSERT(sample_start >= 0);
+    ASSERT(sample_end >= 0);
+    for (id = static_cast<size_t>(sample_start); id != static_cast<size_t>(sample_end); id++) {
         checkpoint->addListElement();
         string str;
         ASSERT(checkpoint->getString("", str));
@@ -184,13 +189,15 @@ void IQTree::restoreCheckpoint() {
 //        CKP_RESTORE(max_candidate_trees);
         CKP_RESTORE(logl_cutoff);
         // save boot_samples and boot_trees
-        int id = 0;
+        
+        // NHANLT: id is always >= 0: starting at 0 and increasing
+        size_t id = 0;
         checkpoint->startList(params->gbo_replicates);
         boot_trees.resize(params->gbo_replicates);
         boot_logl.resize(params->gbo_replicates);
         boot_orig_logl.resize(params->gbo_replicates);
         boot_counts.resize(params->gbo_replicates);
-        for (id = 0; id < params->gbo_replicates; id++) {
+        for (id = 0; id < static_cast<size_t>(params->gbo_replicates); id++) {
             checkpoint->addListElement();
             string str;
             ASSERT(checkpoint->getString("", str));
@@ -203,7 +210,7 @@ void IQTree::restoreCheckpoint() {
         checkpoint->endStruct();
 
         // boot_splits
-        for (id = 0; id < boot_splits_size; id++) {
+        for (id = 0; id < static_cast<size_t>(boot_splits_size); id++) {
             checkpoint->startStruct("UFBootSplit" + convertIntToString(id));
             SplitGraph *sg = new SplitGraph;
             sg->createBlocks();
@@ -1146,7 +1153,7 @@ void IQTree::increaseKDelete() {
 //}
 
 RepresentLeafSet* IQTree::findRepresentLeaves(vector<RepresentLeafSet*> &leaves_vec, int nei_id, PhyloNode *dad) {
-    PhyloNode *node = (PhyloNode*) (dad->neighbors[nei_id]->node);
+    PhyloNode *node = (PhyloNode*) (dad->neighbors[static_cast<size_t>(nei_id)]->node);
     int set_id = dad->id * 3 + nei_id;
     if (leaves_vec[set_id]) {
         return leaves_vec[set_id];
@@ -1294,7 +1301,7 @@ void IQTree::deleteLeaves(PhyloNodeVector &del_leaves) {
     }
     // now try to randomly delete some taxa of the probability of p_delete
     for (i = 0; i < num_delete;) {
-        int id = random_int(taxa.size());
+        size_t id = static_cast<size_t>(random_int(taxa.size()));
         if (!taxa[id]) {
             continue;
         } else {
@@ -1316,11 +1323,11 @@ void IQTree::deleteLeaves(PhyloNodeVector &del_leaves) {
 
 int IQTree::assessQuartet(Node *leaf0, Node *leaf1, Node *leaf2, Node *del_leaf) {
     ASSERT(dist_matrix);
-    size_t nseq = aln->getNSeq();
+    int nseq = aln->getNSeq();
     //int id0 = leaf0->id, id1 = leaf1->id, id2 = leaf2->id;
-    double dist0 = dist_matrix[leaf0->id * nseq + del_leaf->id] + dist_matrix[leaf1->id * nseq + leaf2->id];
-    double dist1 = dist_matrix[leaf1->id * nseq + del_leaf->id] + dist_matrix[leaf0->id * nseq + leaf2->id];
-    double dist2 = dist_matrix[leaf2->id * nseq + del_leaf->id] + dist_matrix[leaf0->id * nseq + leaf1->id];
+    double dist0 = dist_matrix[static_cast<size_t>(leaf0->id * nseq + del_leaf->id)] + dist_matrix[static_cast<size_t>(leaf1->id * nseq + leaf2->id)];
+    double dist1 = dist_matrix[static_cast<size_t>(leaf1->id * nseq + del_leaf->id)] + dist_matrix[static_cast<size_t>(leaf0->id * nseq + leaf2->id)];
+    double dist2 = dist_matrix[static_cast<size_t>(leaf2->id * nseq + del_leaf->id)] + dist_matrix[static_cast<size_t>(leaf0->id * nseq + leaf1->id)];
     if (dist0 < dist1 && dist0 < dist2) {
         return 0;
     }
@@ -1333,10 +1340,10 @@ int IQTree::assessQuartet(Node *leaf0, Node *leaf1, Node *leaf2, Node *del_leaf)
 int IQTree::assessQuartetParsimony(Node *leaf0, Node *leaf1, Node *leaf2, Node *del_leaf) {
     int score[3] = { 0, 0, 0 };
     for (Alignment::iterator it = aln->begin(); it != aln->end(); it++) {
-        char ch0 = (*it)[leaf0->id];
-        char ch1 = (*it)[leaf1->id];
-        char ch2 = (*it)[leaf2->id];
-        char chd = (*it)[del_leaf->id];
+        char ch0 = (*it)[static_cast<size_t>(leaf0->id)];
+        char ch1 = (*it)[static_cast<size_t>(leaf1->id)];
+        char ch2 = (*it)[static_cast<size_t>(leaf2->id)];
+        char chd = (*it)[static_cast<size_t>(del_leaf->id)];
         if (ch0 >= aln->num_states || ch1 >= aln->num_states || ch2 >= aln->num_states || chd >= aln->num_states) {
             continue;
         }
@@ -1451,7 +1458,7 @@ void IQTree::assessQuartets(vector<RepresentLeafSet*> &leaves_vec, PhyloNode *cu
                 } else {
                     best_id = assessQuartetParsimony((*i0)->leaf, (*i1)->leaf, (*i2)->leaf, del_leaf);
                 }
-                bonus[best_id] += 1.0;
+                bonus[static_cast<size_t>(best_id)] += 1.0;
             }
         }
     }
@@ -1528,7 +1535,7 @@ void IQTree::reinsertLeaves(PhyloNodeVector &del_leaves) {
         if (verbose_mode >= VB_DEBUG)
             cout << "Best bonus " << best_bonus << " " << best_nodes[0]->id << " " << best_dads[0]->id << endl;
         ASSERT(best_nodes.size() == best_dads.size());
-        int node_id = random_int(best_nodes.size());
+        size_t node_id = static_cast<size_t>(random_int(best_nodes.size()));
         if (best_nodes.size() > 1 && verbose_mode >= VB_DEBUG)
             cout << best_nodes.size() << " branches show the same best bonus, branch nr. " << node_id << " is chosen"
                     << endl;
@@ -4276,7 +4283,8 @@ void IQTree::computeRootstrapUnrooted(MTreeSet &trees, const char* outgroup, boo
                 other.invert();
             }
             // count how often both splits occur in the tree set
-            int treeid = 0;
+            // NHANLT: treeid is always >= 0: starting at 0 and increasing
+            size_t treeid = 0;
             for (auto splits : ssvec) {
                 if (monophyletic[treeid] && splits.findSplit(sg[i]) && splits.findSplit(&other)) {
                     rootstrap++;
@@ -4305,7 +4313,8 @@ void IQTree::computeRootstrapUnrooted(MTreeSet &trees, const char* outgroup, boo
                     right = _getSplit(branch.second, (*it)->node);
             }
             // count how often both splits occur in the tree set
-            int treeid = 0;
+            // NHANLT: treeid is always >= 0: starting at 0 and increasing
+            size_t treeid = 0;
             if (left != nullptr && right != nullptr)
             for (auto splits : ssvec) {
                 if (monophyletic[treeid] && splits.findSplit(left) && splits.findSplit(right)) {

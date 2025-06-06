@@ -906,9 +906,9 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
 
     size_t c, i, x;
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
-    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : static_cast<size_t>(ncat*model->getNMixtures());
+    size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
     size_t block = nstates * ncat_mix;
-    size_t tip_block = nstates * model->getNMixtures();
+    size_t tip_block = nstates * static_cast<size_t>(model->getNMixtures());
     size_t cat_id[ncat_mix], mix_addr_nstates[ncat_mix], mix_addr[ncat_mix];
     size_t mix_addr_nstates_malign[ncat_mix], mix_addr_malign[ncat_mix];
     size_t denom = (model_factory->fused_mix_rate) ? 1 : ncat;
@@ -1037,7 +1037,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             if (child->node->isLeaf()) {
                 //vector<int>::iterator it;
 
-                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
+                for (size_t state = 0; state <= static_cast<size_t>(aln->STATE_UNKNOWN); state++) {
                     double *this_partial_lh_leaf = partial_lh_leaf + state*block;
                     VectorClass *echild_ptr = (VectorClass*)echild;
                     for (c = 0; c < ncat_mix; c++) {
@@ -1086,7 +1086,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
             // pre compute information for tip
             if (child->node->isLeaf()) {
                 //vector<int>::iterator it;
-                for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
+                for (size_t state = 0; state <= static_cast<size_t>(aln->STATE_UNKNOWN); state++) {
                     double *this_partial_lh_leaf = partial_lh_leaf + state*block;
                     double *echild_ptr = echild;
                     for (c = 0; c < ncat_mix; c++) {
@@ -2074,7 +2074,7 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
     size_t ncat = static_cast<size_t>(site_rate->getNRate());
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
     size_t block = ncat_mix * nstates;
-    size_t tip_block = nstates * model->getNMixtures();
+    size_t tip_block = nstates * static_cast<size_t>(model->getNMixtures());
     size_t mix_addr_nstates[ncat_mix], mix_addr[ncat_mix];
     size_t denom = (model_factory->fused_mix_rate) ? 1 : ncat;
     for (size_t c = 0; c < ncat_mix; c++) {
@@ -2695,7 +2695,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
     size_t ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
 
     size_t block = ncat_mix * nstates;
-    size_t tip_block = nstates * model->getNMixtures();
+    size_t tip_block = nstates * static_cast<size_t>(model->getNMixtures());
     size_t orig_nptn = aln->size();
     size_t max_orig_nptn = roundUpToMultiple(orig_nptn, VectorClass::size());
     size_t nptn = max_orig_nptn+model_factory->unobserved_ptns.size();

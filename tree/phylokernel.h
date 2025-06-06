@@ -2041,7 +2041,7 @@ int PhyloTree::computeParsimonyBranchSankoffSIMD(PhyloNeighbor *dad_branch, Phyl
         for (size_t ptn = 0; ptn < aln->ordered_pattern.size(); ptn+=VectorClass::size()){
             int ptn_start_index = ptn * nstates;
             for (size_t  i = 0; i < VectorClass::size(); i++) {
-                UINT *node_branch_ptr = &tip_partial_pars[aln->ordered_pattern[ptn+i][dad->id]*static_cast<size_t>(nstates)];
+                UINT *node_branch_ptr = &tip_partial_pars[aln->ordered_pattern[ptn+i][static_cast<size_t>(dad->id)]*static_cast<size_t>(nstates)];
                 UINT *tip_buffer_ptr = (UINT*)tip_buffer + i;
                 for (size_t j = 0; j < static_cast<size_t>(nstates); j++, tip_buffer_ptr += VectorClass::size()) {
                     *tip_buffer_ptr = node_branch_ptr[j];

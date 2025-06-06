@@ -1510,8 +1510,8 @@ void PhyloSuperTreePlen::mapBranchLen()
 		NodeVector nodes1_sub, nodes2_sub;
 		at(part)->getBranches(nodes1_sub, nodes2_sub);
 		for(size_t j = 0; j<nodes1_sub.size();j++){
-			nodes1_sub[j]->findNeighbor(nodes2_sub[j])->length = checkVAL[nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id];
-			nodes2_sub[j]->findNeighbor(nodes1_sub[j])->length = checkVAL[nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id];
+			nodes1_sub[j]->findNeighbor(nodes2_sub[j])->length = checkVAL[static_cast<size_t>(nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id)];
+			nodes2_sub[j]->findNeighbor(nodes1_sub[j])->length = checkVAL[static_cast<size_t>(nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id)];
 		}
 	}
 	delete [] checkVAL;
@@ -1532,8 +1532,8 @@ void PhyloSuperTreePlen::mapBranchLen(int part)
     NodeVector nodes1_sub, nodes2_sub;
     at(part)->getBranches(nodes1_sub, nodes2_sub);
     for(size_t j = 0; j<nodes1_sub.size();j++){
-        nodes1_sub[j]->findNeighbor(nodes2_sub[j])->length = checkVAL[nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id];
-        nodes2_sub[j]->findNeighbor(nodes1_sub[j])->length = checkVAL[nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id];
+        nodes1_sub[j]->findNeighbor(nodes2_sub[j])->length = checkVAL[static_cast<size_t>(nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id)];
+        nodes2_sub[j]->findNeighbor(nodes1_sub[j])->length = checkVAL[static_cast<size_t>(nodes1_sub[j]->findNeighbor(nodes2_sub[j])->id)];
     }
 	delete [] checkVAL;
 }

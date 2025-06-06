@@ -1835,7 +1835,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
                 double *lh_leaf = lh_leaves+leafid*nstates*(aln->STATE_UNKNOWN+1); 
                 // external node
                 int state_child;
-                state_child = (aln->at(ptn))[(*it)->node->id];
+                state_child = (aln->at(ptn))[static_cast<size_t>((*it)->node->id)];
                 double *child_lh = lh_leaf + state_child*nstates;
                 for (child = 0; child < nstates; child++)
                     sumlh[child] += child_lh[child];

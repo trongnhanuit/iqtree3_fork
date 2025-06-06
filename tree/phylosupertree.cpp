@@ -469,7 +469,7 @@ void PhyloSuperTree::linkTree(int part, NodeVector &part_taxa, SuperNode *node, 
 	}
 	if (node->isLeaf()) {
 		ASSERT(dad);
-		PhyloNode *node_part = (PhyloNode*)part_taxa[node->id];
+		PhyloNode *node_part = (PhyloNode*)part_taxa[static_cast<size_t>(node->id)];
 		if (node_part) {
 			PhyloNode *dad_part = (PhyloNode*)node_part->neighbors[0]->node;
 			ASSERT(node_part->isLeaf());
@@ -1180,17 +1180,17 @@ void PhyloSuperTree::computeBranchLengths() {
 		for (i = 0; i < nodes1.size(); i++) {
 			PhyloNeighbor *nei1 = neighbors1[i]->link_neighbors[part];
 			if (!nei1) continue;
-			brfreq[nei1->id]++;
+			brfreq[static_cast<size_t>(nei1->id)]++;
 		}
 		for (i = 0; i < nodes1.size(); i++) {
 			PhyloNeighbor *nei1 = neighbors1[i]->link_neighbors[part];
 			if (!nei1) continue;
             if ((*it)->aln->seq_type == SEQ_CODON && rescale_codon_brlen) {
                 // rescale branch length by 3
-                neighbors1[i]->length += (nei1->length) * (*it)->aln->getNSite() / brfreq[nei1->id];
+                neighbors1[i]->length += (nei1->length) * (*it)->aln->getNSite() / brfreq[static_cast<size_t>(nei1->id)];
                 occurence[i] += (*it)->aln->getNSite()*3;
             } else {
-                neighbors1[i]->length += (nei1->length) * (*it)->aln->getNSite() / brfreq[nei1->id];
+                neighbors1[i]->length += (nei1->length) * (*it)->aln->getNSite() / brfreq[static_cast<size_t>(nei1->id)];
                 occurence[i] += (*it)->aln->getNSite();
             }
 			//cout << neighbors1[i]->id << "  " << nodes1[i]->id << nodes1[i]->name <<"," << nodes2[i]->id << nodes2[i]->name <<": " << (nei1->length) / brfreq[nei1->id] << endl;

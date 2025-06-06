@@ -795,7 +795,7 @@ void PhyloTreeMixlen::computeFuncDerv(double value, double &df, double &ddf) {
                 
                 // TODO: check with vectorclass!
                 double *lh_tip = tip_partial_lh +
-                ((int)((ptn < orig_nptn) ? (aln->at(ptn))[dad->id] :  model_factory->unobserved_ptns[ptn-orig_nptn][dad->id]))*statemix;
+                ((int)((ptn < orig_nptn) ? (aln->at(ptn))[static_cast<size_t>(dad->id)] :  model_factory->unobserved_ptns[ptn-orig_nptn][static_cast<size_t>(dad->id)]))*statemix;
                 for (size_t m = 0; m < nmixture; m++) {
                     for (size_t i = 0; i < statecat; i++) {
                         theta[m*statecat+i] = lh_tip[m*nstates + i%nstates] * partial_lh_dad[m*statecat+i];

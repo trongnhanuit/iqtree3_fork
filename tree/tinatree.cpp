@@ -47,7 +47,7 @@ int TinaTree::computeParsimonyScore(int ptn, int &states, PhyloNode *node, Phylo
             state = aln->STATE_UNKNOWN;
         } else {
             ASSERT(node->id < aln->getNSeq());
-            state = (*aln)[ptn][node->id];
+            state = (*aln)[ptn][static_cast<size_t>(node->id)];
         }
         if (state == aln->STATE_UNKNOWN) {
             states = (1 << aln->num_states) - 1;

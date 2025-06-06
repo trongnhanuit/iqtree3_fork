@@ -2108,12 +2108,12 @@ void PhyloTree::computeAllSubtreeDistForOneNode(PhyloNode* source, PhyloNode* so
         ASSERT(dist_matrix);
         size_t nseq = aln->getNSeq();
         if (params->ls_var_type == OLS) {
-            dist = dist_matrix[dad->id * nseq + source->id];
+            dist = dist_matrix[static_cast<size_t>(dad->id * nseq + source->id)];
             weight = 1.0;
         } else {
             // this will take into account variances, also work for OLS since var = 1
-            weight = 1.0/var_matrix[dad->id * nseq + source->id];
-            dist = dist_matrix[dad->id * nseq + source->id] * weight;
+            weight = 1.0/var_matrix[static_cast<size_t>(dad->id * nseq + source->id)];
+            dist = dist_matrix[static_cast<size_t>(dad->id * nseq + source->id)] * weight;
         }
         subTreeDists.insert(StringDoubleMap::value_type(key, dist));
         subTreeWeights.insert(StringDoubleMap::value_type(key, weight));
@@ -5480,7 +5480,7 @@ int PhyloTree::collapseStableClade(int min_support, NodeVector &pruned_taxa, Str
     do {
         num_pruned_taxa = 0;
         for (tax_it = taxa.begin(); tax_it != taxa.end(); tax_it++)
-            if (linked_taxid[(*tax_it)->id] < 0) {
+            if (linked_taxid[static_cast<size_t>((*tax_it)->id)] < 0) {
                 Node *taxon = (*tax_it);
                 PhyloNode *near_node = (PhyloNode*) taxon->neighbors[0]->node;
                 Node *adj_taxon = nullptr;
@@ -5492,7 +5492,7 @@ int PhyloTree::collapseStableClade(int min_support, NodeVector &pruned_taxa, Str
                 // if it is not a cherry
                 if (!adj_taxon)
                     continue;
-                ASSERT(linked_taxid[adj_taxon->id] < 0);
+                ASSERT(linked_taxid[static_cast<size_t>(adj_taxon->id)] < 0);
                 PhyloNeighbor * near_nei = nullptr;
                 FOR_NEIGHBOR(near_node, taxon, it)
                     if ((*it)->node != adj_taxon) {
@@ -5502,7 +5502,7 @@ int PhyloTree::collapseStableClade(int min_support, NodeVector &pruned_taxa, Str
                 ASSERT(near_nei);
                 // continue if the cherry is not stable, or distance between two taxa is near ZERO
                 if (!isSupportedNode((PhyloNode*) near_nei->node, min_support)
-                        && dist_mat[taxon->id * ntaxa + adj_taxon->id] > 2e-6)
+                        && dist_mat[static_cast<size_t>(taxon->id * ntaxa + adj_taxon->id)] > 2e-6)
                     continue;
                 // now do the taxon pruning
                 Node * pruned_taxon = taxon, *stayed_taxon = adj_taxon;
@@ -5512,7 +5512,7 @@ int PhyloTree::collapseStableClade(int min_support, NodeVector &pruned_taxa, Str
                     stayed_taxon = taxon;
                 }
                 deleteLeaf(pruned_taxon);
-                linked_taxid[pruned_taxon->id] = stayed_taxon->id;
+                linked_taxid[static_cast<size_t>(pruned_taxon->id)] = stayed_taxon->id;
                 pruned_taxa.push_back(pruned_taxon);
                 linked_name.push_back(stayed_taxon->name);
                 num_pruned_taxa++;
@@ -5532,7 +5532,7 @@ int PhyloTree::collapseStableClade(int min_support, NodeVector &pruned_taxa, Str
 
     // set root to the first taxon which was not deleted
     for (tax_it = taxa.begin(); tax_it != taxa.end(); tax_it++)
-        if (linked_taxid[(*tax_it)->id] < 0) {
+        if (linked_taxid[static_cast<size_t>((*tax_it)->id)] < 0) {
             root = (*tax_it);
             break;
         }

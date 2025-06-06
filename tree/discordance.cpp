@@ -151,7 +151,8 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
 
     // extract the taxa from the two left subtrees
     left_taxa.resize(branch.first->neighbors.size()-1);
-    int id = 0;
+    // NHANLT all id >= 0 within this function: setting at 0 and increasing
+    size_t id = 0;
     FOR_NEIGHBOR_DECLARE(branch.first, branch.second, it) {
         // 2018-12-11: do not consider internal branch at the root
         if (rooted && (*it)->node == root) {
@@ -387,7 +388,7 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
             if (isRootLeaf(dad_branch->node)) {
                 state = aln->STATE_UNKNOWN;
             } else {
-                state = (aln->at(ptn))[dad_branch->node->id];
+                state = (aln->at(ptn))[static_cast<size_t>(dad_branch->node->id)];
             }
             double *state_lh = &tip_partial_lh[static_cast<size_t>(state)*nstates];
             memcpy(&ptn_ancestral_prob[ptn*nstates], state_lh, sizeof(double)*nstates);
@@ -795,7 +796,8 @@ void PhyloTree::computeGeneConcordance(MTreeSet &trees, map<string,string> &mean
         }
         
         // now scan through all splits in current tree
-        int id, qid;
+        // NHANLT id, qid are >= 0 within this function: starting at 0 and being used in an incremental loop
+        size_t id, qid;
         for (id = 0, qid = 0; qid < subtrees.size(); id++, qid += 4)
         {
             Neighbor *nei = branches[id].second->findNeighbor(branches[id].first);
@@ -953,7 +955,8 @@ double PhyloTree::computeQuartetConcordance(Branch &branch, MTreeSet &trees) {
     }
 
     // extract the taxa from the two left subtrees
-    int id = 0;
+    // NHANLT: id >= 0 within this function: starting at 0 and increasing
+    size_t id = 0;
     FOR_NEIGHBOR_DECLARE(branch.first, branch.second, it) {
         getTaxaID(taxa[id], (*it)->node, branch.first);
         id++;

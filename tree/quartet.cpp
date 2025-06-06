@@ -1227,7 +1227,7 @@ void readGroupNewick(char *filename, MSetsBlock *sets_block) {
                 } while (ch != ',' && ch != ';');
                 myset->name = name;
             } else {
-                myset->name = "Cluster" + convertIntToString(sets->size());
+                myset->name = "Cluster" + convertIntToString(static_cast<int>(sets->size()));
             }
             // check for duplicated name
             for (TaxaSetNameVector::iterator it = sets->begin(); it != sets->end()-1; it++)
@@ -1279,7 +1279,7 @@ void PhyloTree::readLikelihoodMappingGroups(char *filename, QuartetGroups &LMGro
     cout << "(The leading numbers represent the order from the master alignment.)" << endl << endl;
 
     TaxaSetNameVector *allsets = lmclusters->getSets();
-    numsets = allsets->size();
+    numsets = static_cast<int>(allsets->size());
 
     if(numsets > 5) outError("Only up to 4 Likelihood Mapping clusters allowed, plus one 'ignored' cluster!");
 
@@ -1287,7 +1287,7 @@ void PhyloTree::readLikelihoodMappingGroups(char *filename, QuartetGroups &LMGro
     for (TaxaSetNameVector::iterator i = allsets->begin(); i != allsets->end(); i++) {
 	if ((*i)->name.compare("ignored")==0 || (*i)->name.compare("IGNORED")==0) {
 		LMGroups.Name[4] = (*i)->name;
-		numtax = (*i)->taxlist.size();
+		numtax = static_cast<int>((*i)->taxlist.size());
 		LMGroups.numGrpSeqs[4] = numtax;
 		LMGroups.GroupX.resize(numtax);
 		cout << "Cluster \"" << LMGroups.Name[4] << "\" lists " << (*i)->taxlist.size() << " sequences to be ignored:" << endl;
@@ -1316,7 +1316,7 @@ void PhyloTree::readLikelihoodMappingGroups(char *filename, QuartetGroups &LMGro
     			default: outError("Only up to 4 Likelihood Mapping clusters allowed, plus one 'ignored' cluster!"); break;
 		}
 		LMGroups.Name[n] = (*i)->name;
-		numtax = (*i)->taxlist.size();
+		numtax = static_cast<int>((*i)->taxlist.size());
 		LMGroups.numGrpSeqs[n] = numtax;
 		switch(n){
 			case 0: LMGroups.GroupA.resize(numtax); break;
@@ -1717,7 +1717,7 @@ void PhyloTree::reportLikelihoodMapping(ofstream &out) {
         	   << " (" << setw(6) << (double) 100.0*lmap_seq_quartet_info[qid].countarr[8]/sumq0 << ") "
         	   << setw(7) << lmap_seq_quartet_info[qid].countarr[9]
         	   << " (" << setw(6) << (double) 100.0*lmap_seq_quartet_info[qid].countarr[9]/sumq0 << ")  " 
-        	   << PhyloTree::aln->getSeqName(qid) << endl;
+        	   << PhyloTree::aln->getSeqName(static_cast<int>(qid)) << endl;
 	    } else {
 	       out << "-----------------------------------------------------------------------------" << endl;
                out.setf(ios::fixed, ios::floatfield); // set fixed floating format
@@ -1761,7 +1761,7 @@ void PhyloTree::reportLikelihoodMapping(ofstream &out) {
         	   << " (" << setw(6) << (double) 100.0*lmap_seq_quartet_info[qid].countarr[5]/sumq0 << ") "
         	   << setw(7) << lmap_seq_quartet_info[qid].countarr[6]
         	   << " (" << setw(6) << (double) 100.0*lmap_seq_quartet_info[qid].countarr[6]/sumq0 << ")  "
-        	   << PhyloTree::aln->getSeqName(qid) << endl;
+        	   << PhyloTree::aln->getSeqName(static_cast<int>(qid)) << endl;
 	    } else {
 	       out << "------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
                out.setf(ios::fixed, ios::floatfield); // set fixed floating format
@@ -1808,7 +1808,7 @@ void PhyloTree::reportLikelihoodMapping(ofstream &out) {
                    << " (" << setw(6) << (double) 100.0*partly/sumq0 << ") "
         	   << setw(7) << unres
                    << " (" << setw(6) << (double) 100.0*unres/sumq0 << ")  "
-        	   << PhyloTree::aln->getSeqName(qid) << endl;
+        	   << PhyloTree::aln->getSeqName(static_cast<int>(qid)) << endl;
 	    } else {
 	       out << "-----------------------------------------------------------------------------" << endl;
                out.setf(ios::fixed, ios::floatfield); // set fixed floating format

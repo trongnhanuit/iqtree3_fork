@@ -1083,7 +1083,7 @@ void PhyloTree::getMemoryRequired(uint64_t &partial_lh_entries, uint64_t &scale_
 }
 
 void PhyloTree::initializeAllPartialLh(int &index, int &indexlh, PhyloNode *node, PhyloNode *dad) {
-    uint64_t pars_block_size = getBitsBlockSize();
+    uint64_t pars_block_size = static_cast<uint64_t>(getBitsBlockSize());
     // +num_states for ascertainment bias correction
     size_t nptn = get_safe_upper_limit(aln->size())+ max(get_safe_upper_limit(aln->num_states), get_safe_upper_limit(model_factory->unobserved_ptns.size()));
     uint64_t block_size;

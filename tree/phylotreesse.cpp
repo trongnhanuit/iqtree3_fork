@@ -260,7 +260,7 @@ void PhyloTree::computeTipPartialLikelihood() {
         size_t nptn = aln->getNPattern(), max_nptn = ((nptn+vector_size-1)/vector_size)*vector_size, tip_block_size = max_nptn * aln->num_states;
         int nstates = aln->num_states;
         ASSERT(nstates >= 0);
-        size_t nseq = aln->getNSeq();
+        int nseq = static_cast<int>(aln->getNSeq());
         ASSERT(vector_size > 0);
         
         
@@ -540,7 +540,7 @@ void PhyloTree::computePtnFreq() {
 	ptn_freq_computed = true;
 	size_t nptn = aln->getNPattern();
 	size_t maxptn = get_safe_upper_limit(nptn)+get_safe_upper_limit(model_factory->unobserved_ptns.size());
-	int ptn;
+	size_t ptn;
 	for (ptn = 0; ptn < nptn; ptn++)
 		ptn_freq[ptn] = (*aln)[ptn].frequency;
 	for (ptn = nptn; ptn < maxptn; ptn++)
@@ -1495,7 +1495,7 @@ void PhyloTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, PhyloNo
         for (size_t i = 0; i < nstates; i++) {
             sum += state_prob[i];
             if (state_prob[i] > state_prob[state_best])
-                state_best = i;
+                state_best = static_cast<int>(i);
         }
         sum = 1.0/sum;
         for (size_t i = 0; i < nstates; i++) {
@@ -1516,7 +1516,7 @@ void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, doubl
     ASSERT(model->num_states >= 0);
     size_t nstates = static_cast<size_t>(model->num_states);
     for (size_t site = 0; site < nsites; ++site) {
-        int ptn = aln->getPatternID(site);
+        int ptn = aln->getPatternID(static_cast<int>(site));
         out << node->name << "\t" << site+1 << "\t";
 //        if (params->print_ancestral_sequence == AST_JOINT)
 //            out << aln->convertStateBackStr(joint_ancestral_node[ptn]) << "\t";
@@ -1787,7 +1787,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
             case SEQ_DNA:
                 for (int state = 4; state < 18; state++) {
                     this_lh_leaf = lh_leaf + (state*nstates);
-                    int cstate = state-nstates+1;
+                    int cstate = state-static_cast<int>(nstates)+1;
                     for (parent = 0; parent < nstates; parent++) {
                         double sumlh = 0.0;
                         for (child = 0; child < nstates; child++) {
@@ -1857,7 +1857,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
                     double lh = trans_mat[parent*nstates+child] + sumlh[child];
                     if (lh > lh_dad[parent]) {
                         lh_dad[parent] = lh;
-                        this_C_node[parent] = child;
+                        this_C_node[parent] = static_cast<int>(child);
                     }
                 }
             }
@@ -1869,7 +1869,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
                 double lh = trans_mat[parent] + sumlh[parent];
                 if (lh > lh_dad[0]) {
                     lh_dad[0] = lh;
-                    this_C_node[0] = parent;
+                    this_C_node[0] = static_cast<int>(parent);
                 }
             }
         }

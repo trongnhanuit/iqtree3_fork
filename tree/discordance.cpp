@@ -24,7 +24,7 @@ void PhyloTree::computeSiteConcordance(map<string,string> &meanings) {
         if (verbose_mode >= VB_MED) {
             cout << "Node\tSite\tState";
             for (size_t i = 0; i < aln->num_states; i++)
-                cout << "\tp_" << aln->convertStateBackStr(i);
+                cout << "\tp_" << aln->convertStateBackStr(static_cast<StateType>(i));
             cout << endl;
         }
     }
@@ -221,7 +221,7 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
         for (auto part_aln = saln->partitions.begin(); part_aln != saln->partitions.end(); part_aln++, part++) {
             // get the taxa names of the partition tree
             StringIntMap name_map;
-            for (size_t i = 0; i < (*part_aln)->getNSeq(); i++) {
+            for (int i = 0; i < static_cast<int>((*part_aln)->getNSeq()); i++) {
                 name_map[(*part_aln)->getSeqName(i)] = i;
             }
             
@@ -257,21 +257,21 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
         quartet.resize(4);
         int left_id0 = 0, left_id1 = 1, right_id0 = 0, right_id1 = 1;
         if (left_taxa.size() > 2) {
-            left_id0 = random_int(left_taxa.size(), rstream);
+            left_id0 = random_int(static_cast<int>(left_taxa.size()), rstream);
             do {
-                left_id1 = random_int(left_taxa.size(), rstream);
+                left_id1 = random_int(static_cast<int>(left_taxa.size()), rstream);
             } while (left_id0 == left_id1);
         }
         if (right_taxa.size() > 2) {
-            right_id0 = random_int(right_taxa.size(), rstream);
+            right_id0 = random_int(static_cast<int>(right_taxa.size()), rstream);
             do {
-                right_id1 = random_int(right_taxa.size(), rstream);
+                right_id1 = random_int(static_cast<int>(right_taxa.size()), rstream);
             } while (right_id0 == right_id1);
         }
-        quartet[0] = left_taxa[left_id0][random_int(left_taxa[left_id0].size(), rstream)];
-        quartet[1] = left_taxa[left_id1][random_int(left_taxa[left_id1].size(), rstream)];
-        quartet[2] = right_taxa[right_id0][random_int(right_taxa[right_id0].size(), rstream)];
-        quartet[3] = right_taxa[right_id1][random_int(right_taxa[right_id1].size(), rstream)];
+        quartet[0] = left_taxa[left_id0][random_int(static_cast<int>(left_taxa[left_id0].size()), rstream)];
+        quartet[1] = left_taxa[left_id1][random_int(static_cast<int>(left_taxa[left_id1].size()), rstream)];
+        quartet[2] = right_taxa[right_id0][random_int(static_cast<int>(right_taxa[right_id0].size()), rstream)];
+        quartet[3] = right_taxa[right_id1][random_int(static_cast<int>(right_taxa[right_id1].size()), rstream)];
 
         support[0] = support[1] = support[2] = 0;
         aln->computeQuartetSupports(quartet, support);
@@ -293,7 +293,7 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
                << '\t' << (((double)support[1]) / sum) << '\t' << support[1]
                << '\t' << (((double)support[2]) / sum) <<  '\t' << support[2]
                << '\t' << sum;
-            nei->putAttr("q" + convertIntToString(i), ss.str());
+            nei->putAttr("q" + convertIntToString(static_cast<int>(i)), ss.str());
         }
     }
     sN = (double)sum_sites / nquartets;
@@ -321,9 +321,9 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
     string keys[] = {"sC", "sD1", "sD2"};
     for (size_t i = 3; i < support.size(); ++i) {
         if (support[i] >= 0) {
-            nei->putAttr(keys[i%3] + convertIntToString(i/3), (double)support[i]/nquartets);
+            nei->putAttr(keys[i%3] + convertIntToString(static_cast<int>(i)/3), (double)support[i]/nquartets);
         } else {
-            nei->putAttr(keys[i%3] + convertIntToString(i/3), "NA");
+            nei->putAttr(keys[i%3] + convertIntToString(static_cast<int>(i)/3), "NA");
         }
     }
 }
@@ -420,7 +420,7 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
         for (size_t i = 0; i < nstates; i++) {
             sum += state_prob[i];
             if (state_prob[i] > state_prob[state_best]) {
-                state_best = i;
+                state_best = static_cast<int>(i);
             }
         }
         if (params->ancestral_site_concordance == 2 && sum > 1.0) {
@@ -536,15 +536,15 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
     for (size_t i = 0; i < nquartets; ++i) {
         int first_id0 = 0, first_id1 = 1, second_id0 = 0, second_id1 = 1;
         if (first_ancestral_prob.size() > 2) {
-            first_id0 = random_int(first_ancestral_prob.size(), rstream);
+            first_id0 = random_int(static_cast<int>(first_ancestral_prob.size()), rstream);
             do {
-                first_id1 = random_int(first_ancestral_prob.size(), rstream);
+                first_id1 = random_int(static_cast<int>(first_ancestral_prob.size()), rstream);
             } while (first_id0 == first_id1);
         }
         if (second_ancestral_prob.size() > 2) {
-            second_id0 = random_int(second_ancestral_prob.size(), rstream);
+            second_id0 = random_int(static_cast<int>(second_ancestral_prob.size()), rstream);
             do {
-                second_id1 = random_int(second_ancestral_prob.size(), rstream);
+                second_id1 = random_int(static_cast<int>(second_ancestral_prob.size()), rstream);
             } while (second_id0 == second_id1);
             
         }
@@ -557,8 +557,7 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
             size_t start_pos_seq = 0;
             for (auto it = stree->begin(); it != stree->end(); it++) {
                 size_t nptn = (*it)->getAlnNPattern();
-                ASSERT((*it)->model->num_states >= 0);
-                size_t nstates = static_cast<size_t>((*it)->model->num_states);
+                int nstates = (*it)->model->num_states;
                 for (size_t ptn = 0; ptn < nptn; ptn++) {
                     // FIX sCFL: ignore sites if at least one subtree shows all gap/ambiguitity
                     if (first_ancestral_seq[first_id0][start_pos_seq + ptn] >= nstates ||
@@ -581,13 +580,13 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
                         support[2] += (*it)->aln->at(ptn).frequency;
                     }
                 }
-                start_pos += nptn*nstates;
+                start_pos += nptn*static_cast<size_t>(nstates);
                 start_pos_seq += nptn;
             }
         } else {
             size_t nptn = getAlnNPattern();
             ASSERT(model->num_states >= 0);
-            size_t nstates = static_cast<size_t>(model->num_states);
+            int nstates = model->num_states;
             for (size_t ptn = 0; ptn < nptn; ptn++) {
                 if (first_ancestral_seq[first_id0][ptn] >= nstates ||
                     first_ancestral_seq[first_id1][ptn] >= nstates ||
@@ -747,7 +746,7 @@ void PhyloTree::computeGeneConcordance(MTreeSet &trees, map<string,string> &mean
     getTaxaName(names);
     StringIntMap name_map;
     for (auto stri = names.begin(); stri != names.end(); stri++) {
-        name_map[*stri] = stri - names.begin();
+        name_map[*stri] = static_cast<int>(stri - names.begin());
     }
     BranchVector branches;
     vector<Split*> subtrees;
@@ -976,7 +975,7 @@ double PhyloTree::computeQuartetConcordance(Branch &branch, MTreeSet &trees) {
         IntVector quartet;
         quartet.resize(taxa.size());
         for (j = 0; j < taxa.size(); j++) {
-            quartet[j] = taxa[j][random_int(taxa[j].size())];
+            quartet[j] = taxa[j][random_int(static_cast<int>(taxa[j].size()))];
         }
         
         int quartetCF[3] = {0, 0, 0};

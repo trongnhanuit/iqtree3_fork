@@ -1432,7 +1432,7 @@ void PhyloSuperTree::writeMarginalAncestralState(ostream &out, PhyloNode *node,
         size_t nsites  = (*it)->getAlnNSite();
         int    nstates = (*it)->model->num_states;
         for (size_t site = 0; site < nsites; ++site) {
-            int ptn = (*it)->aln->getPatternID(site);
+            int ptn = (*it)->aln->getPatternID(static_cast<int>(site));
             out << node->name << "\t" << part << "\t" << site+1 << "\t";
             out << (*it)->aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
             double *state_prob = ptn_ancestral_prob + ptn*nstates;

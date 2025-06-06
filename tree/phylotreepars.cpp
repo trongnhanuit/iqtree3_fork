@@ -569,7 +569,7 @@ void PhyloTree::computeTipPartialParsimony() {
 
     size_t nptn = aln->ordered_pattern.size();
     size_t maxptn = get_safe_upper_limit_float(nptn);
-    int ptn;
+    size_t ptn;
     for (ptn = 0; ptn < nptn; ptn++)
         ptn_freq_pars[ptn] = aln->ordered_pattern[ptn].frequency;
     for (ptn = nptn; ptn < maxptn; ptn++)
@@ -653,7 +653,7 @@ void PhyloTree::computePartialParsimonySankoff(PhyloNeighbor *dad_branch, PhyloN
     size_t nstates = static_cast<size_t>(aln->num_states);
     assert(dad_branch->partial_pars);
     
-    int pars_block_size = getBitsBlockSize();
+    size_t pars_block_size = getBitsBlockSize();
     
 
     // internal node

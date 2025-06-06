@@ -89,7 +89,7 @@ double PhyloHmm::computeBackLike(bool showInterRst) {
         k = (pre_k + 1) % 2;
         work = work_arr + k * ncat;
         site_lh_arr += ncat;
-        transit_arr = modelHmm->getTransitLog(nsite-i);
+        transit_arr = modelHmm->getTransitLog(nsite-static_cast<int>(i));
         for (j = 0; j < ncat; j++) {
             work[j] = logDotProd(transit_arr, pre_work, ncat) + site_lh_arr[j];
             transit_arr += ncat;
@@ -127,7 +127,7 @@ double PhyloHmm::computeMaxPath() {
         k = (pre_k + 1) % 2;
         work = work_arr + k * ncat;
         site_lh_arr += ncat;
-        transit_arr = modelHmm->getTransitLog(i);
+        transit_arr = modelHmm->getTransitLog(static_cast<int>(i));
         next_cat_arr = next_cat + (nsite - i - 1) * ncat;
         for (j = 0; j < ncat; j++) {
             work[j] = transit_arr[0] + pre_work[0];
@@ -189,7 +189,7 @@ double PhyloHmm::optimizeProbEM() {
         k = pre_k ^ 1;
         work = work_arr + k * ncat;
         site_lh_arr += ncat;
-        transit_arr = modelHmm->getTransitLog(nsite-i);
+        transit_arr = modelHmm->getTransitLog(nsite-static_cast<int>(i));
         for (j = 0; j < ncat; j++) {
             work[j] = logDotProd(transit_arr, pre_work, ncat) + site_lh_arr[j];
             transit_arr += ncat;
@@ -402,7 +402,7 @@ double PhyloHmm::computeBackLikeArray() {
     for (int i = nsite - 1; i >= 1; i--) {
         pre_work = work;
         work = bwd_array + (i - 1) * ncat;
-        transit_arr = modelHmm->getTransitLog(i);
+        transit_arr = modelHmm->getTransitLog(static_cast<int>(i));
         site_lh_arr += ncat;
         for (size_t j = 0; j < ncat; j++) {
             work[j] = logDotProd(transit_arr, pre_work, ncat) + site_lh_arr[j];
@@ -429,7 +429,7 @@ double PhyloHmm::computeFwdLikeArray() {
     for (int i = 1; i < nsite; i++) {
         pre_work = work;
         work += ncat;
-        transit_arr = modelHmm->getTransitLog(i);
+        transit_arr = modelHmm->getTransitLog(static_cast<int>(i));
         for (size_t j = 0; j < ncat; j++) {
             work[j] = logDotProd(transit_arr, pre_work, ncat) + site_lh_arr[j];
             transit_arr += ncat;
@@ -508,7 +508,7 @@ void PhyloHmm::computeMarginalTransitProb() {
     // cout << "Marginal transition probabilities:" << endl;
     for (int i=1; i<=nsite-1; i++) {
         // cout << "(" << i << "," << i+1 << ")";
-        t_array = modelHmm->getTransitLog(i);
+        t_array = modelHmm->getTransitLog(static_cast<int>(i));
         k = 0;
         for (size_t j1=0; j1<ncat; j1++) {
             for (int j2=0; j2<ncat; j2++) {

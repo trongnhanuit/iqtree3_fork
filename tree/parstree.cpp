@@ -81,7 +81,7 @@ UINT ParsTree::findMstScore(int ptn) {
 			if((added[c] == false) && (site_states[c] == 0))
 				if(labelled_value[c] < min_label){
 					min_label = labelled_value[c];
-					add_node = c;
+					add_node = static_cast<int>(c);
 				}
 		}
 

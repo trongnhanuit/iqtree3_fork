@@ -64,7 +64,7 @@ inline double horizontal_max(Vec4d const &a) {
 template <class Numeric, class VectorClass>
 Numeric PhyloTree::dotProductSIMD(Numeric *x, Numeric *y, int size) {
     VectorClass res = VectorClass().load_a(x) * VectorClass().load_a(y);
-    for (int i = VectorClass::size(); i < size; i += VectorClass::size())
+    for (size_t i = VectorClass::size(); i < static_cast<size_t>(size); i += VectorClass::size())
         res = mul_add(VectorClass().load_a(&x[i]), VectorClass().load_a(&y[i]), res);
     return horizontal_add(res);
 }
@@ -1690,7 +1690,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
         }
 //        VectorClass score = 0;
         UINT score = 0;
-        size_t nsites = (aln->num_parsimony_sites+NUM_BITS-1)/NUM_BITS;
+        int nsites = static_cast<int>((aln->num_parsimony_sites+NUM_BITS-1)/NUM_BITS);
         int entry_size = nstates * VCSIZE;
         
         switch (nstates) {
@@ -1741,7 +1741,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
             break;
                 
         }
-        dad_branch->partial_pars[nstates*VCSIZE*nsites] = score + left->partial_pars[nstates*VCSIZE*nsites] + right->partial_pars[nstates*VCSIZE*nsites];
+        dad_branch->partial_pars[nstates*VCSIZE*static_cast<size_t>(nsites)] = score + left->partial_pars[nstates*VCSIZE*static_cast<size_t>(nsites)] + right->partial_pars[nstates*VCSIZE*static_cast<size_t>(nsites)];
     }
 }
 

@@ -428,8 +428,10 @@ void PhyloTreeMixlen::optimizeOneBranch(PhyloNode *node1, PhyloNode *node2, bool
             outError("Please use option -optlen BFGS to disable EM algorithm");
         
         // EM algorithm
-        size_t nptn = aln->getNPattern();
-        size_t nmix = site_rate->getNRate();
+        ASSERT(aln->getNPattern() >= 0);
+        size_t nptn = static_cast<size_t>(aln->getNPattern());
+        ASSERT(site_rate->getNRate() >= 0);
+        size_t nmix = static_cast<size_t>(site_rate->getNRate());
         ASSERT(nmix == mixlen);
 
         // first compute _pattern_lh_cat

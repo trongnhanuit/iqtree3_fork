@@ -148,7 +148,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                         } else {
                             state = unknown;
                         }
-                        double *tip_child = partial_lh_leaf + block * state;
+                        double *tip_child = partial_lh_leaf + block * static_cast<size_t>(state);
                         double *this_vec_tip = vec_tip+x;
                         for (size_t i = 0; i < block; i++) {
                             *this_vec_tip = tip_child[i];
@@ -295,7 +295,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                     } else {
                         state = static_cast<int>(aln->STATE_UNKNOWN);
                     }
-                    double *tip_right = partial_lh_right + block * state;
+                    double *tip_right = partial_lh_right + block * static_cast<size_t>(state);
                     double *this_vec_right = vright+x;
                     for (size_t i = 0; i < block; i++) {
                         *this_vec_right = tip_right[i];
@@ -336,8 +336,8 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                         leftState  = unknown;
                         rightState = unknown;
                     }
-                    double *tip_left   = partial_lh_left  + block * leftState;
-                    double *tip_right  = partial_lh_right + block * rightState;
+                    double *tip_left   = partial_lh_left  + block * static_cast<size_t>(leftState);
+                    double *tip_right  = partial_lh_right + block * static_cast<size_t>(rightState);
                     double *this_vec_left = vec_left+x;
                     double *this_vec_right = vec_right+x;
                     for (size_t i = 0; i < block; i++) {
@@ -422,7 +422,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                 } else {
                     state = unknown;
                 }
-                double *tip = partial_lh_left + block * state;
+                double *tip = partial_lh_left + block * static_cast<size_t>(state);
                 double *this_vec_left = vec_left+x;
                 for (size_t i = 0; i < block; i++) {
                     *this_vec_left = tip[i];
@@ -614,8 +614,8 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
     size_t nstates = static_cast<size_t>(aln->num_states);
 #endif
     size_t  nstatesqr = nstates*nstates;
-    size_t  ncat = site_rate->getNRate();
-    size_t  ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*model->getNMixtures();
+    size_t  ncat = static_cast<size_t>(site_rate->getNRate());
+    size_t  ncat_mix = (model_factory->fused_mix_rate) ? ncat : ncat*static_cast<size_t>(model->getNMixtures());
     size_t  denom = (model_factory->fused_mix_rate) ? 1 : ncat;
     size_t  block = ncat_mix * nstates;
     size_t  orig_nptn = aln->size();
@@ -694,7 +694,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
 //            IntVector states_dad = model->seq_states[dad->id];
 //            states_dad.push_back(aln->STATE_UNKNOWN);
             // precompute information from one tip
-            for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
+            for (size_t state = 0; state <= static_cast<size_t>(aln->STATE_UNKNOWN); state++) {
                 double *lh_node  = partial_lh_node +state*block;
                 double *lh_derv1 = partial_lh_derv1 +state*block;
                 double *lh_derv2 = partial_lh_derv2 +state*block;
@@ -786,16 +786,16 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
                         state_dad = 0;
                     } else if (ptn+i < orig_nptn) {
                         if ( dadStateRow != nullptr ) {
-                            state_dad = dadStateRow[ptn+i];
+                            state_dad = static_cast<size_t>(dadStateRow[ptn+i]);
                         } else {
-                            state_dad = (aln->at(ptn+i))[static_cast<size_t>(dad->id)];
+                            state_dad = static_cast<size_t>((aln->at(ptn+i))[static_cast<size_t>(dad->id)]);
                         }
                     } else if (ptn+i < max_orig_nptn) {
-                        state_dad = unknown;
+                        state_dad = static_cast<size_t>(unknown);
                     } else if (ptn+i < nptn) {
-                        state_dad = model_factory->unobserved_ptns[ptn+i-max_orig_nptn][static_cast<size_t>(dad->id)];
+                        state_dad = static_cast<size_t>(model_factory->unobserved_ptns[ptn+i-max_orig_nptn][static_cast<size_t>(dad->id)]);
                     } else {
-                        state_dad = unknown;
+                        state_dad = static_cast<size_t>(unknown);
                     }
                     auto   step_dad  = state_dad * block;
                     double *lh_tip   = partial_lh_node  + step_dad;
@@ -1163,7 +1163,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
 //            IntVector states_dad = model->seq_states[dad->id];
 //            states_dad.push_back(aln->STATE_UNKNOWN);
             // precompute information from one tip
-            for (int state = 0; state <= static_cast<int>(aln->STATE_UNKNOWN); state++) {
+            for (size_t state = 0; state <= static_cast<size_t>(aln->STATE_UNKNOWN); state++) {
                 double *lh_node = partial_lh_node + state*block;
                 double *lh_tip = tip_partial_lh + state*nstates;
                 double *trans_mat_tmp = trans_mat;
@@ -1212,16 +1212,16 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
                         dadState = 0;
                     } else if (ptn+i < orig_nptn) {
                         if ( dadStateRow != nullptr ) {
-                            dadState = static_cast<int>(dadStateRow[ptn+i]);
+                            dadState = static_cast<size_t>(dadStateRow[ptn+i]);
                         } else {
-                            dadState = static_cast<int>((aln->at(ptn+i))[static_cast<size_t>(dad->id)]); //FLATTEN
+                            dadState = static_cast<size_t>((aln->at(ptn+i))[static_cast<size_t>(dad->id)]); //FLATTEN
                         }
                     } else if (ptn+i < max_orig_nptn) {
-                        dadState = unknown;
+                        dadState = static_cast<size_t>(unknown);
                     } else if (ptn+i < nptn) {
-                        dadState = static_cast<int>(model_factory->unobserved_ptns[ptn+i-max_orig_nptn][static_cast<size_t>(dad->id)]);
+                        dadState = static_cast<size_t>(model_factory->unobserved_ptns[ptn+i-max_orig_nptn][static_cast<size_t>(dad->id)]);
                     } else {
-                        dadState = unknown;
+                        dadState = static_cast<size_t>(unknown);
                     }
                     double *lh_tip = partial_lh_node + block * dadState;
                     double *this_vec_tip = vec_tip+i;

@@ -877,8 +877,8 @@ size_t PhyloTree::getBufferPartialLhSize() {
     const size_t VECTOR_SIZE = 8; // TODO, adjusted
     // 2017-12-13: make sure that num_threads was already set
     ASSERT(num_threads > 0);
-    size_t ncat_mix    = site_rate->getNRate() * ((model_factory->fused_mix_rate)? 1 : model->getNMixtures());
-    size_t block       = model->num_states * ncat_mix;
+    size_t ncat_mix    = static_cast<size_t>(site_rate->getNRate() * ((model_factory->fused_mix_rate)? 1 : model->getNMixtures()));
+    size_t block       = static_cast<size_t>(model->num_states) * ncat_mix;
     size_t buffer_size = 0;
 
     // buffer for traversal_info.echildren and partial_lh_leaves

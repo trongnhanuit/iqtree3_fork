@@ -444,7 +444,8 @@ void MTreeSet::convertSplits(vector<string> &taxname, SplitGraph &sg, SplitIntMa
 
 
 	SplitGraph *isg;
-	int tree_id = 0;
+    // tree_id is always >= 0: starting at 0 and being used in an incremental loop
+	size_t tree_id = 0;
 //	cout << "Number of trees: " << size() << endl;
 //	cout << "Number of weight: " << tree_weights.size() << endl;
 	for (iterator it = begin(); it != end(); it++, tree_id++) {
@@ -759,7 +760,8 @@ int MTreeSet::categorizeDistinctTrees(IntVector &category) {
 	int ncat = 0;
 	category.resize(size(),-1);
 
-	int id = 0;
+    // NHANLT: id is always >= 0: starting at 0 and being used in an incremental loop
+	size_t id = 0;
 	for (iterator it = begin(); it != end(); it++, id++) {
 		(*it)->root = (*it)->findNodeName(root_name);
 		if (!(*it)->root || !(*it)->root->isLeaf()) 

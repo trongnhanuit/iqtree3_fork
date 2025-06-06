@@ -1698,19 +1698,19 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
                         if (leftStateRow!=nullptr) {
                             leftState = leftStateRow[ptn+x];
                         } else {
-                            leftState = (aln->at(ptn+x))[left->node->id];
+                            leftState = (aln->at(ptn+x))[static_cast<size_t>(left->node->id)];
                         }
                         if (rightStateRow!=nullptr) {
                             rightState =  rightStateRow[ptn+x];
                         } else {
-                            rightState = (aln->at(ptn+x))[right->node->id];
+                            rightState = (aln->at(ptn+x))[static_cast<size_t>(right->node->id)];
                         }
                     } else if (ptn+x < max_orig_nptn) {
                         leftState = unknown;
                         rightState = unknown;
                     } else if (ptn+x < nptn) {
-                        leftState  = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][left->node->id];
-                        rightState = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][right->node->id];
+                        leftState  = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(left->node->id)];
+                        rightState = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(right->node->id)];
                     } else {
                         leftState  = unknown;
                         rightState = unknown;
@@ -1830,12 +1830,12 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
                         if (leftStateRow!=nullptr) {
                             state =  leftStateRow[ptn+x];
                         } else {
-                            state = (aln->at(ptn+x))[left->node->id];
+                            state = (aln->at(ptn+x))[static_cast<size_t>(left->node->id)];
                         }
                     } else if (ptn+x < max_orig_nptn) {
                         state = unknown;
                     } else if (ptn+x < nptn) {
-                        state = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][left->node->id];
+                        state = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(left->node->id)];
                     } else {
                         state = unknown;
                     }

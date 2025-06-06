@@ -160,8 +160,8 @@ public:
         @param start_pos starting position in vec to copy to
     */
     virtual void getLength(DoubleVector &vec, int start_pos) { 
-        ASSERT(start_pos < static_cast<int>(vec.size()));
-        vec[start_pos] = length;
+        ASSERT(static_cast<size_t>(start_pos) < vec.size());
+        vec[static_cast<size_t>(start_pos)] = length;
     }
 
     /**
@@ -197,9 +197,9 @@ public:
         @param start_pos starting position in vec to copy from
     */
     virtual void setLength(DoubleVector &vec, int start_pos, int num_elem) { 
-        ASSERT(start_pos < static_cast<int>(vec.size()));
+        ASSERT(static_cast<size_t>(start_pos) < vec.size());
         ASSERT(num_elem == 1);
-        length = vec[start_pos];
+        length = vec[static_cast<size_t>(start_pos)];
     }
 
     /************** attribute processing ***************/

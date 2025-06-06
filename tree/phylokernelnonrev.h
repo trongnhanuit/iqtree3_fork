@@ -79,7 +79,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     double *partial_lh_leaves = info.partial_lh_leaves;
     
     if (Params::getInstance().buffer_mem_save) {
-        echildren = aligned_alloc<double>(get_safe_upper_limit(block*nstates*(node->degree()-1)));
+        echildren = aligned_alloc<double>(get_safe_upper_limit(block*nstates*(static_cast<size_t>(node->degree())-1)));
         if (num_leaves > 0)
             partial_lh_leaves = aligned_alloc<double>(get_safe_upper_limit((aln->STATE_UNKNOWN+1)*block*num_leaves));
         double *buffer_tmp = aligned_alloc<double>(nstates);
@@ -130,21 +130,21 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                     // external node
                     // load data for tip
                     auto childStateRow = this->getConvertedSequenceByNumber(child->node->id);
-                    auto unknown  = aln->STATE_UNKNOWN;
+                    int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
                     for (size_t x = 0; x < VectorClass::size(); x++) {
                         int state;
                         if (isRootLeaf(child->node)) {
                             state = 0;
                         } else if (ptn+x < orig_nptn) {
                             if (childStateRow!=nullptr) {
-                                state = childStateRow[ptn+x];
+                                state = static_cast<int>(childStateRow[ptn+x]);
                             } else {
-                                state = (aln->at(ptn+x))[static_cast<size_t>(child->node->id)];
+                                state = static_cast<int>((aln->at(ptn+x))[static_cast<size_t>(child->node->id)]);
                             }
                         } else if (ptn+x < max_orig_nptn) {
                             state = unknown;
                         } else if (ptn+x < nptn) {
-                            state = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(child->node->id)];
+                            state = static_cast<int>(model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(child->node->id)]);
                         } else {
                             state = unknown;
                         }
@@ -275,7 +275,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
         
         if (isRootLeaf(left->node)) {
             auto rightStateRow = this->getConvertedSequenceByNumber(right->node->id);
-            auto unknown  = aln->STATE_UNKNOWN;
+            int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
             for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {
                 double *vright = dad_branch->partial_lh + ptn*block;
                 VectorClass *partial_lh = (VectorClass*)vright;
@@ -284,16 +284,16 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                     int state;
                     if (ptn+x < orig_nptn) {
                         if (rightStateRow!=nullptr) {
-                            state = rightStateRow[ptn+x];
+                            state = static_cast<int>(rightStateRow[ptn+x]);
                         } else {
-                            state = (aln->at(ptn+x))[static_cast<size_t>(right->node->id)];
+                            state = static_cast<int>((aln->at(ptn+x))[static_cast<size_t>(right->node->id)]);
                         }
                     } else if (ptn+x < max_orig_nptn) {
                         state = unknown;
                     } else if (ptn+x < nptn) {
-                        state = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(right->node->id)];
+                        state = static_cast<int>(model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(right->node->id)]);
                     } else {
-                        state = aln->STATE_UNKNOWN;
+                        state = static_cast<int>(aln->STATE_UNKNOWN);
                     }
                     double *tip_right = partial_lh_right + block * state;
                     double *this_vec_right = vright+x;
@@ -309,7 +309,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
             auto leftStateRow  = this->getConvertedSequenceByNumber(left->node->id);
             auto rightStateRow = this->getConvertedSequenceByNumber(right->node->id);
             bool flat = (leftStateRow!=nullptr && rightStateRow!=nullptr);
-            auto unknown  = aln->STATE_UNKNOWN;
+            int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
             for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {
                 VectorClass *partial_lh = (VectorClass*)(dad_branch->partial_lh + ptn*block);
                 VectorClass *vleft = (VectorClass*)vec_left;
@@ -320,18 +320,18 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                     int rightState;
                     if (ptn+x < orig_nptn) {
                         if (flat) {
-                            leftState  = leftStateRow[ptn+x];
-                            rightState = rightStateRow[ptn+x];
+                            leftState  = static_cast<int>(leftStateRow[ptn+x]);
+                            rightState = static_cast<int>(rightStateRow[ptn+x]);
                         } else {
-                            leftState  = (aln->at(ptn+x))[static_cast<size_t>(left->node->id)];
-                            rightState = (aln->at(ptn+x))[static_cast<size_t>(right->node->id)];
+                            leftState  = static_cast<int>((aln->at(ptn+x))[static_cast<size_t>(left->node->id)]);
+                            rightState = static_cast<int>((aln->at(ptn+x))[static_cast<size_t>(right->node->id)]);
                         }
                     } else if (ptn+x < max_orig_nptn) {
                         leftState  = unknown;
                         rightState = unknown;
                     } else if (ptn+x < nptn) {
-                        leftState  = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(left->node->id)];
-                        rightState = model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(right->node->id)];
+                        leftState  = static_cast<int>(model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(left->node->id)]);
+                        rightState = static_cast<int>(model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(right->node->id)]);
                     } else {
                         leftState  = unknown;
                         rightState = unknown;
@@ -401,7 +401,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
         double *partial_lh_left = partial_lh_leaves;
         double *vec_left = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * packet_id;
         auto leftStateRow  = this->getConvertedSequenceByNumber(left->node->id);
-        auto unknown  = aln->STATE_UNKNOWN;
+        int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
         for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {
             VectorClass *partial_lh = (VectorClass*)(dad_branch->partial_lh + ptn*block);
             VectorClass *partial_lh_right = (VectorClass*)(right->partial_lh + ptn*block);
@@ -411,14 +411,14 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                 int state;
                 if (ptn+x < orig_nptn) {
                     if (leftStateRow!=nullptr) {
-                        state = leftStateRow[ptn+x];
+                        state = static_cast<int>(leftStateRow[ptn+x]);
                     } else {
-                        state = (aln->at(ptn+x))[static_cast<size_t>(left->node->id)];
+                        state = static_cast<int>((aln->at(ptn+x))[static_cast<size_t>(left->node->id)]);
                     }
                 } else if (ptn+x < max_orig_nptn) {
                     state = unknown;
                 } else if (ptn+x < nptn) {
-                    state = block*model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(left->node->id)];
+                    state = static_cast<int>(block*model_factory->unobserved_ptns[ptn+x-max_orig_nptn][static_cast<size_t>(left->node->id)]);
                 } else {
                     state = unknown;
                 }
@@ -1196,7 +1196,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
 
             double *vec_tip = buffer_partial_lh_ptr + block*VectorClass::size() * packet_id;
             auto dadStateRow  = this->getConvertedSequenceByNumber(dad->id);
-            auto unknown  = aln->STATE_UNKNOWN;
+            int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
 
             for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {
                 VectorClass lh_ptn(0.0);
@@ -1212,14 +1212,14 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
                         dadState = 0;
                     } else if (ptn+i < orig_nptn) {
                         if ( dadStateRow != nullptr ) {
-                            dadState = dadStateRow[ptn+i];
+                            dadState = static_cast<int>(dadStateRow[ptn+i]);
                         } else {
-                            dadState = (aln->at(ptn+i))[static_cast<size_t>(dad->id)]; //FLATTEN
+                            dadState = static_cast<int>((aln->at(ptn+i))[static_cast<size_t>(dad->id)]); //FLATTEN
                         }
                     } else if (ptn+i < max_orig_nptn) {
                         dadState = unknown;
                     } else if (ptn+i < nptn) {
-                        dadState = model_factory->unobserved_ptns[ptn+i-max_orig_nptn][static_cast<size_t>(dad->id)];
+                        dadState = static_cast<int>(model_factory->unobserved_ptns[ptn+i-max_orig_nptn][static_cast<size_t>(dad->id)]);
                     } else {
                         dadState = unknown;
                     }

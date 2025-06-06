@@ -6058,7 +6058,7 @@ bool PhyloTree::computeTraversalInfo(PhyloNeighbor *dad_branch, PhyloNode *dad, 
         //------- normal model -----
         info.echildren = buffer;
         size_t block = nstates * ((model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures());
-        buffer += get_safe_upper_limit(block*nstates*(node->degree()-1));
+        buffer += get_safe_upper_limit(block*nstates*(static_cast<size_t>(node->degree())-1));
         if (num_leaves) {
             info.partial_lh_leaves = buffer;
             buffer += get_safe_upper_limit((aln->STATE_UNKNOWN+1)*block*num_leaves);

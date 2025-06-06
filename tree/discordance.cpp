@@ -386,9 +386,9 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
         for (size_t ptn = 0; ptn < nptn; ptn++) {
             int state;
             if (isRootLeaf(dad_branch->node)) {
-                state = aln->STATE_UNKNOWN;
+                state = static_cast<int>(aln->STATE_UNKNOWN);
             } else {
-                state = (aln->at(ptn))[static_cast<size_t>(dad_branch->node->id)];
+                state = static_cast<int>((aln->at(ptn))[static_cast<size_t>(dad_branch->node->id)]);
             }
             double *state_lh = &tip_partial_lh[static_cast<size_t>(state)*nstates];
             memcpy(&ptn_ancestral_prob[ptn*nstates], state_lh, sizeof(double)*nstates);

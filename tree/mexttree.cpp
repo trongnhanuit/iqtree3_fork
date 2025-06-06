@@ -66,7 +66,7 @@ void MExtTree::setZeroInternalBranches(int num_zero_len) {
 	generateNNIBraches(nodes, nodes2);
 	if (num_zero_len > nodes.size()) outError("The specified number of zero branches is too much");
 	for (int i = 0; i < num_zero_len;) {
-		int id = random_int(nodes.size());
+		size_t id = static_cast<size_t>(random_int(nodes.size()));
 		if (!nodes[id]) continue;
 		i++;
 		nodes[id]->findNeighbor(nodes2[id])->length = 0.0;

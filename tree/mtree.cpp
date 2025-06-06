@@ -165,7 +165,7 @@ void MTree::copyTree(MTree *tree, string &taxa_set) {
 
 Node* MTree::copyTree(MTree *tree, string &taxa_set, double &len, Node *node, Node *dad) {
     if (!node) {
-        if (taxa_set[tree->root->id]) {
+        if (taxa_set[static_cast<size_t>(tree->root->id)]) {
             node = tree->root;
         } else {
             for (int i = 0; i < tree->leafNum; i++)
@@ -180,7 +180,7 @@ Node* MTree::copyTree(MTree *tree, string &taxa_set, double &len, Node *node, No
     DoubleVector new_lens;
     if (node->isLeaf()) {
         len = 0.0;
-        if (taxa_set[node->id]) {
+        if (taxa_set[static_cast<size_t>(node->id)]) {
             new_node = newNode(leafNum++, node->name.c_str());
         }
         if (dad) return new_node;
@@ -601,7 +601,7 @@ void MTree::printSubTree(ostream &out, NodeVector &subtree, Node *node, Node *da
     do {
         degree = 0;
         FOR_NEIGHBOR(node, dad, it) {
-            if (subtree[(*it)->node->id] != nullptr) {
+            if (subtree[static_cast<size_t>((*it)->node->id)] != nullptr) {
                 degree++;
                 child = (*it)->node;
             }
@@ -623,7 +623,7 @@ void MTree::printSubTree(ostream &out, NodeVector &subtree, Node *node, Node *da
         bool first = true;
 
         FOR_NEIGHBOR(node, dad, it)	{
-            if (subtree[(*it)->node->id] != nullptr) {
+            if (subtree[static_cast<size_t>((*it)->node->id)] != nullptr) {
                 if ((*it)->node->name != ROOT_NAME) {
                     if (!first)
                         out << ",";
@@ -1434,7 +1434,7 @@ void MTree::getBranchLengths(vector<DoubleVector> &len, Node *node, Node *dad) {
     //for (NeighborVec::iterator it = node->neighbors.begin(); it != node->neighbors.end(); it++)
     //if ((*it)->node != dad)	{
     FOR_NEIGHBOR_IT(node, dad, it) {
-        (*it)->getLength(len[(*it)->id]);
+        (*it)->getLength(len[static_cast<size_t>((*it)->id)]);
         getBranchLengths(len, (*it)->node, node);
     }
 }
@@ -1447,8 +1447,8 @@ void MTree::setBranchLengths(vector<DoubleVector> &len, Node *node, Node *dad) {
     //for (NeighborVec::iterator it = node->neighbors.begin(); it != node->neighbors.end(); it++)
     //if ((*it)->node != dad)	{
     FOR_NEIGHBOR_IT(node, dad, it) {
-        (*it)->setLength(len[(*it)->id]);
-        (*it)->node->findNeighbor(node)->setLength(len[(*it)->id]);
+        (*it)->setLength(len[static_cast<size_t>((*it)->id)]);
+        (*it)->node->findNeighbor(node)->setLength(len[static_cast<size_t>((*it)->id)]);
         setBranchLengths(len, (*it)->node, node);
     }
 }
@@ -1457,7 +1457,7 @@ void MTree::getOrderedTaxa(NodeVector &taxa, Node *node, Node *dad) {
     if (!node) node = root;
     if (node->isLeaf()) {
         if (taxa.empty()) taxa.resize(leafNum);
-        taxa[node->id] = node;
+        taxa[static_cast<size_t>(node->id)] = node;
     }
     //for (NeighborVec::iterator it = node->neighbors.begin(); it != node->neighbors.end(); it++)
     //if ((*it)->node != dad)	{
@@ -1474,7 +1474,7 @@ void MTree::getTaxaName(vector<string> &taxname, Node *node, Node *dad) {
         if (taxname.empty()) {
             taxname.resize(leafNum);
         }
-        taxname[node->id] = node->name;
+        taxname[static_cast<size_t>(node->id)] = node->name;
     }
     FOR_NEIGHBOR_IT(node, dad, it) {
         getTaxaName(taxname, (*it)->node, node);
@@ -2262,8 +2262,8 @@ void MTree::calcDist(Node *aroot, double cur_len, double* &dist, Node *node, Nod
     double branch_length;
 	if (!node) node = root;
     if (node->isLeaf()) {
-        dist[aroot->id * leafNum + node->id] = cur_len;
-        dist[node->id * leafNum + aroot->id] = cur_len;
+        dist[static_cast<size_t>(aroot->id * leafNum + node->id)] = cur_len;
+        dist[static_cast<size_t>(node->id * leafNum + aroot->id)] = cur_len;
     }
     //for (NeighborVec::iterator it = node->neighbors.begin(); it != node->neighbors.end(); it++)
     //if ((*it)->node != dad)	{
@@ -2399,7 +2399,8 @@ void MTree::extractQuadSubtrees(vector<Split*> &subtrees, BranchVector &branches
 		int cnt = 0;
 		Node *child = (*it)->node;
         string treestrings[4];
-        int nodeid = 0;
+        // NHANLT: nodeid is always >= 0: starting at 0 and increasing
+        size_t nodeid = 0;
 		FOR_NEIGHBOR_DECLARE(child, node, it2) {
 			Split *sp = new Split(leafNum);
 			getTaxa(*sp, (*it2)->node, child);

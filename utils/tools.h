@@ -3654,7 +3654,7 @@ void quicksort(T1* arr, int left, int right, T2* arr2 = nullptr) {
 */
 inline uint32_t popcount_lauradoux(unsigned *buf, int n) {
   const uint64_t* data = (uint64_t*) buf;
-  uint32_t size = static_cast<unsigned long>(n)/(sizeof(uint64_t)/sizeof(int));
+  uint32_t size = static_cast<uint32_t>( static_cast<unsigned long>(n)/(sizeof(uint64_t)/sizeof(int)) );
   const uint64_t m1  = (0x5555555555555555ULL);
   const uint64_t m2  = (0x3333333333333333ULL);
   const uint64_t m4  = (0x0F0F0F0F0F0F0F0FULL);

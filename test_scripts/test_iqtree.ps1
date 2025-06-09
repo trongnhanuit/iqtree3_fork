@@ -8,7 +8,8 @@ $SEED=73073
 
 ./build/iqtree3 -s test_scripts/test_data/turtle.fa -p test_scripts/test_data/turtle.nex -B 1000 -T 1 -m MFP+MERGE -rcluster 10 --prefix test_scripts/test_data/turtle.merge -seed $SEED
 
-cat test_scripts/test_data/turtle.fa.treefile test_scripts/test_data/turtle.nex.treefile > test_scripts/test_data/turtle.trees
+Get-Content test_scripts/test_data/turtle.fa.treefile, test_scripts/test_data/turtle.nex.treefile |
+    Set-Content test_scripts/test_data/turtle.trees
 ./build/iqtree3 -s test_scripts/test_data/turtle.fa -p test_scripts/test_data/turtle.merge.best_scheme.nex -z test_scripts/test_data/turtle.trees -zb 10000 -au -n 0 --prefix test_scripts/test_data/turtle.test -seed $SEED -T 1
 
 ./build/iqtree3 -s test_scripts/test_data/turtle.fa -m GTR+F+I+R3+T -te test_scripts/test_data/turtle.trees -T 1 --prefix test_scripts/test_data/turtle.mix -seed $SEED

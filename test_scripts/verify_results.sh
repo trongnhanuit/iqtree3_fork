@@ -1,6 +1,6 @@
 #!/bin/bash
 
-input_file="test_data/expect_ans.txt"
+input_file="${1:-test_scripts/test_data/expect_ans.txt}"  # default fallback
 fail_count=0
 line_num=0
 

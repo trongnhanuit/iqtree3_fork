@@ -158,7 +158,6 @@ jobs:
           make package
           file iqtree3 | grep x86_64
           file iqtree*.zip | grep Zip
-          echo "export PATH=$PWD:\$PATH" >> $GITHUB_ENV
           
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4

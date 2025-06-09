@@ -338,7 +338,7 @@ jobs:
       - name: Run test_iqtree.ps1
         shell: pwsh
         run: |
-          ./test_scripts/test_iqtree.sh
+          ./test_scripts/test_iqtree.ps1
 
       - name: Run verify_results.ps1
         shell: pwsh

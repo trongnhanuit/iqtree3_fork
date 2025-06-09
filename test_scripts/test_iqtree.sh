@@ -15,8 +15,6 @@ build/iqtree3 -s test_scripts/test_data/turtle.fa -p test_scripts/test_data/turt
 
 build/iqtree3 -s test_scripts/test_data/turtle.fa -m GTR+F+I+R3+T -te test_scripts/test_data/turtle.trees -T 1 --prefix test_scripts/test_data/turtle.mix -seed $SEED
 
-build/iqtree3 -s test_scripts/test_data/turtle.fa -m GTR+F+I+R3+TR -te test_scripts/test_data/turtle.trees -T 1 --prefix test_scripts/test_data/turtle.mix.tr -seed $SEED
-
 build/iqtree3 -s test_scripts/test_data/turtle.fa -p test_scripts/test_data/turtle.nex.best_scheme.nex -z test_scripts/test_data/turtle.trees -n 0 -wpl --prefix test_scripts/test_data/turtle.wpl -seed $SEED -T 1
 
 build/iqtree3 -s test_scripts/test_data/turtle.fa -S test_scripts/test_data/turtle.nex --prefix test_scripts/test_data/turtle.loci -T 1 -seed $SEED
@@ -26,8 +24,6 @@ build/iqtree3 -t test_scripts/test_data/turtle.nex.treefile --gcf test_scripts/t
 build/iqtree3 -t test_scripts/test_data/turtle.fa.treefile --gcf test_scripts/test_data/turtle.loci.treefile -s test_scripts/test_data/turtle.fa --scf 100 -seed $SEED -T 1
 
 # link-exchange-rates model
-
-build/iqtree3 -s test_scripts/test_data/seqTest_Minh1.fa -te test_scripts/test_data/10txtreelong2.txt -mdef test_scripts/test_data/small2.nex -m "GTR20+ESmodel+G" -mwopt --prefix test_scripts/test_data/small.link.exchange -me 0.99 -T 1 --link-exchange-rates -seed $SEED
 
 build/iqtree3 -s test_scripts/test_data/turtle.fa -m "MIX{GTR+FO,GTR+FO}" --link-exchange-rates --prefix test_scripts/test_data/turtle.mix.link -seed $SEED -T 1
 

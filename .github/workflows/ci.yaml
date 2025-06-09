@@ -64,15 +64,15 @@ jobs:
         path: build/iqtree*.tar.gz
         if-no-files-found: error
 
-      - name: Run test.sh
-        run: |
-          chmod +x test_scripts/test_iqtree.sh
-          ./test_scripts/test_iqtree.sh
+    - name: Run test.sh
+      run: |
+        chmod +x test_scripts/test_iqtree.sh
+        ./test_scripts/test_iqtree.sh
 
-      - name: Run verify_test.sh
-        run: |
-          chmod +x test_scripts/verify_results.sh
-          ./test_scripts/verify_results.sh test_scripts/test_data/expect_ans.txt
+    - name: Run verify_test.sh
+      run: |
+        chmod +x test_scripts/verify_results.sh
+        ./test_scripts/verify_results.sh test_scripts/test_data/expect_ans.txt
 
   build-linux-aarch64:
      name: Linux aarch64

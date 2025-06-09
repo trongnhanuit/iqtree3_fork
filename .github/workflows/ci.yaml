@@ -158,6 +158,7 @@ jobs:
           make package
           file iqtree3 | grep x86_64
           file iqtree*.zip | grep Zip
+          echo "export PATH=$PWD:\$PATH" >> $GITHUB_ENV
           
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
@@ -166,6 +167,16 @@ jobs:
           path: build/iqtree*.zip
           if-no-files-found: error
 
+      - name: Run test.sh
+        run: |
+          chmod +x test_scripts/test_iqtree.sh
+          ./test_scripts/test_iqtree.sh
+
+      - name: Run verify_test.sh
+        run: |
+          chmod +x test_scripts/verify_results.sh
+          ./test_scripts/verify_results.sh test_scripts/test_data/expect_ans.txt
+          
   build-macos-arm:
     name: Mac OS ARM64
     runs-on: macos-14

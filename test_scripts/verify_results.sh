@@ -49,7 +49,8 @@ done < "$input_file"
 
 echo
 if [ "$fail_count" -eq 0 ]; then
-    echo "All checks passed."
+    echo "✅ All checks passed."
 else
-    echo "$fail_count checks failed."
+    echo "❌ $fail_count checks failed."
+    exit 1
 fi

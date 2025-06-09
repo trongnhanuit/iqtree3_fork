@@ -1,6 +1,6 @@
 #!/bin/bash
 
-input_file="${1:-test_scripts/test_data/expect_ans.txt}"  # default fallback
+input_file="test_scripts/test_data/expect_ans.txt"
 fail_count=0
 line_num=0
 
@@ -12,7 +12,7 @@ while IFS=$'\t' read -r iqtree_file field_name expected_value threshold || [ -n 
         continue
     fi
 
-    iqtree_file="test_data/${iqtree_file}"
+    iqtree_file="test_scripts/test_data/${iqtree_file}"
 
     if [ ! -f "$iqtree_file" ]; then
         echo "File not found: $iqtree_file"

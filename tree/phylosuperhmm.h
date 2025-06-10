@@ -28,7 +28,7 @@ public:
     /**
      destructor
      */
-    ~PhyloSuperHmm();
+    ~PhyloSuperHmm() override;
     
     /**
      @return true if this is a mixture of trees, default: false

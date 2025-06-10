@@ -386,7 +386,7 @@ public:
     /**
             destructor
      */
-    virtual ~PhyloTree();
+    virtual ~PhyloTree() override;
 
     /**
         start structure for checkpointing

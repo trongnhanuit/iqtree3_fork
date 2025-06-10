@@ -28,7 +28,7 @@ public:
     /**
      destructor
      */
-    ~IQTreeMixHmm();
+    ~IQTreeMixHmm() override;
     
     // initialize the model
     void initializeModel(Params &params, string model_name, ModelsBlock *models_block) override;

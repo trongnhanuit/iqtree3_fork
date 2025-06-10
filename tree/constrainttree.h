@@ -27,7 +27,7 @@ public:
     ConstraintTree();
 
     /** destructor */
-    virtual ~ConstraintTree();
+    virtual ~ConstraintTree() override;
 
     /**
         internal function to initialize splits from tree structure

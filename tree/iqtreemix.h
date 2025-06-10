@@ -45,7 +45,7 @@ public:
     /**
      destructor
      */
-    virtual ~IQTreeMix();
+    virtual ~IQTreeMix() override;
 
     /**
      initialization

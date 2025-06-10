@@ -32,7 +32,7 @@ public:
     /**
      * destructor
      */
-    ~ParsTree();
+    ~ParsTree() override;
 
 //    /**
 //     * allocate for ptn_pars if needed

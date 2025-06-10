@@ -24,7 +24,7 @@ public:
 
     /**
      * Constructor with given alignment
-     * @param alignment
+     * @param alignment an alignment
      */
     ParsTree(Alignment *alignment);
 

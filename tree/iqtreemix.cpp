@@ -1710,7 +1710,7 @@ void IQTreeMix::setParams(Params* params) {
         at(i)->setParams(params);
     }
     this->params = params;
-};
+}
 
 /*
  * Generate the branch IDs

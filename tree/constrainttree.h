@@ -43,7 +43,7 @@ public:
 
     /**
         initialize from another constraint tree
-        @param src source constraint tree
+        @param src_tree source constraint tree
     */
     void readConstraint(MTree &src_tree);
 

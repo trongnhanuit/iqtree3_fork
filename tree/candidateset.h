@@ -116,9 +116,9 @@ public:
     /**
      *  update/insert \a tree into the candidate set if its score is higher than the worst tree
      *
-     *  @param tree
+     *  @param newTree
      * 	    The new tree string (with branch lengths)
-     *  @param score
+     *  @param newScore
      * 	    The score (ML or parsimony) of \a tree
      *  @return
      *      Relative position of the new tree to the current best tree.
@@ -157,7 +157,7 @@ public:
     /**
      *  Get \a numTree top scoring trees for this MPI process. Also work for sequential version.
      *
-     *  @param numTree
+     *  @param totalNumTree
      *  	Number of top scoring trees
      *  @return
      *  	Vector of current best trees
@@ -200,7 +200,7 @@ public:
      *
      * 	@param tree
      * 		The newick tree string, from which the topology string will be generated
-     * 	@param convertOption
+     * 	@param format
      * 	    Use the same options as printTree() (WT_ID, WT_BR_LEN, ...)
      * 	@return
      * 		Newick string of the tree topology
@@ -272,8 +272,8 @@ public:
 
     /**
      * Return a pointer to the \a CandidateTree that has topology equal to \a topology
-     * @param topology
-     * @return
+     * @param topology tree topology
+     * @return iterator an iterator
      */
     iterator getCandidateTree(string topology);
 
@@ -298,7 +298,7 @@ public:
     /**
      * Return a CandidateSet containing \a numTrees candidate trees
      * @param numTrees
-     * @return
+     * @return a CandidateSet
      */
     CandidateSet getBestCandidateTrees(int numTrees = 0);
 
@@ -325,7 +325,7 @@ public:
 	/**
 	 *  Add splits from \a treeString to the current candidate splits
 	 *
-	 *  @param tree collect splits from this tree
+	 *  @param treeString collect splits from this tree
 	 */
 	void addCandidateSplits(string treeString);
 

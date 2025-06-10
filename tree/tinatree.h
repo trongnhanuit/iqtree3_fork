@@ -31,7 +31,7 @@ public:
     TinaTree();
     /**
      * Constructor with given alignment
-     * @param alignment
+     * @param alignment an alignment
      */
     TinaTree(Alignment *alignment);
 

@@ -366,7 +366,7 @@ public:
 
     /**
      * Constructor with given alignment
-     * @param alignment
+     * @param aln an alignment
      */
     PhyloTree(Alignment *aln);
 
@@ -434,7 +434,7 @@ public:
     /**
      copy the constraint tree structure into this tree and reindex node IDs accordingly
      @param tree the tree to copy
-     @param[out] order of taxa with first part being in constraint tree
+     @param[out] taxon_order of taxa with first part being in constraint tree
      */
     void copyConstraintTree(MTree *tree, IntVector &taxon_order, int *rand_stream);
 
@@ -896,8 +896,6 @@ public:
 
     /**
             compute the partial likelihood at a subtree
-            @param dad_branch the branch leading to the subtree
-            @param dad its dad, used to direct the tranversal
      */
     virtual void computePartialLikelihood(TraversalInfo &info, size_t ptn_lower, size_t ptn_upper, int thread_id);
     typedef void (PhyloTree::*ComputePartialLikelihoodType)(TraversalInfo &info, size_t ptn_lower, size_t ptn_upper, int thread_id);
@@ -995,8 +993,6 @@ public:
     /**
             quickly compute tree likelihood on branch current_it <-> current_it_back given buffer (theta_all).
            	Used after optimizing branch length
-            @param pattern_lh (OUT) if not nullptr, the function will assign pattern log-likelihoods to this vector
-                            assuming pattern_lh has the size of the number of patterns
             @return tree likelihood
      */
     virtual double computeLikelihoodFromBuffer();
@@ -1045,7 +1041,7 @@ public:
             compute the tree likelihood
             @param pattern_lh (OUT) if not nullptr, the function will assign pattern log-likelihoods to this vector
                             assuming pattern_lh has the size of the number of patterns
-            @param save_log_value, report the log-likelihood values or likelihood values to the array pattern_lh
+            @param save_log_value report the log-likelihood values or likelihood values to the array pattern_lh
             @return tree likelihood
      */
     virtual double computeLikelihood(double *pattern_lh = nullptr, bool save_log_value = true);
@@ -1184,8 +1180,8 @@ public:
     /**
      * \brief Approximate the branch legnth between \a dad_branch and \a dad using Least Square instead
      * of Newton Raphson
-     * @param[in] dad_branch
-     * @param[in] dad
+     * @param[in] dad_branch dad branch
+     * @param[in] dad dad node
      * @return approximated branch length
      */
     double computeLeastSquareBranLen(PhyloNeighbor *dad_branch, PhyloNode *dad);
@@ -1229,20 +1225,18 @@ public:
             refactored 2015-12-22: Taxon IDs instead of Taxon names to save space!
             Read the tree saved with Taxon IDs and branch lengths.
             @param tree_string tree string to read from
-            @param updatePLL if true, tree is read into PLL
      */
     virtual void readTreeString(const string &tree_string);
 
     /**
             Read the tree saved with Taxon names and branch lengths.
             @param tree_string tree string to read from
-            @param updatePLL if true, tree is read into PLL
      */
     virtual void readTreeStringSeqName(const string &tree_string);
 
     /**
             Read the tree saved with Taxon Names and branch lengths.
-            @param tree_string tree string to read from
+            @param file_name tree file to read from
      */
     void readTreeFile(const string &file_name);
     
@@ -1266,7 +1260,7 @@ public:
 
     /**
      * Read the newick string into PLL kernel
-     * @param newickTree
+     * @param newickTree a tree in newick string
      */
     void pllReadNewick(string newickTree);
 
@@ -1338,7 +1332,6 @@ public:
             @param dad its dad, used to direct the tranversal
             @param df (OUT) first derivative
             @param ddf (OUT) second derivative
-            @return tree likelihood
      */
     void computeLikelihoodDerv(PhyloNeighbor *dad_branch, PhyloNode *dad, double *df, double *ddf);
 
@@ -1366,9 +1359,6 @@ public:
     /**
             FAST VERSION: used internally by computeParsimonyTree() to find the best target branch to add into the tree
             @param added_node node to add
-            @param target_node (OUT) one end of the best branch found
-            @param target_dad (OUT) the other end of the best branch found
-            @param target_partial_pars (OUT) copy of the partial_pars corresponding to best branch
             @param node the current node
             @param dad dad of the node, used to direct the search
             @return the parsimony score of the tree
@@ -1417,7 +1407,6 @@ public:
             @param node2 2nd end node of the branch
             @param clearLH true to clear the partial likelihood, otherwise false
             @param maxNRStep maximum number of Newton-Raphson steps
-            @return likelihood score
      */
     virtual void optimizeOneBranch(PhyloNode *node1, PhyloNode *node2, bool clearLH = true, int maxNRStep = 100);
 
@@ -1433,7 +1422,6 @@ public:
             optimize all branch lengths at the subtree rooted at node step-by-step.
             @param node the current node
             @param dad dad of the node, used to direct the search
-            @return the likelihood of the tree
      */
     virtual void optimizeAllBranches(PhyloNode *node, PhyloNode *dad = nullptr, int maxNRStep = 100);
 
@@ -1449,7 +1437,7 @@ public:
 
     /**
             optimize all branch lengths of the tree
-            @param iterations number of iterations to loop through all branches
+            @param my_iterations number of iterations to loop through all branches
             @return the likelihood of the tree
      */
     virtual double optimizeAllBranches(int my_iterations = 100, double tolerance = TOL_LIKELIHOOD, int maxNRStep = 100);
@@ -1459,7 +1447,7 @@ public:
     virtual double computeFundiLikelihood();
 
     /**
-     optimize \rho and branch length of the central branch by FunDi model (Gaston, Susko, Roger 2011)
+     optimize rho and branch length of the central branch by FunDi model (Gaston, Susko, Roger 2011)
      @return log-likelihood of FunDi model
      */
     virtual double optimizeFundiModel();
@@ -1494,7 +1482,6 @@ public:
             @param value current branch length
             @param df (OUT) first derivative
             @param ddf (OUT) second derivative
-            @return negative of likelihood (for minimization)
      */
     virtual void computeFuncDerv(double value, double &df, double &ddf);
 
@@ -1526,7 +1513,7 @@ public:
      * Estimate the current branch using least squares
      * @param node1 first node of the branch
      * @param node2 second node of the branch
-     * @return
+     * @return a double
      */
     double optimizeOneBranchLS(PhyloNode *node1, PhyloNode *node2);
 
@@ -1703,15 +1690,6 @@ public:
 
     virtual void prepareToComputeDistances();
     
-    /**
-            compute the distance between 2 sequences.
-            @param seq1 index of sequence 1
-            @param seq2 index of sequence 2
-            @param initial_dist initial distance
-            @param (OUT) variance of distance between seq1 and seq2
-            @return distance between seq1 and seq2
-     */
-    
     virtual bool hasMatrixOfConvertedSequences() const;
 
     virtual size_t getConvertedSequenceLength() const;
@@ -1809,7 +1787,6 @@ public:
     /**
             Neighbor-joining/parsimony tree might contain negative branch length. This
             function will fix this.
-            @param fixed_length fixed branch length to set to negative branch lengths
             @param node the current node
             @param dad dad of the node, used to direct the search
             @return The number of branches that have no/negative length
@@ -1964,7 +1941,7 @@ public:
     vector<SeqQuartetInfo> lmap_seq_quartet_info;
 
     /** generate a bunch of quartets and compute likelihood for 3 quartet trees for each replicate
-        @param lmap_num_quartets number of quartets
+        @param LMGroups number of quartets
         @param lmap_quartet_info (OUT) vector of quartet information
     */
     void computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info, QuartetGroups &LMGroups);
@@ -1987,7 +1964,6 @@ public:
      compute site concordance factor
      @param branch target branch
      @param nquartets number of quartets
-     @param[out] info concordance information
      @param rstream random stream
      */
     virtual void computeSiteConcordance(Branch &branch, int nquartets, int *rstream);
@@ -2001,7 +1977,6 @@ public:
      compute ancestral site concordance factor
      @param branch target branch
      @param nquartets number of quartets
-     @param[out] info concordance information
      @param rstream random stream
      */
     virtual void computeAncestralSiteConcordance(Branch &branch, int nquartets, int *rstream,
@@ -2047,7 +2022,6 @@ public:
     /**
             reinsert one leaf back into the tree
             @param leaf the leaf to reinsert
-            @param adjacent_node the node adjacent to the leaf, returned by deleteLeaves() function
             @param node one end node of the reinsertion branch in the existing tree
             @param dad the other node of the reinsertion branch in the existing tree
      */
@@ -2296,8 +2270,7 @@ public:
     virtual void writeBranches(ostream &out);
     
     /**
-       @param out the file path to which a (newly generated) distance file has been written
-        (or blank, if it hasn't)
+       @return a string
      */
     const string& getDistanceFileWritten() const;
 

@@ -100,17 +100,17 @@ public:
         set checkpoint object
         @param checkpoint
     */
-    virtual void setCheckpoint(Checkpoint *checkpoint);
+    virtual void setCheckpoint(Checkpoint *checkpoint) override;
 
     /** 
         save object into the checkpoint
     */
-    virtual void saveCheckpoint();
+    virtual void saveCheckpoint() override;
 
     /** 
         restore object from the checkpoint
     */
-    virtual void restoreCheckpoint();
+    virtual void restoreCheckpoint() override;
 
     /**
         save UFBoot_trees.
@@ -865,7 +865,7 @@ protected:
 
     void estimateNNICutoff(Params* params);
 
-    virtual void saveCurrentTree(double logl); // save current tree
+    virtual void saveCurrentTree(double logl) override; // save current tree
 
 
     void saveNNITrees(PhyloNode *node = nullptr, PhyloNode *dad = nullptr);

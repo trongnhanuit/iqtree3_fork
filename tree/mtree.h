@@ -840,7 +840,7 @@ public:
     Node *findFarthestLeaf(Node *node = nullptr, Node *dad = nullptr);
         
     /** 
-        @get pre-order branches going into swallow subtrees first
+        get pre-order branches going into swallow subtrees first
         @param nodes one endpoint of branch
         @params nodes2 other endpoint of branch
         @param node the starting node, nullptr to start from the root

@@ -77,7 +77,6 @@ public:
             refactored 2015-12-22: Taxon IDs instead of Taxon names to save space!
             Read the tree saved with Taxon IDs and branch lengths.
             @param tree_string tree string to read from
-            @param updatePLL if true, tree is read into PLL
      */
     virtual void readTreeString(const string &tree_string);
 
@@ -133,7 +132,7 @@ public:
 
     /**
             print tree to .treefile
-            @param params program parameters, field root is taken
+            @param suffix suffix of the output file
      */
     virtual void printResultTree(string suffix = "");
 
@@ -160,13 +159,12 @@ public:
             @param node2 2nd end node of the branch
             @param clearLH true to clear the partial likelihood, otherwise false
             @param maxNRStep maximum number of Newton-Raphson steps
-            @return likelihood score
      */
     virtual void optimizeOneBranch(PhyloNode *node1, PhyloNode *node2, bool clearLH = true, int maxNRStep = 100);
 
     /**
             optimize all branch lengths of the tree
-            @param iterations number of iterations to loop through all branches
+            @param my_iterations number of iterations to loop through all branches
             @return the likelihood of the tree
      */
     virtual double optimizeAllBranches(int my_iterations = 100, double tolerance = TOL_LIKELIHOOD, int maxNRStep = 100);
@@ -189,7 +187,6 @@ public:
             @param value current branch length
             @param df (OUT) first derivative
             @param ddf (OUT) second derivative
-            @return negative of likelihood (for minimization)
      */
     virtual void computeFuncDerv(double value, double &df, double &ddf);
 

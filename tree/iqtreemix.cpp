@@ -1293,7 +1293,7 @@ void IQTreeMix::computePatternProbabilityCategory(double *ptn_prob_cat, SiteLogl
 
 /**
         optimize all branch lengths of one tree
-        @param iterations number of iterations to loop through all branches
+        @param my_iterations number of iterations to loop through all branches
  */
 void IQTreeMix::optimizeAllBranchesOneTree(int whichtree, int my_iterations, double tolerance, int maxNRStep) {
     PhyloTree* ptree;
@@ -1308,7 +1308,7 @@ void IQTreeMix::optimizeAllBranchesOneTree(int whichtree, int my_iterations, dou
 
 /**
         optimize all branch lengths of all trees
-        @param iterations number of iterations to loop through all branches
+        @param my_iterations number of iterations to loop through all branches
         @return the likelihood of the tree
  */
 double IQTreeMix::optimizeAllBranches(int my_iterations, double tolerance, int maxNRStep) {
@@ -1644,7 +1644,7 @@ void IQTreeMix::setRootNode(const char *my_root, bool multi_taxa) {
 
 /**
     set checkpoint object
-    @param checkpoint
+    @param checkpoint a checkpoint
 */
 void IQTreeMix::setCheckpoint(Checkpoint *checkpoint) {
     size_t i;
@@ -2632,7 +2632,7 @@ string IQTreeMix::optimizeModelParameters(bool printInfo, double logl_epsilon) {
 
 /**
         print tree to .treefile
-        @param params program parameters, field root is taken
+        @param suffix suffix of the output file
  */
 void IQTreeMix::printResultTree(string suffix) {
     ofstream fout;
@@ -2823,7 +2823,6 @@ vector<string> IQTreeMix::getBestTrees(int numTrees) {
 /**
         Read the tree saved with Taxon IDs and branch lengths.
         @param tree_string tree string to read from
-        @param updatePLL if true, tree is read into PLL
  */
 void IQTreeMix::readTreeString(const string &tree_string) {
     vector<string> substrs;

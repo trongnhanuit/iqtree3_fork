@@ -92,7 +92,7 @@ public:
     /**
             destructor
      */
-    virtual ~IQTree();
+    virtual ~IQTree() override;
 
     void init();
 

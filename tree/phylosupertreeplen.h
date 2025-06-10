@@ -46,7 +46,7 @@ public:
     PhyloSuperTreePlen(SuperAlignment *alignment, int partition_type);
 	PhyloSuperTreePlen(SuperAlignment *alignment, PhyloSuperTree *super_tree);
 
-	~PhyloSuperTreePlen();
+	~PhyloSuperTreePlen() override;
 
     /** normalize part_rate of part_info */
     void normalizePartRate();

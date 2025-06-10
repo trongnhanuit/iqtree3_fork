@@ -176,7 +176,7 @@ public:
     /**
      * destructor
      */
-    virtual ~CandidateSet();
+    virtual ~CandidateSet() override;
 
     /**
      * 	Check if tree topology \a topo already exists

@@ -35,7 +35,7 @@ public:
      */
     TinaTree(Alignment *alignment);
 
-    ~TinaTree();
+    ~TinaTree() override;
     /**
             SLOW VERSION: compute the parsimony score of the tree, given the alignment
             @return the parsimony score

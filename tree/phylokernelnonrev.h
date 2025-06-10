@@ -628,7 +628,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
     double* buffer_partial_lh_ptr = buffer_partial_lh + get_safe_upper_limit(3*block*nstates);
 
     for (size_t c = 0; c < ncat_mix; c++) {
-        int  mycat = c%ncat;
+        int  mycat = static_cast<int>(c%ncat);
         int  m = static_cast<int>(c/denom);
         double  cat_rate = site_rate->getRate(mycat);
         double  len = cat_rate * dad_branch->length;

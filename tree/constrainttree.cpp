@@ -36,7 +36,7 @@ void ConstraintTree::readConstraint(const char *constraint_file, StrVector &full
 
     StringIntMap fulltax_index;
     for (it = fulltaxname.begin(); it != fulltaxname.end(); it++) {
-        fulltax_index[(*it)] = it - fulltaxname.begin();
+        fulltax_index[(*it)] = static_cast<int>(it - fulltaxname.begin());
     }
 
     bool err = false;

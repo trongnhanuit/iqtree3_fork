@@ -118,7 +118,7 @@ vector<string> CandidateSet::getBestTreeStringsForProcess(int numTree) {
     if (numTree == 0 || numTree > alltrees.size()) {
         numTree = alltrees.size();
     }
-    int cnt = 0;
+    size_t cnt = 0;
     vector<string> res;
     // process will get trees indexed procID, procID+1*numProc, procID+2*numProc,...
     for (cnt = procID; cnt < numTree; cnt+=numProc) {

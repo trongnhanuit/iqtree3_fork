@@ -140,8 +140,8 @@ bool ConstraintTree::isCompatible(StrVector &tax1, StrVector &tax2) {
         return true;
     }
 
-    Split sp1(leafNum);
-    Split sp2(leafNum);
+    Split sp1(static_cast<int>(leafNum));
+    Split sp2(static_cast<int>(leafNum));
     
     StrVector::iterator it;
     StringIntMap::iterator mit;

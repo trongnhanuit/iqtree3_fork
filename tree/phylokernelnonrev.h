@@ -74,7 +74,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     }
     
     // precomputed buffer to save times
-    double *buffer_partial_lh_ptr = buffer_partial_lh + (getBufferPartialLhSize() - 2*block*VectorClass::size()*num_packets);
+    double *buffer_partial_lh_ptr = buffer_partial_lh + (getBufferPartialLhSize() - 2*block*VectorClass::size()*static_cast<size_t>(num_packets));
     double *echildren = info.echildren;
     double *partial_lh_leaves = info.partial_lh_leaves;
     
@@ -105,7 +105,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     if (node->degree() > 3) {
         
         /*--------------------- multifurcating node ------------------*/
-        double *vec_tip = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * packet_id;
+        double *vec_tip = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * static_cast<size_t>(packet_id);
         VectorClass *vtip = (VectorClass*)vec_tip;
         
         // now for-loop computing partial_lh over all site-patterns
@@ -254,7 +254,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
         
         double *partial_lh_left = partial_lh_leaves;
         double *partial_lh_right = partial_lh_leaves + (aln->STATE_UNKNOWN+1)*block;
-        double *vec_left = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * packet_id;
+        double *vec_left = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * static_cast<size_t>(packet_id);
         double *vec_right =  &vec_left[block*VectorClass::size()];
         
         if (isRootLeaf(right->node)) {
@@ -399,7 +399,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
         
         
         double *partial_lh_left = partial_lh_leaves;
-        double *vec_left = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * packet_id;
+        double *vec_left = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * static_cast<size_t>(packet_id);
         auto leftStateRow  = this->getConvertedSequenceByNumber(left->node->id);
         int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
         for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {

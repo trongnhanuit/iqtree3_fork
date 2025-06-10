@@ -24,7 +24,7 @@ inline double logDotProd(double* ln_x, double* ln_y, int n) {
     double ans;
     ASSERT(n >= 0);
     
-    w = new double[n];
+    w = new double[static_cast<size_t>(n)];
     for (i = 0; i < static_cast<size_t>(n); i++) {
         w[i] = ln_x[i] + ln_y[i];
     }

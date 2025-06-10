@@ -193,10 +193,10 @@ void IQTree::restoreCheckpoint() {
         // NHANLT: id is always >= 0: starting at 0 and increasing
         size_t id = 0;
         checkpoint->startList(params->gbo_replicates);
-        boot_trees.resize(params->gbo_replicates);
-        boot_logl.resize(params->gbo_replicates);
-        boot_orig_logl.resize(params->gbo_replicates);
-        boot_counts.resize(params->gbo_replicates);
+        boot_trees.resize(static_cast<size_t>(params->gbo_replicates));
+        boot_logl.resize(static_cast<size_t>(params->gbo_replicates));
+        boot_orig_logl.resize(static_cast<size_t>(params->gbo_replicates));
+        boot_counts.resize(static_cast<size_t>(params->gbo_replicates));
         for (id = 0; id < static_cast<size_t>(params->gbo_replicates); id++) {
             checkpoint->addListElement();
             string str;
@@ -253,7 +253,7 @@ void IQTree::initSettings(Params &params) {
                 params.min_iterations = aln->getNSeq() * 2;
             }
             if (params.iteration_multiple > 1)
-                params.min_iterations = aln->getNSeq() * params.iteration_multiple;
+                params.min_iterations = static_cast<int>(aln->getNSeq()) * params.iteration_multiple;
         } else {
             params.min_iterations = 100;
         }
@@ -300,7 +300,8 @@ void IQTree::initSettings(Params &params) {
         if (k_delete_max < 20) {
             k_delete_max = 20;
         }
-        k_delete_stay = ceil(leafNum / k_delete);
+        ASSERT(k_delete >= 0);
+        k_delete_stay = ceil(leafNum / static_cast<unsigned int>(k_delete));
     }
 
     //tree.setIQPIterations(params.stop_condition, params.stop_confidence, params.min_iterations, params.max_iterations);
@@ -360,14 +361,14 @@ void IQTree::initSettings(Params &params) {
 //        cout << "Generating " << params.gbo_replicates << " samples for ultrafast "
 //             << RESAMPLE_NAME << " (seed: " << params.ran_seed << ")..." << endl;
         // allocate memory for boot_samples
-        boot_samples.resize(params.gbo_replicates);
+        boot_samples.resize(static_cast<size_t>(params.gbo_replicates));
         sample_start = 0;
         sample_end = boot_samples.size();
 
         // compute the sample_start and sample_end
         if (MPIHelper::getInstance().getNumProcesses() > 1) {
             int num_samples = boot_samples.size() / MPIHelper::getInstance().getNumProcesses();
-            if (boot_samples.size() % MPIHelper::getInstance().getNumProcesses() != 0) {
+            if (boot_samples.size() % static_cast<size_t>(MPIHelper::getInstance().getNumProcesses()) != 0) {
                 num_samples++;
             }
             sample_start = MPIHelper::getInstance().getProcessID() * num_samples;
@@ -390,10 +391,10 @@ void IQTree::initSettings(Params &params) {
         }
 
         if (boot_trees.empty()) {
-            boot_logl.resize(params.gbo_replicates, -DBL_MAX);
-            boot_orig_logl.resize(params.gbo_replicates, -DBL_MAX);
-            boot_trees.resize(params.gbo_replicates, "");
-            boot_counts.resize(params.gbo_replicates, 0);
+            boot_logl.resize(static_cast<size_t>(params.gbo_replicates), -DBL_MAX);
+            boot_orig_logl.resize(static_cast<size_t>(params.gbo_replicates), -DBL_MAX);
+            boot_trees.resize(static_cast<size_t>(params.gbo_replicates), "");
+            boot_counts.resize(static_cast<size_t>(params.gbo_replicates), 0);
         } else {
             cout << "CHECKPOINT: " << boot_trees.size() << " UFBoot trees and " << boot_splits.size() << " UFBootSplits restored" << endl;
         }
@@ -437,7 +438,7 @@ void IQTree::initSettings(Params &params) {
         on_refine_btree = false;
         saved_aln_on_refine_btree = nullptr;
         if(params.ufboot2corr){
-            boot_samples_int.resize(params.gbo_replicates);
+            boot_samples_int.resize(static_cast<size_t>(params.gbo_replicates));
             for (size_t i = 0; i < params.gbo_replicates; i++) {
                 boot_samples_int[i].resize(nptn, 0);
                 for (size_t j = 0; j < orig_nptn; j++) {
@@ -551,7 +552,7 @@ void IQTree::createPLLPartition(Params &params, ostream &pllPartitionFileHandle)
                         startPos = startPos + curLen;
                         first = false;
                     } else {
-                        startPos = startPos + (*it)->getAlnNSite();
+                        startPos = startPos + static_cast<int>((*it)->getAlnNSite());
                     }
                 if (!first) {
                     pllPartitionFileHandle << endl;
@@ -811,7 +812,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 #ifdef _OPENMP
     StrVector pars_trees;
     if (params->start_tree == STT_PARSIMONY && nParTrees >= 1) {
-        pars_trees.resize(nParTrees);
+        pars_trees.resize(static_cast<size_t>(nParTrees));
         #pragma omp parallel
         {
             int *rstream;
@@ -827,7 +828,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             #pragma omp for schedule(dynamic)
             for (int i = 0; i < nParTrees; i++) {
                 tree.computeParsimonyTree(nullptr, aln, rstream);
-                pars_trees[i] = tree.getTreeString();
+                pars_trees[static_cast<size_t>(i)] = tree.getTreeString();
             }
             finish_random(rstream);
         }
@@ -865,7 +866,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         } else if (params->start_tree == STT_PARSIMONY) {
             /********* Create parsimony tree using IQ-TREE *********/
 #ifdef _OPENMP
-            PhyloTree::readTreeString(pars_trees[treeNr-1]);
+            PhyloTree::readTreeString(pars_trees[static_cast<size_t>(treeNr-1)]);
 #else
             computeParsimonyTree(nullptr, aln, randstream);
 #endif
@@ -903,7 +904,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
     candidateTrees.clear();
 
     if (init_size < initTreeStrings.size()) {
-        cout << "Computing log-likelihood of " << initTreeStrings.size() - init_size << " initial trees ... ";
+        cout << "Computing log-likelihood of " << static_cast<int>(initTreeStrings.size()) - init_size << " initial trees ... ";
     }
     startTime = getRealTime();
 
@@ -1032,7 +1033,7 @@ void IQTree::initializePLL(Params &params) {
     stringstream pllAln;
     aln->printAlignment(IN_PHYLIP, pllAln, "");
     string pllAlnStr = pllAln.str();
-    pllAlignment = pllParsePHYLIPString(pllAlnStr.c_str(), pllAlnStr.length());
+    pllAlignment = pllParsePHYLIPString(pllAlnStr.c_str(), static_cast<long>(pllAlnStr.length()));
 
     /* Read in the partition information */
     // BQM: to avoid printing file
@@ -1127,7 +1128,8 @@ double IQTree::getProbDelete() {
 
 void IQTree::resetKDelete() {
     k_delete = k_delete_min;
-    k_delete_stay = ceil(leafNum / k_delete);
+    ASSERT(k_delete >= 0);
+    k_delete_stay = ceil(leafNum / static_cast<unsigned int>(k_delete));
 }
 
 void IQTree::increaseKDelete() {
@@ -1139,7 +1141,8 @@ void IQTree::increaseKDelete() {
         return;
     }
     k_delete++;
-    k_delete_stay = ceil(leafNum / k_delete);
+    ASSERT(k_delete >= 0);
+    k_delete_stay = ceil(leafNum / static_cast<unsigned int>(k_delete));
     if (verbose_mode >= VB_MED) {
         cout << "Increase k_delete to " << k_delete << endl;
     }
@@ -1154,7 +1157,7 @@ void IQTree::increaseKDelete() {
 
 RepresentLeafSet* IQTree::findRepresentLeaves(vector<RepresentLeafSet*> &leaves_vec, int nei_id, PhyloNode *dad) {
     PhyloNode *node = (PhyloNode*) (dad->neighbors[static_cast<size_t>(nei_id)]->node);
-    int set_id = dad->id * 3 + nei_id;
+    size_t set_id = static_cast<size_t>(dad->id * 3 + nei_id);
     if (leaves_vec[set_id]) {
         return leaves_vec[set_id];
     }
@@ -2349,7 +2352,7 @@ double IQTree::doTreeSearch() {
 
     double initCPUTime = getRealTime();
     int treesPerProc = (params->numInitTrees) / MPIHelper::getInstance().getNumProcesses() - candidateTrees.size();
-    if (params->numInitTrees % MPIHelper::getInstance().getNumProcesses() != 0) {
+    if (params->numInitTrees % static_cast<size_t>(MPIHelper::getInstance().getNumProcesses()) != 0) {
         treesPerProc++;
     }
     if (treesPerProc < 0) {

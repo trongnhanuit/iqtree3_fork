@@ -1164,13 +1164,13 @@ void PhyloTree::computeTraversalInfo(PhyloNode *node, PhyloNode *dad, bool compu
     // reserve beginning of buffer_partial_lh for other purpose
     size_t ncat_mix = static_cast<size_t>((model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures());
     size_t block = static_cast<size_t>(aln->num_states) * ncat_mix;
-    double *buffer = buffer_partial_lh + block*VectorClass::size()*num_packets + get_safe_upper_limit(block)*(aln->STATE_UNKNOWN+2);
+    double *buffer = buffer_partial_lh + block*VectorClass::size()*static_cast<size_t>(num_packets) + get_safe_upper_limit(block)*(aln->STATE_UNKNOWN+2);
 
     // more buffer for non-reversible models
     if (!model->useRevKernel()) {
         buffer += get_safe_upper_limit(3*block*nstates);
         buffer += get_safe_upper_limit(block)*(aln->STATE_UNKNOWN+1)*2;
-        buffer += block*2*VectorClass::size()*num_packets;
+        buffer += block*2*VectorClass::size()*static_cast<size_t>(num_packets);
     }
 
     // sort subtrees for mem save technique
@@ -1213,7 +1213,7 @@ void PhyloTree::computeTraversalInfo(PhyloNode *node, PhyloNode *dad, bool compu
 
     if (!model->isSiteSpecificModel()) {
 
-        int num_info = static_cast<int>(traversal_info.size());
+        size_t num_info = traversal_info.size();
 
         if (verbose_mode >= VB_DEBUG) {
             cout << "traversal order:";
@@ -1253,7 +1253,7 @@ void PhyloTree::computeTraversalInfo(PhyloNode *node, PhyloNode *dad, bool compu
 #else
             VectorClass *buffer_tmp = (VectorClass*)buffer;
 #endif
-            for (int i = 0; i < num_info; i++) {
+            for (size_t i = 0; i < num_info; i++) {
             #ifdef KERNEL_FIX_STATES
                 computePartialInfo<VectorClass, nstates>(traversal_info[i], buffer_tmp);
             #else
@@ -1362,7 +1362,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
     double *partial_lh_leaves = nullptr;
 
     // pre-compute scaled branch length per category
-    double len_children[ncat*(node->degree()-1)]; // +1 in case num_leaves = 0
+    double len_children[ncat*static_cast<size_t>(node->degree()-1)]; // +1 in case num_leaves = 0
     double *len_left = nullptr, *len_right = nullptr;
 
     if (SITE_MODEL) {
@@ -1446,7 +1446,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
                     VectorClass *partial_lh = partial_lh_all;
                     if (child->node->isLeaf()) {
                         // external node
-                        VectorClass *tip_partial_lh_child = (VectorClass*) &tip_partial_lh[child->node->id*tip_mem_size + ptn*nstates];
+                        VectorClass *tip_partial_lh_child = (VectorClass*) &tip_partial_lh[static_cast<size_t>(child->node->id)*tip_mem_size + ptn*nstates];
                         for (size_t c = 0; c < ncat; c++) {
                             for (size_t i = 0; i < nstates; i++) {
                                 expchild[i] = exp(eval_ptr[i]*len_child[c]) * tip_partial_lh_child[i];
@@ -1639,8 +1639,8 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
 
         /*--------------------- TIP-TIP (cherry) case ------------------*/
 
-        double *partial_lh_left = SITE_MODEL ? &tip_partial_lh[left->node->id * tip_mem_size] : partial_lh_leaves;
-        double *partial_lh_right = SITE_MODEL ? &tip_partial_lh[right->node->id * tip_mem_size] : partial_lh_leaves + (aln->STATE_UNKNOWN+1)*block;
+        double *partial_lh_left = SITE_MODEL ? &tip_partial_lh[static_cast<size_t>(left->node->id) * tip_mem_size] : partial_lh_leaves;
+        double *partial_lh_right = SITE_MODEL ? &tip_partial_lh[static_cast<size_t>(right->node->id) * tip_mem_size] : partial_lh_leaves + (aln->STATE_UNKNOWN+1)*block;
 
 		// scale number must be ZERO
 	    memset(dad_branch->scale_num + (SAFE_NUMERIC ? ptn_lower*ncat_mix : ptn_lower), 0, scale_size * sizeof(UBYTE));
@@ -1761,7 +1761,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
             right->scale_num + (SAFE_NUMERIC ? ptn_lower*ncat_mix : ptn_lower),
             scale_size * sizeof(UBYTE));
 
-        double *partial_lh_left = SITE_MODEL ? &tip_partial_lh[left->node->id * tip_mem_size] : partial_lh_leaves;
+        double *partial_lh_left = SITE_MODEL ? &tip_partial_lh[static_cast<size_t>(left->node->id) * tip_mem_size] : partial_lh_leaves;
 
 
         double *vec_left = buffer_partial_lh_ptr + thread_buf_size * static_cast<size_t>(packet_id);
@@ -2087,7 +2087,7 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
     double *buffer_partial_lh_ptr = buffer_partial_lh + 3*get_safe_upper_limit(block);
     if (isMixlen()) {
         size_t nmix = static_cast<size_t>(getMixlen());
-        buffer_partial_lh_ptr += nmix*(nmix+1)*VectorClass::size() + (nmix+3)*nmix*VectorClass::size()*num_packets;
+        buffer_partial_lh_ptr += nmix*(nmix+1)*VectorClass::size() + (nmix+3)*nmix*VectorClass::size()*static_cast<size_t>(num_packets);
     }
 
     // first compute partial_lh
@@ -2098,7 +2098,7 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
     if (dad->isLeaf()) {
         // special treatment for TIP-INTERNAL NODE case
         double *tip_partial_lh_node = &tip_partial_lh[static_cast<size_t>(dad->id) * max_orig_nptn * nstates];
-        double *vec_tip = buffer_partial_lh_ptr + tip_block * VectorClass::size() * packet_id;
+        double *vec_tip = buffer_partial_lh_ptr + tip_block * VectorClass::size() * static_cast<size_t>(packet_id);
         auto stateRow = this->getConvertedSequenceByNumber(dad->id);
         int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
 
@@ -2405,7 +2405,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
         if (isMixlen()) {
             // mixed branch length model
             VectorClass lh_ptn;
-            VectorClass *df_ptn = ((VectorClass*)buffer_partial_lh_ptr) + (nmixlen+3)*nmixlen * packet_id; //PROBLEM
+            VectorClass *df_ptn = ((VectorClass*)buffer_partial_lh_ptr) + (nmixlen+3)*nmixlen * static_cast<size_t>(packet_id); //PROBLEM
             VectorClass *ddf_ptn = df_ptn+nmixlen;
 
             VectorClass my_lh(0.0);
@@ -3568,7 +3568,8 @@ void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch
     double cat_rate[ncat];
     double cat_prop[ncat];
 
-    int cur_mixlen = getCurMixture();
+    ASSERT(getCurMixture() >= 0);
+    size_t cur_mixlen = getCurMixture();
 
     if (SITE_MODEL) {
         for (size_t c = 0; c < ncat; c++) {
@@ -3580,7 +3581,7 @@ void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch
         val1 = val0 + get_safe_upper_limit(block);
         val2 = val1 + get_safe_upper_limit(block);
         buffer_partial_lh_ptr += 3*get_safe_upper_limit(block);
-        double len = dad_branch->getLength(cur_mixlen);
+        double len = dad_branch->getLength(static_cast<int>(cur_mixlen));
         for (size_t c = 0; c < nmix; c++) {
             size_t cur_mix = (model_factory->fused_mix_rate) ? cur_mixlen : c;
             double *eval_ptr = eval+cur_mix*nstates;

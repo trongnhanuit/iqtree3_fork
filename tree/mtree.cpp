@@ -25,7 +25,7 @@
 #include "pda/splitgraph.h"
 #include "utils/tools.h"
 #include "mtreeset.h"
-using namespace std;
+// using namespace std;
 
 /*********************************************
 	class MTree

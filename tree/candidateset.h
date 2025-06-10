@@ -79,12 +79,12 @@ public:
     /**
         save object into the checkpoint
     */
-    virtual void saveCheckpoint();
+    virtual void saveCheckpoint() override;
 
     /**
         restore object from the checkpoint
     */
-    virtual void restoreCheckpoint();
+    virtual void restoreCheckpoint() override;
 
     /**
      * return randomly one of the current best trees
@@ -279,7 +279,7 @@ public:
 
     /**
      * Remove candidate trees with topology equal to the specified topology
-     * @param topology
+     * @param topology topology
      */
     void removeCandidateTree(string topology);
 
@@ -297,7 +297,7 @@ public:
 
     /**
      * Return a CandidateSet containing \a numTrees candidate trees
-     * @param numTrees
+     * @param numTrees number of trees
      * @return a CandidateSet
      */
     CandidateSet getBestCandidateTrees(int numTrees = 0);

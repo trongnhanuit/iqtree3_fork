@@ -89,7 +89,7 @@ public:
      allocate a new Neighbor by just copying from this one
      @return pointer to newly created Neighbor
      */
-    virtual Neighbor* newNeighbor() {
+    virtual Neighbor* newNeighbor() override {
         return (new PhyloNeighbor(this));
     }
 
@@ -229,7 +229,7 @@ public:
         @param length branch length
         @param id branch ID
      */
-    virtual void addNeighbor(Node *node, double length, int id = -1);
+    virtual void addNeighbor(Node *node, double length, int id = -1) override;
 
 
 

@@ -52,9 +52,9 @@ public:
      */
     int computeParsimonyScore(int ptn, int &states, PhyloNode *node = nullptr, PhyloNode *dad = nullptr);
 
-	virtual void initializeAllPartialLh();
+	virtual void initializeAllPartialLh() override;
 
-	virtual void initializeAllPartialLh(int &index, int &indexlh, PhyloNode *node = nullptr, PhyloNode *dad = nullptr);
+	virtual void initializeAllPartialLh(int &index, int &indexlh, PhyloNode *node = nullptr, PhyloNode *dad = nullptr) override;
 
 };
 

@@ -79,7 +79,7 @@ public:
 
     /**
         set checkpoint object
-        @param checkpoint
+        @param checkpoint a checkpoint
     */
     virtual void setCheckpoint(Checkpoint *checkpoint);
 
@@ -142,20 +142,19 @@ public:
 
     /**
      print tree to .treefile
-     @param params program parameters, field root is taken
+     @param suffix suffix of the output file
      */
     virtual void printResultTree(string suffix = "");
 
     /**
      * Return the tree string contining taxon names and branch lengths
-     * @return
+     * @return a tree string
      */
     virtual string getTreeString();
 
     /**
             Read the tree saved with Taxon Names and branch lengths.
             @param tree_string tree string to read from
-            @param updatePLL if true, tree is read into PLL
      */
     virtual void readTreeString(const string &tree_string);
 
@@ -296,7 +295,7 @@ public:
     /**
             optimize all branch lengths of all subtrees, then compute branch lengths
             of supertree as weighted average over all subtrees
-            @param iterations number of iterations to loop through all branches
+            @param my_iterations number of iterations to loop through all branches
             @return the likelihood of the tree
      */
     virtual double optimizeAllBranches(int my_iterations = 100, double tolerance = TOL_LIKELIHOOD, int maxNRStep = 100);
@@ -304,7 +303,6 @@ public:
     /**
             search the best swap for a branch
             @return NNIMove The best Move/Swap
-            @param cur_score the current score of the tree before the swaps
             @param node1 1 of the 2 nodes on the branch
             @param node2 1 of the 2 nodes on the branch
      */
@@ -396,7 +394,6 @@ public:
     /**
             Neighbor-joining/parsimony tree might contain negative branch length. This
             function will fix this.
-            @param fixed_length fixed branch length to set to negative branch lengths
             @param node the current node
             @param dad dad of the node, used to direct the search
             @return The number of branches that have no/negative length

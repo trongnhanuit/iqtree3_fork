@@ -1019,7 +1019,8 @@ void MTree::parseFile(istream &infile, char &ch, Node* &root, DoubleVector &bran
 /**
         parse the [&<key_1>=<value_1>,...,<key_n>=<value_n>] in the tree file
         @param in_comment the input comment extract from tree file
-        @param node1, node2 the nodes that the branch connects to
+        @param node1 the nodes that the branch connects to
+        @param node2 the nodes that the branch connects to
  */
 void MTree::parseKeyValueFromComment(string &in_comment, Node* node1, Node* node2)
 {

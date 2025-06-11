@@ -276,9 +276,7 @@ void MExtTree::generateUniform(Params &params, bool binary)
 
 /**
     generate a random tree following birth-death model
-    @param size number of taxa
-    @param rescale_birth_rate (birth_rate/(birth_rate+death_rate)
-    @param binary TRUE if you want to generate a binary tree
+    @param param program parameters
 */
 void MExtTree::generateBirthDeath(Params &params)
 {

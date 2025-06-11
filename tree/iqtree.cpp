@@ -2021,8 +2021,8 @@ void IQTree::pllBuildIQTreePatternIndex(){
  * DTH:
  * Substitute bases in seq according to PLL's rules
  * This function should be updated if PLL's rules change.
- * @param seq: data of some sequence to be substituted
- * @param dataType: PLL_DNA_DATA or PLL_AA_DATA
+ * @param seq data of some sequence to be substituted
+ * @param dataType PLL_DNA_DATA or PLL_AA_DATA
  */
 void IQTree::pllBaseSubstitute (char *seq, int dataType)
 {

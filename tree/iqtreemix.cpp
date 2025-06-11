@@ -1255,7 +1255,7 @@ void IQTreeMix::clearAllPartialLH(bool make_null) {
 
 /**
         compute pattern posterior probabilities per rate/mixture category
-        @param pattern_prob_cat (OUT) all pattern-probabilities per category
+        @param ptn_prob_cat (OUT) all pattern-probabilities per category
         @param wsl either WSL_RATECAT, WSL_MIXTURE or WSL_MIXTURE_RATECAT
  */
 void IQTreeMix::computePatternProbabilityCategory(double *ptn_prob_cat, SiteLoglType wsl) {
@@ -2721,10 +2721,7 @@ void IQTreeMix::drawTree(ostream &out, int brtype, double zero_epsilon) {
 /**
         print the tree to the output file in newick format
         @param out the output file.
-        @param node the starting node, nullptr to start from the root
-        @param dad dad of the node, used to direct the search
         @param brtype type of branch to print
-        @return ID of the taxon with smallest ID
  */
 void IQTreeMix::printTree(ostream & out, int brtype) {
     for (size_t i=0; i<size(); i++) {

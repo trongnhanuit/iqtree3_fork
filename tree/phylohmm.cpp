@@ -48,7 +48,7 @@ PhyloHmm::PhyloHmm(int n_site, int n_cat) {
     marginal_tran = aligned_alloc<double>(site_transition_size);
 
     // the probabilities are initialized as equally distributed
-    double init_prob_value = 1.0/((double)ncat);
+    double init_prob_value = 1.0/(static_cast<double>(ncat));
     for (size_t i = 0; i < ncat; i++)
         prob[i] = init_prob_value;
     computeLogProb();
@@ -136,7 +136,7 @@ double PhyloHmm::computeMaxPath() {
                 v = transit_arr[l] + pre_work[l];
                 if (work[j] < v) {
                     work[j] = v;
-                    next_cat_arr[j] = (int) l;
+                    next_cat_arr[j] = static_cast<int>(l);
                 }
             }
             work[j] += site_lh_arr[j];
@@ -153,7 +153,7 @@ double PhyloHmm::computeMaxPath() {
         v = prob_log[j] + pre_work[j];
         if (max_log_like < v) {
             max_log_like = v;
-            max_cat = (int) j;
+            max_cat = static_cast<int>(j);
         }
     }
     pathLogLike = max_log_like;
@@ -209,7 +209,7 @@ double PhyloHmm::optimizeProbEM() {
     for (j = 1; j < ncat; j++) {
         if (max < work[j]) {
             max = work[j];
-            max_j = (int) j;
+            max_j = static_cast<int>(j);
         }
     }
     // exp(prob_log[i] + work[i] - max)
@@ -351,7 +351,7 @@ void PhyloHmm::showSiteCatMaxLike(ostream& out, bool show_assignment, int cat_as
         out << "[" << pre_site + 1 << "," << i << "]\t" << pre_max_cat+1 << endl;
     
     for (i=0; i<ncat; i++)
-        rateSites[i] = (double) numSites[i] / nsite;
+        rateSites[i] = static_cast<double>(numSites[i]) / nsite;
     
     // show the statistics
     out << "Number of sites for each category:";

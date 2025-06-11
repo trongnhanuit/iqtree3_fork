@@ -45,7 +45,7 @@ void PhyloTree::setNumThreads(int threadCount) {
     if (!isSuperTree() && aln!=nullptr && threadCount > 1 && threadCount > aln->getNPattern()/8) {
         outWarning(convertIntToString(threadCount) + " threads for alignment length " +
                    convertIntToString(aln->getNPattern()) + " will slow down analysis");
-        threadCount = max(aln->getNPattern()/8,(size_t)1);
+        threadCount = max(aln->getNPattern()/8,static_cast<size_t>(1));
     }
     this->num_threads = threadCount;
     this->num_packets = (num_threads==1) ? 1 : (num_threads*PACKETS_PER_THREAD);
@@ -230,7 +230,7 @@ double PhyloTree::computeLikelihoodFromBuffer() {
 	if (computeLikelihoodFromBufferPointer && optimize_by_newton)
 		return (this->*computeLikelihoodFromBufferPointer)();
 	else {
-		return (this->*computeLikelihoodBranchPointer)(current_it, (PhyloNode*)current_it_back->node, true);
+		return (this->*computeLikelihoodBranchPointer)(current_it, static_cast<PhyloNode*>(current_it_back->node), true);
     }
 
 }
@@ -581,7 +581,7 @@ void PhyloTree::computePtnInvar() {
         // For PoMo, if a polymorphic state is considered, the likelihood is
         // left unchanged and zero because ptn_invar has been initialized to 0.
 			} else if ((*aln)[ptn].const_char < nstates) {
-				ptn_invar[ptn] = p_invar * state_freq[(int) (*aln)[ptn].const_char];
+				ptn_invar[ptn] = p_invar * state_freq[static_cast<int>((*aln)[ptn].const_char)];
 			} else if (aln->seq_type == SEQ_DNA) {
                 // 2016-12-21: handling ambiguous state
                 ptn_invar[ptn] = 0.0;
@@ -1691,11 +1691,11 @@ void PhyloTree::computeJointAncestralSequences(int *ancestral_seqs) {
 
     // step 1-3 of the dynamic programming algorithm of Pupko et al. 2000, MBE 17:890-896
     ASSERT(root->isLeaf());
-    int *C = new int[(size_t)getAlnNPattern()*model->num_states*leafNum];
-    computeAncestralLikelihood((PhyloNeighbor*)root->neighbors[0], nullptr, C);
+    int *C = new int[static_cast<size_t>(getAlnNPattern())*model->num_states*leafNum];
+    computeAncestralLikelihood(static_cast<PhyloNeighbor*>(root->neighbors[0]), nullptr, C);
     
     // step 4-5 of the dynamic programming algorithm of Pupko et al. 2000, MBE 17:890-896
-    computeAncestralState((PhyloNeighbor*)root->neighbors[0], nullptr, C, ancestral_seqs);
+    computeAncestralState(static_cast<PhyloNeighbor*>(root->neighbors[0]), nullptr, C, ancestral_seqs);
     
     clearAllPartialLH();
     
@@ -1703,7 +1703,7 @@ void PhyloTree::computeJointAncestralSequences(int *ancestral_seqs) {
 }
 
 void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode *dad, int *C) {
-    PhyloNode *node = (PhyloNode*)dad_branch->node;
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
     if (node->isLeaf())
         return;
     
@@ -1714,7 +1714,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
         if ((*it)->node->isLeaf()) {
             num_leaves++;
         } else {
-            computeAncestralLikelihood((PhyloNeighbor*)(*it), node, C);
+            computeAncestralLikelihood(static_cast<PhyloNeighbor*>(*it), node, C);
         }
     }
 
@@ -1723,7 +1723,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
         // re-orient partial_lh
         bool done = false;
         FOR_NEIGHBOR_IT(node, dad, it2) {
-            PhyloNeighbor *backnei = ((PhyloNeighbor*)(*it2)->node->findNeighbor(node));
+            PhyloNeighbor *backnei = static_cast<PhyloNeighbor*>((*it2)->node->findNeighbor(node));
             if (backnei->partial_lh) {
                 dad_branch->partial_lh = backnei->partial_lh;
                 dad_branch->scale_num = backnei->scale_num;
@@ -1830,7 +1830,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
         double sumlh[nstates];
         memset(sumlh, 0, sizeof(double)*nstates);
         FOR_NEIGHBOR(node, dad, it) {
-            PhyloNeighbor *childnei = (PhyloNeighbor*)(*it);
+            PhyloNeighbor *childnei = static_cast<PhyloNeighbor*>(*it);
             if ((*it)->node->isLeaf()) {
                 double *lh_leaf = lh_leaves+leafid*nstates*(aln->STATE_UNKNOWN+1); 
                 // external node
@@ -1883,7 +1883,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
 
 
 void PhyloTree::computeAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad, int *C, int *ancestral_seqs) {
-    PhyloNode *node = (PhyloNode*)dad_branch->node;
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
     if (node->isLeaf())
         return;
     
@@ -1905,7 +1905,7 @@ void PhyloTree::computeAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad,
             ancestral_seqs_node[ptn] = C_node[ptn*nstates];
     }
     FOR_NEIGHBOR_IT(node, dad, it)
-        computeAncestralState((PhyloNeighbor*)(*it), node, C, ancestral_seqs);
+        computeAncestralState(static_cast<PhyloNeighbor*>(*it), node, C, ancestral_seqs);
 }
 
 

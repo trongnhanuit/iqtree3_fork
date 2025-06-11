@@ -117,7 +117,7 @@ inline T *aligned_alloc(size_t size) {
 #endif
         outError("Not enough memory, allocation of " + convertInt64ToString(static_cast<int64_t>(size*sizeof(T))) + " bytes failed (bad_alloc)");
     }
-    return (T*)mem;
+    return static_cast<T*>(mem);
 }
 
 template <class T> T* ensure_aligned_allocated(T* & ptr, long long int size) {

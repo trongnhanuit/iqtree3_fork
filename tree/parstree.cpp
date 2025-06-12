@@ -93,8 +93,8 @@ UINT ParsTree::findMstScore(int ptn) {
 		// update adjacent list
 		for(int c = 0; c < aln->num_states; c++)
 			if((site_states[c] == 0) && (added[c] == false)){
-				if(labelled_value[c] > cost_matrix[add_node * cost_nstates + c])
-					labelled_value[c] = cost_matrix[add_node * cost_nstates + c];
+				if(labelled_value[c] > cost_matrix[(add_node * cost_nstates) + c])
+					labelled_value[c] = cost_matrix[(add_node * cost_nstates) + c];
 			}
 	}while(count < aln->num_states);
 

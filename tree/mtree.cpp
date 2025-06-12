@@ -2233,7 +2233,7 @@ void MTree::calcDist(char *filename) {
         for (i = 0; i < leafNum; i++) {
             out << taxname[i] << "   ";
             for (j = 0; j < leafNum; j++) {
-                out << dist[i*leafNum + j] << "  ";
+                out << dist[(i*leafNum) + j] << "  ";
             }
             out << endl;
         }
@@ -2260,8 +2260,8 @@ void MTree::calcDist(Node *aroot, double cur_len, double* &dist, Node *node, Nod
     double branch_length;
 	if (!node) node = root;
     if (node->isLeaf()) {
-        dist[aroot->id * leafNum + node->id] = cur_len;
-        dist[node->id * leafNum + aroot->id] = cur_len;
+        dist[(aroot->id * leafNum) + node->id] = cur_len;
+        dist[(node->id * leafNum) + aroot->id] = cur_len;
     }
     //for (NeighborVec::iterator it = node->neighbors.begin(); it != node->neighbors.end(); it++)
     //if ((*it)->node != dad)	{
@@ -2693,7 +2693,7 @@ void MTree::computeRFDist(istream &in, DoubleVector &dist, int assign_sup, bool 
 
 		//cout << "common_splits = " << common_splits << endl;
         double max_dist = branchNum-leafNum + tree.branchNum-tree.leafNum;
-        double rf_val = max_dist - 2*common_splits;
+        double rf_val = max_dist - (2*common_splits);
         if (Params::getInstance().normalize_tree_dist) {
             rf_val = rf_val / max_dist;
         }

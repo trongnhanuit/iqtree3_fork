@@ -123,8 +123,8 @@ void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 
 			// Upper Bound for a given split from the input tree
 			double brLen = branch1[i]->findNeighbor(branch2[i])->length;
-			double coef  = tree->aln->getNSite()*(log(1+3*exp(-brLen)) - log(1-exp(-brLen)));
-			double coef2  = tree->aln->getNSite()*log(1+3*exp(-brLen));
+			double coef  = tree->aln->getNSite()*(log(1+(3*exp(-brLen))) - log(1-exp(-brLen)));
+			double coef2  = tree->aln->getNSite()*log(1+(3*exp(-brLen)));
 			double UB_true  = coef + treeA->getCurScore() + treeB->getCurScore();
 			double UB_true2 = coef2 + treeA->getCurScore() + treeB->getCurScore();
 
@@ -501,7 +501,7 @@ double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBo
 
 	//len = 1;
 
-	double coef = tree->aln->getNSite()*(log(1+3*exp(-len)) - log(1-exp(-len)));
+	double coef = tree->aln->getNSite()*(log(1+(3*exp(-len))) - log(1-exp(-len)));
 	double U = coef + UpperBoundAB(taxaA, taxaB, tree, params);
 
 	// leafNum		alnLen		brLen (before opt)		brLen (after opt)		coef 		UB
@@ -703,13 +703,13 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
     	//for(cat = 0; cat < ncat; cat++){
     		for(x = 0; x < nstates; x++){
     		// First  subtree --------------------------
-    			score[0] += tree->getModel()->state_freq[x]*T1_partial_lh[i*nstates+x];
+    			score[0] += tree->getModel()->state_freq[x]*T1_partial_lh[(i*nstates)+x];
     		// Second subtree --------------------------
-    			score[1] += tree->getModel()->state_freq[x]*T2_partial_lh[i*nstates+x];
+    			score[1] += tree->getModel()->state_freq[x]*T2_partial_lh[(i*nstates)+x];
     	   	// Third  subtree --------------------------
-    			score[2] += tree->getModel()->state_freq[x]*T3_partial_lh[i*nstates+x];
+    			score[2] += tree->getModel()->state_freq[x]*T3_partial_lh[(i*nstates)+x];
     	   	// Fourth subtree --------------------------
-    			score[3] += tree->getModel()->state_freq[x]*T4_partial_lh[i*nstates+x];
+    			score[3] += tree->getModel()->state_freq[x]*T4_partial_lh[(i*nstates)+x];
     		}
    	//}
     	L[0] += log(score[0])*ptnFreq[i];
@@ -756,8 +756,8 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
     double q2 = logC(t[0]+t[2],tree) + logC(t[1]+t[3],tree);
     //cout<<"Coefficients q1 and q2:"<<endl<<q1<<endl<<q2<<endl;
 
-    double UBq1 = UB + nsite*q1;
-    double UBq2 = UB + nsite*q2;
+    double UBq1 = UB + (nsite*q1);
+    double UBq2 = UB + (nsite*q2);
 
 	string out_file_UB = tree->params->out_prefix;
 	out_file_UB += ".UB.NNI.upperBounds";
@@ -874,8 +874,8 @@ void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
 			plhx[x] = 0.0;
 			plhy[x] = 0.0;
 			for(j = 0; j<nstates; j++){
-				plhx[x]+= T1_partial_lh[i*nstates+j]*eigen[x*nstates+j];
-				plhy[x]+= T2_partial_lh[i*nstates+j]*eigen[x*nstates+j];
+				plhx[x]+= T1_partial_lh[(i*nstates)+j]*eigen[(x*nstates)+j];
+				plhy[x]+= T2_partial_lh[(i*nstates)+j]*eigen[(x*nstates)+j];
 			}
 		}
 

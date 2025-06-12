@@ -1147,7 +1147,7 @@ void IQTree::increaseKDelete() {
 
 RepresentLeafSet* IQTree::findRepresentLeaves(vector<RepresentLeafSet*> &leaves_vec, int nei_id, PhyloNode *dad) {
     PhyloNode *node = (PhyloNode*) (dad->neighbors[nei_id]->node);
-    int set_id = dad->id * 3 + nei_id;
+    int set_id = (dad->id * 3) + nei_id;
     if (leaves_vec[set_id]) {
         return leaves_vec[set_id];
     }
@@ -1318,9 +1318,9 @@ int IQTree::assessQuartet(Node *leaf0, Node *leaf1, Node *leaf2, Node *del_leaf)
     ASSERT(dist_matrix);
     size_t nseq = aln->getNSeq();
     //int id0 = leaf0->id, id1 = leaf1->id, id2 = leaf2->id;
-    double dist0 = dist_matrix[leaf0->id * nseq + del_leaf->id] + dist_matrix[leaf1->id * nseq + leaf2->id];
-    double dist1 = dist_matrix[leaf1->id * nseq + del_leaf->id] + dist_matrix[leaf0->id * nseq + leaf2->id];
-    double dist2 = dist_matrix[leaf2->id * nseq + del_leaf->id] + dist_matrix[leaf0->id * nseq + leaf1->id];
+    double dist0 = dist_matrix[(leaf0->id * nseq) + del_leaf->id] + dist_matrix[(leaf1->id * nseq) + leaf2->id];
+    double dist1 = dist_matrix[(leaf1->id * nseq) + del_leaf->id] + dist_matrix[(leaf0->id * nseq) + leaf2->id];
+    double dist2 = dist_matrix[(leaf2->id * nseq) + del_leaf->id] + dist_matrix[(leaf0->id * nseq) + leaf1->id];
     if (dist0 < dist1 && dist0 < dist2) {
         return 0;
     }

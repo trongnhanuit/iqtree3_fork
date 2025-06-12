@@ -164,7 +164,7 @@ double PhyloHmm::computeMaxPath() {
     // get the assignment of the categories along sites with maximum likelihood
     site_categories[0] = max_cat;
     for (i = 0; i < nsite - 1; i++) {
-        max_cat = next_cat[i * ncat + max_cat];
+        max_cat = next_cat[(i * ncat) + max_cat];
         site_categories[i+1] = max_cat;
     }
     
@@ -494,7 +494,7 @@ void PhyloHmm::computeMarginalTransitProb() {
     double score, sum;
     double* f_array = fwd_array;
     double* b_array = bwd_array + ncat;
-    double* catlike_array = site_like_cat + ncat * (nsite - 1);
+    double* catlike_array = site_like_cat + (ncat * (nsite - 1));
     double* t_array;
     double* mprob = marginal_tran;
     double* t1 = new double[ncat * ncat];

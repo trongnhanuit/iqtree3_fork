@@ -682,7 +682,7 @@ void IQTreeMix::computeSiteTreeLogLike(int update_which_tree) {
     }
     
     // compute likelihood for each tree
-    double* patternlh_tree = _ptn_like_cat + t*nptn;
+    double* patternlh_tree = _ptn_like_cat + (t*nptn);
     ptree = at(t)->getRate()->getTree();
     // set the tree t as the site rate's tree
     // and compute the likelihood values
@@ -707,7 +707,7 @@ void IQTreeMix::computeSiteTreeLogLike(int update_which_tree) {
     // synchonize the scaling factor between the updated tree and the other trees for every pattern
     #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
     for (size_t ptn=0; ptn<nptn; ptn++) {
-        double* pattern_lh_tree = ptn_like_cat + ntree * ptn;
+        double* pattern_lh_tree = ptn_like_cat + (ntree * ptn);
         // check whether the scaling factor of the updated tree has much difference
         double scale_diff = at(t)->_pattern_scaling[ptn] - this->_pattern_scaling[ptn];
         double abs_scale_diff = fabs(scale_diff);
@@ -774,7 +774,7 @@ double IQTreeMix::computeLikelihood(double *pattern_lh, bool save_log_value) {
             omp_set_num_threads(at(t)->num_threads);
             #endif
         }
-        double* pattern_lh_tree = _ptn_like_cat + nptn * t;
+        double* pattern_lh_tree = _ptn_like_cat + (nptn * t);
         // save the site rate's tree
         PhyloTree* ptree = at(t)->getRate()->getTree();
         // set the tree t as the site rate's tree
@@ -818,8 +818,8 @@ double IQTreeMix::computeLikelihood(double *pattern_lh, bool save_log_value) {
     // synchonize the scaling factor among the trees for every pattern
     #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
     for (size_t ptn=0; ptn<nptn; ptn++) {
-        double* pattern_lh_tree = ptn_like_cat + ntree * ptn;
-        double* pattern_scale_tree = ptn_scale_cat + ntree * ptn;
+        double* pattern_lh_tree = ptn_like_cat + (ntree * ptn);
+        double* pattern_scale_tree = ptn_scale_cat + (ntree * ptn);
         // find the max scaling factor among the trees
         double max_scale = pattern_scale_tree[0];
         int max_tree = 0;
@@ -897,7 +897,7 @@ double IQTreeMix::computePatternLhCat(SiteLoglType wsl) {
                 omp_set_num_threads(at(t)->num_threads);
             }
             #endif
-            double* pattern_lh_tree = _ptn_like_cat + t * nptn;
+            double* pattern_lh_tree = _ptn_like_cat + (t * nptn);
             // save the site rate's tree
             PhyloTree* ptree = at(t)->getRate()->getTree();
             // set the tree t as the site rate's tree
@@ -938,8 +938,8 @@ double IQTreeMix::computePatternLhCat(SiteLoglType wsl) {
         #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
         for (size_t ptn=0; ptn<nptn; ptn++) {
             // find the max scaling factor among the trees
-            double* pattern_lh_tree = ptn_like_cat + ptn * ntree;
-            double* pattern_scale_tree = ptn_scale_cat + ptn * ntree;
+            double* pattern_lh_tree = ptn_like_cat + (ptn * ntree);
+            double* pattern_scale_tree = ptn_scale_cat + (ptn * ntree);
             double max_scale = at(0)->_pattern_scaling[ptn];
             int max_tree = 0;
             for (size_t t=1; t<ntree; t++) {
@@ -1153,7 +1153,7 @@ void IQTreeMix::computePatternLikelihood(double *pattern_lh, double *cur_logl,
             omp_set_num_threads(at(t)->num_threads);
         }
         #endif
-        double* pattern_lh_tree = _ptn_like_cat + t * nptn;
+        double* pattern_lh_tree = _ptn_like_cat + (t * nptn);
         // save the site rate's tree
         PhyloTree* ptree = at(t)->getRate()->getTree();
         // set the tree t as the site rate's tree
@@ -1196,8 +1196,8 @@ void IQTreeMix::computePatternLikelihood(double *pattern_lh, double *cur_logl,
     #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
     for (size_t ptn=0; ptn<nptn; ptn++) {
         // find the max scaling factor among the trees
-        double* pattern_lh_tree = ptn_like_cat + ptn * ntree;
-        double* pattern_scale_tree = ptn_scale_cat + ptn * ntree;
+        double* pattern_lh_tree = ptn_like_cat + (ptn * ntree);
+        double* pattern_scale_tree = ptn_scale_cat + (ptn * ntree);
         double max_scale = pattern_scale_tree[0];
         int max_tree = 0;
         for (size_t t=1; t<ntree; t++) {
@@ -2886,7 +2886,7 @@ void IQTreeMix::getPostProb(double* pattern_mix_lh, bool need_computeLike, int u
     if (need_multiplyFreq) {
         #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
         for (size_t ptn = 0; ptn < nptn; ptn++) {
-            double* this_lk_cat = pattern_mix_lh + ptn * ntree;
+            double* this_lk_cat = pattern_mix_lh + (ptn * ntree);
             double lk_ptn = 0.0;
             for (size_t c = 0; c < ntree; c++) {
                 lk_ptn += this_lk_cat[c];
@@ -2902,7 +2902,7 @@ void IQTreeMix::getPostProb(double* pattern_mix_lh, bool need_computeLike, int u
     } else {
         #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
         for (size_t ptn = 0; ptn < nptn; ptn++) {
-            double* this_lk_cat = pattern_mix_lh + ptn * ntree;
+            double* this_lk_cat = pattern_mix_lh + (ptn * ntree);
             double lk_ptn = 0.0;
             for (size_t c = 0; c < ntree; c++) {
                 lk_ptn += this_lk_cat[c];

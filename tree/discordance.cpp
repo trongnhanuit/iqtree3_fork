@@ -136,8 +136,8 @@ void SuperAlignment::computeQuartetSupports(IntVector &quartet, vector<int64_t> 
             part_support.resize(3, 0);
             partitions[part]->computeQuartetSupports(part_quartet, part_support);
             for (size_t j = 0; j < 3; j++) if (part_support[j] > 0) {
-                ASSERT(support[part*3+3+j] >= 0);
-                support[part*3+3+j] += part_support[j];
+                ASSERT(support[(part*3)+3+j] >= 0);
+                support[(part*3)+3+j] += part_support[j];
                 support[j] += part_support[j];
             }
         } else
@@ -245,7 +245,7 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
             }
             if (left_count < 2 || right_count < 2) {
                 // not decisive
-                support[part*3+3] = support[part*3+4] = support[part*3+5] = -1;
+                support[(part*3)+3] = support[(part*3)+4] = support[(part*3)+5] = -1;
                 break;
             }
         }
@@ -398,12 +398,12 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
         // internal node
         // convert vector_size into continuous pattern
         for (size_t ptn = 0; ptn < nptn; ptn += vector_size) {
-            double *state_prob = ptn_ancestral_prob + ptn*nstates;
+            double *state_prob = ptn_ancestral_prob + (ptn*nstates);
             for (size_t c = 0; c < ncat_mix; c++) {
                 for (size_t i = 0; i < nstates; i++) {
                     for (size_t v = 0; v < vector_size; v++) {
                         if (ptn+v < nptn) {
-                            state_prob[v*nstates+i] += lh_state[i*vector_size + v];
+                            state_prob[(v*nstates)+i] += lh_state[(i*vector_size) + v];
                         }
                     }
                 }
@@ -414,7 +414,7 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
 
     // now normalize to probability
     for (size_t ptn = 0; ptn < nptn; ptn++) {
-        double *state_prob = ptn_ancestral_prob + ptn*nstates;
+        double *state_prob = ptn_ancestral_prob + (ptn*nstates);
         double sum = 0.0;
         int state_best = 0;
         for (size_t i = 0; i < nstates; i++) {
@@ -566,10 +566,10 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
                         second_ancestral_seq[second_id1][start_pos_seq + ptn] >= nstates) {
                         continue;
                     }
-                    StateType first_state0 = random_int_multinomial(nstates, first_ancestral_prob[first_id0]+ptn*nstates+start_pos, rstream);
-                    StateType first_state1 = random_int_multinomial(nstates, first_ancestral_prob[first_id1]+ptn*nstates+start_pos, rstream);
-                    StateType second_state0 = random_int_multinomial(nstates, second_ancestral_prob[second_id0]+ptn*nstates+start_pos, rstream);
-                    StateType second_state1 = random_int_multinomial(nstates, second_ancestral_prob[second_id1]+ptn*nstates+start_pos, rstream);
+                    StateType first_state0 = random_int_multinomial(nstates, first_ancestral_prob[first_id0]+(ptn*nstates)+start_pos, rstream);
+                    StateType first_state1 = random_int_multinomial(nstates, first_ancestral_prob[first_id1]+(ptn*nstates)+start_pos, rstream);
+                    StateType second_state0 = random_int_multinomial(nstates, second_ancestral_prob[second_id0]+(ptn*nstates)+start_pos, rstream);
+                    StateType second_state1 = random_int_multinomial(nstates, second_ancestral_prob[second_id1]+(ptn*nstates)+start_pos, rstream);
                     if (first_state0 == first_state1 && second_state0 == second_state1 && first_state0 != second_state0) {
                         support[0] += (*it)->aln->at(ptn).frequency;
                     }

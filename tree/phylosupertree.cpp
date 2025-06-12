@@ -1388,7 +1388,7 @@ void PhyloSuperTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, Ph
             double eqprob = 1.0/nstates;
             for (size_t ptn = 0; ptn < nptn; ptn++) {
                 for (size_t i = 0; i < nstates; i++)
-                    ptn_ancestral_prob[ptn*nstates+i] = eqprob;
+                    ptn_ancestral_prob[(ptn*nstates)+i] = eqprob;
                 ptn_ancestral_seq[ptn] = (*it)->aln->STATE_UNKNOWN;
             }
         }
@@ -1415,7 +1415,7 @@ void PhyloSuperTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, Phy
             double eqprob = 1.0/nstates;
             for (size_t ptn = 0; ptn < nptn; ptn++) {
                 for (size_t i = 0; i < nstates; i++)
-                    ptn_ancestral_prob[ptn*nstates+i] = eqprob;
+                    ptn_ancestral_prob[(ptn*nstates)+i] = eqprob;
                 ptn_ancestral_seq[ptn] = (*it)->aln->STATE_UNKNOWN;
             }
         }
@@ -1435,7 +1435,7 @@ void PhyloSuperTree::writeMarginalAncestralState(ostream &out, PhyloNode *node,
             int ptn = (*it)->aln->getPatternID(static_cast<int>(site));
             out << node->name << "\t" << part << "\t" << site+1 << "\t";
             out << (*it)->aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
-            double *state_prob = ptn_ancestral_prob + ptn*nstates;
+            double *state_prob = ptn_ancestral_prob + (ptn*nstates);
             for (int j = 0; j < nstates; ++j) {
                 out << "\t" << state_prob[j];
             }

@@ -481,13 +481,13 @@ void PhyloTree::initCostMatrix(CostMatrixType cost_type) {
         case CM_LINEAR:
             for(int i = 0; i < cost_nstates; i++){
                 for(int j = 0; j < cost_nstates; j++)
-                    cost_matrix[i * cost_nstates + j] = abs(i-j);
+                    cost_matrix[(i * cost_nstates) + j] = abs(i-j);
             }
             break;
         case CM_UNIFORM:
             for(int i = 0; i < cost_nstates; i++){
                 for(int j = 0; j < cost_nstates; j++)
-                    cost_matrix[i * cost_nstates + j] = ((i==j) ? 0 : 1);
+                    cost_matrix[(i * cost_nstates) + j] = ((i==j) ? 0 : 1);
             }
             break;
     }
@@ -511,8 +511,8 @@ void PhyloTree::loadCostMatrixFile(char * file_name){
         cost_matrix = aligned_alloc<unsigned int>(cost_nstates * cost_nstates);
         for(size_t i = 0; i < cost_nstates; i++)
             for(size_t j = 0; j < cost_nstates; j++){
-                if(j == i) cost_matrix[i * cost_nstates + j] = 0;
-                else cost_matrix[i * cost_nstates + j] = 1;
+                if(j == i) cost_matrix[(i * cost_nstates) + j] = 0;
+                else cost_matrix[(i * cost_nstates) + j] = 1;
             }
     } else{ // Sankoff cost
         cout << "Loading cost matrix from " << file_name << "..." << endl;
@@ -529,7 +529,7 @@ void PhyloTree::loadCostMatrixFile(char * file_name){
         // read numbers from file
         for(int i = 0; i < cost_nstates; i++){
             for(int j = 0; j < cost_nstates; j++)
-                fin >> cost_matrix[i * cost_nstates + j];
+                fin >> cost_matrix[(i * cost_nstates) + j];
         }
         
         fin.close();
@@ -542,9 +542,9 @@ void PhyloTree::loadCostMatrixFile(char * file_name){
     for (k = 0; k < cost_nstates; k++)
         for (i = 0; i < cost_nstates; i++)
             for (j = 0; j < cost_nstates; j++)
-                if (cost_matrix[i*cost_nstates+j] > cost_matrix[i*cost_nstates+k] + cost_matrix[k*cost_nstates+j]) {
+                if (cost_matrix[(i*cost_nstates)+j] > cost_matrix[(i*cost_nstates)+k] + cost_matrix[(k*cost_nstates)+j]) {
                     changed = true;
-                    cost_matrix[i*cost_nstates+j] = cost_matrix[i*cost_nstates+k] + cost_matrix[k*cost_nstates+j];
+                    cost_matrix[(i*cost_nstates)+j] = cost_matrix[(i*cost_nstates)+k] + cost_matrix[(k*cost_nstates)+j];
                 }
     
     if (changed) {
@@ -552,7 +552,7 @@ void PhyloTree::loadCostMatrixFile(char * file_name){
         cout << cost_nstates << endl;
         for (i = 0; i < cost_nstates; i++) {
             for (j = 0; j < cost_nstates; j++)
-                cout << "  " << cost_matrix[i*cost_nstates+j];
+                cout << "  " << cost_matrix[(i*cost_nstates)+j];
             cout << endl;
         }
     } else {
@@ -603,7 +603,7 @@ void PhyloTree::computeTipPartialParsimony() {
                         this_tip_partial_pars[i] = UINT_MAX;
                         for (int j = 0; j < nstates; j++)
                             if ((cstate) & (1 << j))
-                                this_tip_partial_pars[i] = min(this_tip_partial_pars[i], cost_matrix[i*nstates+j]);
+                                this_tip_partial_pars[i] = min(this_tip_partial_pars[i], cost_matrix[(i*nstates)+j]);
                     }
                 }
             }
@@ -618,7 +618,7 @@ void PhyloTree::computeTipPartialParsimony() {
                         this_tip_partial_pars[i] = UINT_MAX;
                         for (int j = 0; j < nstates; j++)
                             if (ambi_aa[static_cast<size_t>(state)] & (1 << j))
-                                this_tip_partial_pars[i] = min(this_tip_partial_pars[i], cost_matrix[i*nstates+j]);
+                                this_tip_partial_pars[i] = min(this_tip_partial_pars[i], cost_matrix[(i*nstates)+j]);
                     }
                 }
             }
@@ -1110,7 +1110,7 @@ void getNeiBranches(NeighborVec &removed_nei, NodeVector &attached_node, NodeVec
         }
         // check that exactly two branches are added
     }
-    ASSERT(nodes1.size() == 3 + (i-j-1)*2);
+    ASSERT(nodes1.size() == 3 + ((i-j-1)*2));
     
 }
 

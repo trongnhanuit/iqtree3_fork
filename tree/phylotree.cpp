@@ -5568,7 +5568,7 @@ int PhyloTree::collapseStableClade(int min_support, NodeVector &pruned_taxa, Str
     double *pruned_dist = new double[leafNum * leafNum];
     for (i = 0; i < leafNum; i++)
         for (j = 0; j < leafNum; j++)
-            pruned_dist[(i * leafNum) + j] = (dist_mat[stayed_id[i] * ntaxa) + stayed_id[j]];
+            pruned_dist[(i * leafNum) + j] = dist_mat[(stayed_id[i] * ntaxa) + stayed_id[j]];
     dist_mat = pruned_dist;
 
     return pruned_taxa.size();

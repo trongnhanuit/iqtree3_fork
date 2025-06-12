@@ -199,7 +199,7 @@ void initsvg(FILE *ofp, QuartetGroups &LMGroups)
 void plotlmpointsvg(FILE *ofp, double w1, double w2)
 {
 	/* plot dots into triangle 1 (top) */
-	fprintf(ofp,"	<circle cx=\"%.10f\" cy=\"%.10f\" r=\"2\" />\n", (0.5*w1 + w2)*1000, -(w1*866.0254038));
+    fprintf(ofp,"	<circle cx=\"%.10f\" cy=\"%.10f\" r=\"2\" />\n", (0.5*w1 + w2)*NUM_ONE_E_THREE, -(w1*866.0254038));
 } /* plotlmpointsvg */
 
 
@@ -507,7 +507,7 @@ void plotlmpoint(FILE *epsofp, FILE *svgofp, double w1, double w2)
 	if (lmapsvg_optn) {
 		//fprintf(svgofp,"    <use x=\"%.10f\" y=\"%.10f\" xlink:href=\"#result\" />\n", (0.5*w1 + w2), -(w1*0.8660254038));
 		fprintf(svgofp,"    <circle cx=\"%.10f\" cy=\"%.10f\" r=\"2\" />\n", 
-			(0.5*w1 + w2)*1000, -(w1*866.0254038));
+            (0.5*w1 + w2)*NUM_ONE_E_THREE, -(w1*866.0254038));
 	}
 } /* plotlmpoint */
 #endif
@@ -543,7 +543,7 @@ void plotlmpointcolor(FILE *epsofp, FILE *svgofp, double w1, double w2, int red,
 		you can use rgb values as well: fill: rgb(255,0,0);
 */
 		fprintf(svgofp,"    <circle cx=\"%.10f\" cy=\"%.10f\" r=\"2\" ", 
-			(0.5*w1 + w2)*1000, -(w1*866.0254038));
+			(0.5*w1 + w2)*NUM_ONE_E_THREE, -(w1*866.0254038));
 		fprintf(svgofp,"fill=\"rgb(%d%%, %d%%, %d%%)\" />\n", (int)(100*red), (int)(100*green), (int)(100*blue));
 	}
 } /* plotlmpointcolor */
@@ -737,8 +737,8 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
 	   size0 = sizeA-1;
 	   LMGroups.uniqueQuarts = static_cast<int64_t>(1) + size3 +
             static_cast<int64_t>(size2) * (size2-1) / 2 +
-            static_cast<int64_t>(size1) * (size1-1) * (size1-2) / 6 +
-            static_cast<int64_t>(size0) * (size0-1) * (size0-2) * (size0-3) / 24;
+            static_cast<int64_t>(size1) * (size1-1) * (size1-2) / NUM_SIX +
+            static_cast<int64_t>(size0) * (size0-1) * (size0-2) * (size0-3) / NUM_TWO_FOUR;
 	   break;
 	case 2: 
 	   LMGroups.uniqueQuarts = (static_cast<int64_t>(sizeA) * (sizeA - 1)) / 2 * (sizeB * (sizeB - 1)) / 2; break;
@@ -961,7 +961,7 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
                 quartet_tree->initializeAllPartialLh();
                 quartet_tree->wrapperFixNegativeBranch(true);
                 // optimize branch lengths with logl_epsilon=0.1 accuracy
-                lmap_quartet_info[qid].logl[k] = quartet_tree->optimizeAllBranches(10, 0.1);
+                lmap_quartet_info[qid].logl[k] = quartet_tree->optimizeAllBranches(NUM_TEN, 0.1);
             }
             // reset model & rate so that they are not deleted
             quartet_tree->setModel(nullptr);
@@ -1075,7 +1075,7 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
 	temp2 = onethird - lmap_quartet_info[qid].qweight[qworder[1]];
 	temp3 = onethird - lmap_quartet_info[qid].qweight[qworder[2]];
 	sqdiff[2] = temp1 * temp1 + temp2 * temp2 + temp3 * temp3;
-	discreteweight[2] = static_cast<unsigned char>(7);
+    discreteweight[2] = static_cast<unsigned char>(NUM_SEVEN);
 
         /* sort in descending order */
         int sqorder[3]; // local (thread-safe) vector for sorting
@@ -1126,22 +1126,22 @@ void PhyloTree::computeQuartetLikelihoods(vector<QuartetInfo> &lmap_quartet_info
 	if (qpbranching == 3) {
 		lmap_quartet_info[qid].area=3; // LM_REG4
 	}
-	if (qpbranching == 6) {
+    if (qpbranching == NUM_SIX) {
 		lmap_quartet_info[qid].area=4; // LM_REG5
 	}
-	if (qpbranching == 5) {
-		lmap_quartet_info[qid].area=5; // LM_REG6
+    if (qpbranching == NUM_FIVE) {
+        lmap_quartet_info[qid].area=NUM_FIVE; // LM_REG6
 	}
 
-	if (qpbranching == 7) {
-		lmap_quartet_info[qid].area=6; // LM_REG7 - center 
+    if (qpbranching == NUM_SEVEN) {
+		lmap_quartet_info[qid].area=NUM_SIX; // LM_REG7 - center
 	}
 
 	{
 		int64_t count = (qid+1);
-		if ((count % 100) == 0) {
+		if ((count % NUM_ONE_ZERO_ZERO) == 0) {
 			cout << '.';
-			if ((count % 1000) == 0) { // separator after 10 dots
+            if ((count % NUM_ONE_E_THREE) == 0) { // separator after 10 dots
 				cout << ' ';
 				if ((count % 5000) == 0) // new-line after 50 dots
 					cout << " : " << count << endl;
@@ -1281,7 +1281,7 @@ void PhyloTree::readLikelihoodMappingGroups(char *filename, QuartetGroups &LMGro
     TaxaSetNameVector *allsets = lmclusters->getSets();
     numsets = static_cast<int>(allsets->size());
 
-    if(numsets > 5) outError("Only up to 4 Likelihood Mapping clusters allowed, plus one 'ignored' cluster!");
+    if(numsets > NUM_FIVE) outError("Only up to 4 Likelihood Mapping clusters allowed, plus one 'ignored' cluster!");
 
     int n = 0;
     for (TaxaSetNameVector::iterator i = allsets->begin(); i != allsets->end(); i++) {
@@ -1386,7 +1386,7 @@ void PhyloTree::doLikelihoodMapping() {
             recommended_quartets = static_cast<int64_t>(25)*aln->getNSeq();
         } else {
             int64_t n = aln->getNSeq();
-            recommended_quartets = n*(n-1)*(n-2)*(n-3)/24;
+            recommended_quartets = n*(n-1)*(n-2)*(n-3)/NUM_TWO_FOUR;
         }
         if (params->lmap_num_quartets > 0 && params->lmap_num_quartets < recommended_quartets) {
             outWarning("Number of quartets is recommended to be at least " + convertInt64ToString(recommended_quartets) + " s.t. each sequence is sampled sufficiently");
@@ -1394,31 +1394,31 @@ void PhyloTree::doLikelihoodMapping() {
 
     }
 
-    areacount[0] = 0;
-    areacount[1] = 0;
-    areacount[2] = 0;
-    areacount[3] = 0;
-    areacount[4] = 0;
-    areacount[5] = 0;
-    areacount[6] = 0;
-    areacount[7] = 0;
-    cornercount[0] = 0;
-    cornercount[1] = 0;
-    cornercount[2] = 0;
-    cornercount[3] = 0;
+    areacount[NUM_ZERO] = 0;
+    areacount[NUM_ONE] = 0;
+    areacount[NUM_TWO] = 0;
+    areacount[NUM_THREE] = 0;
+    areacount[NUM_FOUR] = 0;
+    areacount[NUM_FIVE] = 0;
+    areacount[NUM_SIX] = 0;
+    areacount[NUM_SEVEN] = 0;
+    cornercount[NUM_ZERO] = 0;
+    cornercount[NUM_ONE] = 0;
+    cornercount[NUM_TWO] = 0;
+    cornercount[NUM_THREE] = 0;
 
     lmap_seq_quartet_info.resize(leafNum+1);
     for (qid = 0; qid < leafNum; qid++) {
-        lmap_seq_quartet_info[qid].countarr[0] = 0;
-        lmap_seq_quartet_info[qid].countarr[1] = 0;
-        lmap_seq_quartet_info[qid].countarr[2] = 0;
-        lmap_seq_quartet_info[qid].countarr[3] = 0;
-        lmap_seq_quartet_info[qid].countarr[4] = 0;
-        lmap_seq_quartet_info[qid].countarr[5] = 0;
-        lmap_seq_quartet_info[qid].countarr[6] = 0;
-        lmap_seq_quartet_info[qid].countarr[7] = 0;
-        lmap_seq_quartet_info[qid].countarr[8] = 0;
-        lmap_seq_quartet_info[qid].countarr[9] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_ZERO] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_ONE] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_TWO] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_THREE] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_FOUR] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_FIVE] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_SIX] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_SEVEN] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_EIGHT] = 0;
+        lmap_seq_quartet_info[qid].countarr[NUM_NINE] = 0;
     }
 
     computeQuartetLikelihoods(lmap_quartet_info, LMGroups);
@@ -1495,10 +1495,10 @@ void PhyloTree::doLikelihoodMapping() {
 //        PhyloTree::reportLikelihoodMapping(out);
 
     }
-
-    resolved   = areacount[0] + areacount[1] + areacount[2];
-    partly     = areacount[3] + areacount[4] + areacount[5];
-    unresolved = areacount[6];
+    
+    resolved   = areacount[NUM_ZERO] + areacount[NUM_ONE] + areacount[NUM_TWO];
+    partly     = areacount[NUM_THREE] + areacount[NUM_FOUR] + areacount[NUM_FIVE];
+    unresolved = areacount[NUM_SIX];
 	
 #if 0  // for debugging purposes only (HAS)
     out << endl << "LIKELIHOOD MAPPING SUMMARY" << endl << endl;
@@ -1824,9 +1824,9 @@ void PhyloTree::reportLikelihoodMapping(ofstream &out) {
 	    }
         }
 
-    resolved   = areacount[0] + areacount[1] + areacount[2];
-    partly     = areacount[3] + areacount[4] + areacount[5];
-    unresolved = areacount[6];
+    resolved   = areacount[NUM_ZERO] + areacount[NUM_ONE] + areacount[NUM_TWO];
+    partly     = areacount[NUM_THREE] + areacount[NUM_FOUR] + areacount[NUM_FIVE];
+    unresolved = areacount[NUM_SIX];
 	
     // out << endl << "LIKELIHOOD MAPPING ANALYSIS" << endl << endl;
     // out << "Number of quartets: " << (resolved+partly+unresolved)

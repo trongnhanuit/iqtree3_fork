@@ -39,7 +39,7 @@ void CandidateSet::saveCheckpoint() {
     for (reverse_iterator it = rbegin(); it != rend() && ntrees > 0; it++, ntrees--) {
         checkpoint->addListElement();
         stringstream ss;
-        ss.precision(12);
+        ss.precision(NUM_ONE_TWO);
         ss << it->second.score << " " << it->second.tree;
 //        double score = it->second.score;
 //        CKP_SAVE(score);
@@ -448,7 +448,7 @@ int CandidateSet::computeSplitOccurences(double supportThreshold) {
     }
     int newNumStableSplits = countStableSplits(supportThreshold);
     if (verbose_mode >= VB_MED) {
-        cout << ((double) newNumStableSplits / (aln->getNSeq() - 3)) * 100;
+        cout << ((double) newNumStableSplits / (aln->getNSeq() - 3)) * NUM_ONE_ZERO_ZERO;
         cout << " % of the splits are stable (support threshold " << supportThreshold;
         cout << " from " << candSplits.getNumTree() << " trees)" << endl;
     }

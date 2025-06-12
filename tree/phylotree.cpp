@@ -97,7 +97,7 @@ void PhyloTree::init() {
     _pattern_scaling = nullptr;
     _site_lh = nullptr;
     //root_state = STATE_UNKNOWN;
-    root_state = 126;
+    root_state = NUM_ONE_TWO_SIX;
     theta_all = nullptr;
     buffer_scale_all = nullptr;
     buffer_partial_lh = nullptr;
@@ -835,7 +835,7 @@ size_t PhyloTree::getBitsBlockSize() {
 #ifdef __AVX512KNL
     len = ((len+15)/16)*16;
 #else
-    len = ((len+7)/8)*8;
+    len = ((len+NUM_SEVEN)/NUM_EIGHT)*NUM_EIGHT;
 #endif
     return len;
 }
@@ -1671,7 +1671,7 @@ int PhyloTree::computePatternCategories(IntVector *pattern_ncat) {
         ptn_cat_mask.resize(npattern, 0);
     
     size_t num_best_mixture = 0;
-    ASSERT(ncat < sizeof(uint64_t)*8 && nmixture < sizeof(uint64_t)*8);
+    ASSERT(ncat < sizeof(uint64_t)*NUM_EIGHT && nmixture < sizeof(uint64_t)*NUM_EIGHT);
 
     double *lh_cat = _pattern_lh_cat;
     double *lh_mixture = new double[nmixture];
@@ -3045,7 +3045,7 @@ double PhyloTree::optimizeRootPosition(int root_dist, bool write_info, double lo
     // optimize branch lengths for all trees
     for (auto t = trees.begin(); t != trees.end(); t++) {
         readTreeString(*t);
-        setCurScore(optimizeAllBranches(100, logl_epsilon));
+        setCurScore(optimizeAllBranches(NUM_ONE_ZERO_ZERO, logl_epsilon));
         if (verbose_mode >= VB_MED) {
             cout << "Root pos " << (t - trees.begin())+1 << ": " << curScore << endl;
             if (verbose_mode >= VB_DEBUG) {
@@ -3115,7 +3115,7 @@ double PhyloTree::testRootPosition(bool write_info, double logl_epsilon, IntVect
     // optimize branch lengths for all trees
     for (i = 0; i != trees.size(); i++) {
         readTreeString(trees[i]);
-        setCurScore(optimizeAllBranches(100, logl_epsilon));
+        setCurScore(optimizeAllBranches(NUM_ONE_ZERO_ZERO, logl_epsilon));
         stringstream ss;
         printTree(ss);
         logl_trees.insert({curScore, make_pair(branch_ids[i], ss.str())});
@@ -3142,7 +3142,7 @@ double PhyloTree::testRootPosition(bool write_info, double logl_epsilon, IntVect
     
     ofstream out;
     out.open(out_file);
-    out.precision(10);
+    out.precision(NUM_TEN);
     branch_ids.clear();
     for (auto lt = logl_trees.rbegin(); lt != logl_trees.rend(); lt++) {
         branch_ids.push_back(lt->second.first);
@@ -3580,7 +3580,7 @@ double PhyloTree::computeDist_Experimental(double *dist_mat, double *var_mat) {
     EX_TRACE("Maximum possible uncorrected length "
         << (static_cast<double>(maxDistance) / static_cast<double>(s.totalFrequencyOfNonConstSites))
         << " Denominator " << denominator);
-    if ( 256 < s.maxState - s.minState ) {
+    if ( NUM_TWO_FIVE_SIX < s.maxState - s.minState ) {
         EX_TRACE("Falling back to stock distance calculation");
         double longest = computeDist(dist_mat, var_mat);
         EX_TRACE("Done stock distance calculation");
@@ -4158,7 +4158,7 @@ NNIMove PhyloTree::getBestNNIForBran(PhyloNode *node1, PhyloNode *node2, NNIMove
 
     NeighborVec::iterator it;
 
-    NeighborVec::iterator saved_it[6];
+    NeighborVec::iterator saved_it[NUM_SIX];
     int id = 0;
 
     saved_it[id++] = node1->findNeighborIt(node2);
@@ -4178,7 +4178,7 @@ NNIMove PhyloTree::getBestNNIForBran(PhyloNode *node1, PhyloNode *node2, NNIMove
         reorientPartialLh(static_cast<PhyloNeighbor*>(node2->findNeighbor(node1)), node2);
     }
 
-    Neighbor *saved_nei[6];
+    Neighbor *saved_nei[NUM_SIX];
     int mem_id = 0;
     // save Neighbor and allocate new Neighbor pointer
     for (id = 0; id < IT_NUM; id++) {
@@ -4853,8 +4853,8 @@ double PhyloTree::assessSPRMove(double cur_score, const SPRMove &spr) {
 double PhyloTree::optimizeSPR() {
     double cur_score = computeLikelihood();
     //spr_radius = leafNum / 5;
-    spr_radius = 10;
-    for (int i = 0; i < 100; i++) {
+    spr_radius = NUM_TEN;
+    for (int i = 0; i < NUM_ONE_ZERO_ZERO; i++) {
         cout << "i = " << i << endl;
         spr_moves.clear();
         double score = optimizeSPR_old(cur_score, static_cast<PhyloNode*>(root->neighbors[0]->node));
@@ -4884,7 +4884,7 @@ double PhyloTree::optimizeSPR() {
 double PhyloTree::optimizeSPRBranches() {
     cout << "Search with Subtree Pruning and Regrafting (SPR) using ML..." << endl;
     double cur_score = computeLikelihood();
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < NUM_ONE_ZERO_ZERO; i++) {
         double score = optimizeSPR();
         if (score <= cur_score + TOL_LIKELIHOOD) {
             break;
@@ -5396,7 +5396,7 @@ int PhyloTree::testAllBranches(int threshold, double best_score, double *pattern
     if (dad && !node->isLeaf() && !dad->isLeaf()) {
         double lbp_support, aLRT_support, aBayes_support;
         double SH_aLRT_support = (testOneBranch(best_score, pattern_lh, reps, lbp_reps,
-            node, dad, lbp_support, aLRT_support, aBayes_support) * 100);
+            node, dad, lbp_support, aLRT_support, aBayes_support) * NUM_ONE_ZERO_ZERO);
         ostringstream ss;
         ss.precision(3);
         ss << node->name;
@@ -5405,7 +5405,7 @@ int PhyloTree::testAllBranches(int threshold, double best_score, double *pattern
         if (reps)
             ss << SH_aLRT_support;
         if (lbp_reps)
-            ss << "/" << lbp_support * 100;
+            ss << "/" << lbp_support * NUM_ONE_ZERO_ZERO;
         if (aLRT_test)
             ss << "/" << aLRT_support;
         if (aBayes_test)

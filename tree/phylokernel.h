@@ -1500,7 +1500,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
         size_t leafid = static_cast<size_t>(node->id);
         size_t pars_size = getBitsBlockSize();
         memset(dad_branch->partial_pars, 0, pars_size*sizeof(UINT));
-        int ambi_aa[] = {2, 3, 5, 6, 9, 10}; // {4+8, 32+64, 512+1024};
+        int ambi_aa[] = {NUM_TWO, NUM_THREE, NUM_FIVE, NUM_SIX, NUM_NINE, NUM_TEN}; // {4+8, 32+64, 512+1024};
         UINT *x = dad_branch->partial_pars;
         int start_pos = 0;
 
@@ -1571,12 +1571,12 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
                             }
                             UINT bit1 = (1 << (site%UINT_BITS));
                             UINT *p = x+(site/UINT_BITS);
-                            for (int i = 0; i < 20; i++)
+                            for (int i = 0; i < NUM_TWO_ZERO; i++)
                                 p[i*VCSIZE] |= bit1;
                         }
                     } else {
-                        ASSERT(state < 23);
-                        state = (state-20)*2;
+                        ASSERT(state < NUM_TWO_THREE);
+                        state = (state-NUM_TWO_ZERO)*2;
                         for (int j = 0; j < freq; j++, site++) {
                             if (site == NUM_BITS) {
                                 x += nstates*VCSIZE;

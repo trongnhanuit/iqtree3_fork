@@ -296,7 +296,7 @@ void MExtTree::generateBirthDeath(Params &params)
     int i;
     
     // retry the birth-death process (up to 1000 times) until successfully generating the tree
-    for (int retry = 0; retry < 1000; retry++)
+    for (int retry = 0; retry < NUM_ONE_E_THREE; retry++)
     {
         i  = 0;
         myleaves.clear();

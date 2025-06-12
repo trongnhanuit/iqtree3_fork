@@ -297,9 +297,9 @@ void PhyloTree::computeTipPartialLikelihood() {
                         double lh_ambiguous;
                         // ambiguous characters
                         int ambi_aa[] = {
-                            4+8, // B = N or D
-                            32+64, // Z = Q or E
-                            512+1024 // U = I or L
+                            NUM_FOUR+NUM_EIGHT, // B = N or D
+                            NUM_THREE_TWO+NUM_SIX_FOUR, // Z = Q or E
+                            NUM_FIVE_ONE_TWO+NUM_ONE_ZERO_TWO_FOUR // U = I or L
                             };
                         switch (aln->seq_type) {
                         case SEQ_DNA:
@@ -321,7 +321,7 @@ void PhyloTree::computeTipPartialLikelihood() {
                                 int cstate = state-nstates;
                                 for (size_t i = 0; i < static_cast<size_t>(nstates); i++) {
                                     lh_ambiguous = 0.0;
-                                    for (int x = 0; x < 11; x++)
+                                    for (int x = 0; x < NUM_ONE_ONE; x++)
                                         if (ambi_aa[cstate] & (1 << x))
                                             lh_ambiguous += inv_evec[(((i*nstates)+x)*vector_size)+v];
                                     partial_lh[(i*vector_size)+v] = lh_ambiguous;
@@ -556,9 +556,9 @@ void PhyloTree::computePtnInvar() {
     int x;
     // ambiguous characters
     int ambi_aa[] = {
-        4+8, // B = N or D
-        32+64, // Z = Q or E
-        512+1024 // U = I or L
+        NUM_FOUR+NUM_EIGHT, // B = N or D
+        NUM_THREE_TWO+NUM_SIX_FOUR, // Z = Q or E
+        NUM_FIVE_ONE_TWO+NUM_ONE_ZERO_TWO_FOUR // U = I or L
     };
 
     double state_freq[nstates];
@@ -595,7 +595,7 @@ void PhyloTree::computePtnInvar() {
                 ptn_invar[ptn] = 0.0;
                 int cstate = (*aln)[ptn].const_char-nstates;
                 ASSERT(cstate <= 2);
-                for (x = 0; x < 11; x++)
+                for (x = 0; x < NUM_ONE_ONE; x++)
                     if (ambi_aa[cstate] & (1 << x))
                         ptn_invar[ptn] += state_freq[x];
                 ptn_invar[ptn] *= p_invar;
@@ -1761,9 +1761,9 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
     
     // compute information buffer for leaves
 	int ambi_aa[] = {
-        4+8, // B = N or D
-        32+64, // Z = Q or E
-        512+1024 // U = I or L
+        NUM_FOUR+NUM_EIGHT, // B = N or D
+        NUM_THREE_TWO+NUM_SIX_FOUR, // Z = Q or E
+        NUM_FIVE_ONE_TWO+NUM_ONE_ZERO_TWO_FOUR // U = I or L
     };
     int leafid = 0; 
     FOR_NEIGHBOR(node, dad, it) {
@@ -1785,7 +1785,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
             // special treatment for ambiguous characters
             switch (aln->seq_type) {
             case SEQ_DNA:
-                for (int state = 4; state < 18; state++) {
+                for (int state = 4; state < NUM_ONE_EIGHT; state++) {
                     this_lh_leaf = lh_leaf + (state*nstates);
                     int cstate = state-static_cast<int>(nstates)+1;
                     for (parent = 0; parent < nstates; parent++) {
@@ -1800,7 +1800,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
                 break;
             case SEQ_PROTEIN:
                 for (int state = 0; state < sizeof(ambi_aa)/sizeof(int); state++) {
-                    this_lh_leaf = lh_leaf + ((state+20)*nstates);
+                    this_lh_leaf = lh_leaf + ((state+NUM_TWO_ZERO)*nstates);
                     for (parent = 0; parent < nstates; parent++) {
                         double sumlh = 0.0;                
                         for (child = 0; child < nstates; child++) {

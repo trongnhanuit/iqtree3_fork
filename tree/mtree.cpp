@@ -40,7 +40,7 @@ MTree::MTree() {
     nodeNum = 0;
     rooted = false;
     if (Params::getInstance().min_branch_length <= 0)
-        num_precision = 6;
+        num_precision = NUM_SIX;
     else
         num_precision = max((int)ceil(-log10(Params::getInstance().min_branch_length))+1, 6);
     len_scale = 1.0;
@@ -54,7 +54,7 @@ MTree::MTree(const char *userTreeFile, bool &is_rooted)
 
 void MTree::init(const char *userTreeFile, bool &is_rooted) {
     if (Params::getInstance().min_branch_length <= 0)
-        num_precision = 6;
+        num_precision = NUM_SIX;
     else
         num_precision = max((int)ceil(-log10(Params::getInstance().min_branch_length))+1, 6);
     len_scale = 1.0;
@@ -465,12 +465,12 @@ typedef set<IntString*, IntStringCmp> IntStringSet;
 void MTree::printBranchLength(ostream &out, int brtype, bool print_slash, Neighbor *length_nei) {
     if (length_nei->length == -1.0)
         return; // NA branch length
-    int prec = 10;
+    int prec = NUM_TEN;
     if (Params::getInstance().numeric_precision > 0)
         prec = Params::getInstance().numeric_precision;
 	double length = length_nei->length;
     if (brtype & WT_BR_SCALE) length *= len_scale;
-    if (brtype & WT_BR_LEN_SHORT) prec = 6;
+    if (brtype & WT_BR_LEN_SHORT) prec = NUM_SIX;
     if (brtype & WT_BR_LEN_ROUNDING) length = round(length);
     out.precision(prec);
     
@@ -878,7 +878,7 @@ void MTree::parseBranchLength(string &lenstr, DoubleVector &branch_len) {
 void MTree::parseFile(istream &infile, char &ch, Node* &root, DoubleVector &branch_len)
 {
     Node *node;
-    int maxlen = 1000;
+    int maxlen = NUM_ONE_E_THREE;
     string seqname;
     int seqlen;
     DoubleVector brlen;
@@ -1910,7 +1910,7 @@ char MTree::readNextChar(istream &in, char current_ch) {
     else {
         in.get(ch);
         in_column++;
-        if (ch == 10) {
+        if (ch == NUM_TEN) {
             in_line++;
             in_column = 1;
         }
@@ -1918,7 +1918,7 @@ char MTree::readNextChar(istream &in, char current_ch) {
     while (controlchar(ch) && !in.eof()) {
         in.get(ch);
         in_column++;
-        if (ch == 10) {
+        if (ch == NUM_TEN) {
             in_line++;
             in_column = 1;
         }
@@ -1931,7 +1931,7 @@ char MTree::readNextChar(istream &in, char current_ch) {
             if (ch != ']')
                 in_comment += ch;
             in_column++;
-            if (ch == 10) {
+            if (ch == NUM_TEN) {
                 in_line++;
                 in_column = 1;
             }
@@ -1939,14 +1939,14 @@ char MTree::readNextChar(istream &in, char current_ch) {
         if (ch != ']') throw "Comments not ended with ]";
         in_column++;
         in.get(ch);
-        if (ch == 10) {
+        if (ch == NUM_TEN) {
             in_line++;
             in_column = 1;
         }
         while (controlchar(ch) && !in.eof()) {
             in_column++;
             in.get(ch);
-            if (ch == 10) {
+            if (ch == NUM_TEN) {
                 in_line++;
                 in_column = 1;
             }
@@ -2119,10 +2119,10 @@ void MTree::drawTree2(ostream &out, int brtype, double brscale, IntVector &subtr
     }
     if (node->isLeaf()) {
         for (ii = subtree_br.begin()+1; ii != subtree_br.end(); ii++) {
-            if (abs(*(ii-1)) > 1000) out << ' ';
+            if (abs(*(ii-1)) > NUM_ONE_E_THREE) out << ' ';
             else out << fig_char[0];
             int num = abs(*ii);
-            if (num > 1000) num -= 1000;
+            if (num > NUM_ONE_E_THREE) num -= NUM_ONE_E_THREE;
             for (i = 0; i < num; i++) out << ' ';
         }
         out << ((node==dad->neighbors.front()->node) ? fig_char[2] : ((node==dad->neighbors.back()->node) ? fig_char[4] : fig_char[3]));
@@ -2145,7 +2145,7 @@ void MTree::drawTree2(ostream &out, int brtype, double brscale, IntVector &subtr
     int cnt = 0;
     bool first = true;
 
-    br_len = br_len+1000;
+    br_len = br_len+NUM_ONE_E_THREE;
     FOR_NEIGHBOR_IT(node, dad, it) {
         if (cnt == descendant_cnt-1)
             br_len = -br_len;
@@ -2153,16 +2153,16 @@ void MTree::drawTree2(ostream &out, int brtype, double brscale, IntVector &subtr
 
         drawTree2(out, brtype, brscale, subtree_br, zero_epsilon, (*it)->node, node);
         subtree_br.pop_back();
-        if (br_len > 1000) br_len -= 1000;
+        if (br_len > NUM_ONE_E_THREE) br_len -= NUM_ONE_E_THREE;
         cnt++;
         if (cnt == descendant_cnt) break;
         if (subtree_br.size() > 1)
             for (ii = subtree_br.begin()+1; ii != subtree_br.end(); ii++) {
-                if (abs(*(ii-1)) > 1000) out << ' ';
+                if (abs(*(ii-1)) > NUM_ONE_E_THREE) out << ' ';
                 else out << fig_char[0];
                 if (ii == subtree_br.begin()) continue;
                 int num = abs(*ii);
-                if (num > 1000) num -= 1000;
+                if (num > NUM_ONE_E_THREE) num -= NUM_ONE_E_THREE;
                 for (i = 0; i < num; i++) out << ' ';
             }
         if (first) {
@@ -2182,14 +2182,14 @@ void MTree::drawTree2(ostream &out, int brtype, double brscale, IntVector &subtr
             if (brtype & WT_BR_ID && dad)
                 out << " [" << node->findNeighbor(dad)->id << "]";
             if (!subtree_br.empty()) {
-                if (subtree_br.back() >1000)
-                    subtree_br.back() -= 1000;
+                if (subtree_br.back() > NUM_ONE_E_THREE)
+                    subtree_br.back() -= NUM_ONE_E_THREE;
                 else if (subtree_br.back() < 0)
-                    subtree_br.back() -= 1000;
+                    subtree_br.back() -= NUM_ONE_E_THREE;
             }
         } else {
             if (dad) {
-                if (abs(subtree_br.back()) > 1000) out << ' ';
+                if (abs(subtree_br.back()) > NUM_ONE_E_THREE) out << ' ';
                 else out << fig_char[0];
                 for (i = 0; i < abs(br_len); i++)
                     out << ' ';

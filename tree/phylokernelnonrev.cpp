@@ -786,7 +786,7 @@ double PhyloTree::computeNonrevLikelihoodBranch(PhyloNeighbor *dad_branch, Phylo
             if (std::isnan(_pattern_lh[ptn]) || std::isinf(_pattern_lh[ptn])) {
                 cout << " " << j+1;
                 c++;
-                if (c >= 10) {
+                if (c >= NUM_TEN) {
                     cout << " ...";
                     break;
                 }

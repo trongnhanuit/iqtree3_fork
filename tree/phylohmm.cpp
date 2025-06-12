@@ -74,7 +74,7 @@ PhyloHmm::~PhyloHmm() {
 // prerequisite: array site_like_cat has been updated (i.e. computeLogLikelihoodSiteTree() has been invoked)
 // note: site_like_cat[i * ntree + j] : log-likelihood of site nsite-i-1 and tree j
 double PhyloHmm::computeBackLike(bool showInterRst) {
-    int showlines = 5;
+    int showlines = NUM_FIVE;
     size_t pre_k = 0;
     size_t k;
     size_t i,j;

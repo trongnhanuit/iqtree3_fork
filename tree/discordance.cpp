@@ -245,7 +245,7 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
             }
             if (left_count < 2 || right_count < 2) {
                 // not decisive
-                support[(part*3)+3] = support[(part*3)+4] = support[(part*3)+5] = -1;
+                support[(part*3)+3] = support[(part*3)+4] = support[(part*3) + NUM_FIVE] = -1;
                 break;
             }
         }
@@ -298,12 +298,12 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
     }
     sN = static_cast<double>(sum_sites) / nquartets;
     // rounding
-    sCF = round(sCF / nquartets * 10000)/100;
-    sDF1 = round(sDF1 / nquartets * 10000)/100;
-    sDF2 = round(sDF2 / nquartets * 10000)/100;
-    sCF_N = round(sCF_N / nquartets * 100)/100;
-    sDF1_N = round(sDF1_N / nquartets * 100)/100;
-    sDF2_N = round(sDF2_N / nquartets * 100)/100;
+    sCF = round(sCF / nquartets * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+    sDF1 = round(sDF1 / nquartets * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+    sDF2 = round(sDF2 / nquartets * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+    sCF_N = round(sCF_N / nquartets * NUM_ONE_ZERO_ZERO)/NUM_ONE_ZERO_ZERO;
+    sDF1_N = round(sDF1_N / nquartets * NUM_ONE_ZERO_ZERO)/NUM_ONE_ZERO_ZERO;
+    sDF2_N = round(sDF2_N / nquartets * NUM_ONE_ZERO_ZERO)/NUM_ONE_ZERO_ZERO;
     PUT_ATTR(nei, sCF);
     PUT_ATTR(nei, sN);
     PUT_ATTR(nei, sDF1);
@@ -619,12 +619,12 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
     }
     sN = static_cast<double>(sum_sites) / nquartets;
     // rounding
-    sCF = round(sCF / nquartets * 10000)/100;
-    sDF1 = round(sDF1 / nquartets * 10000)/100;
-    sDF2 = round(sDF2 / nquartets * 10000)/100;
-    sCF_N = round(sCF_N / nquartets * 100)/100;
-    sDF1_N = round(sDF1_N / nquartets * 100)/100;
-    sDF2_N = round(sDF2_N / nquartets * 100)/100;
+    sCF = round(sCF / nquartets * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+    sDF1 = round(sDF1 / nquartets * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+    sDF2 = round(sDF2 / nquartets * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+    sCF_N = round(sCF_N / nquartets * NUM_ONE_ZERO_ZERO)/NUM_ONE_ZERO_ZERO;
+    sDF1_N = round(sDF1_N / nquartets * NUM_ONE_ZERO_ZERO)/NUM_ONE_ZERO_ZERO;
+    sDF2_N = round(sDF2_N / nquartets * NUM_ONE_ZERO_ZERO)/NUM_ONE_ZERO_ZERO;
     PUT_ATTR(nei, sCF);
     PUT_ATTR(nei, sN);
     PUT_ATTR(nei, sDF1);
@@ -851,10 +851,10 @@ void PhyloTree::computeGeneConcordance(MTreeSet &trees, map<string,string> &mean
         int gDF1_N = supports[1][i];
         int gDF2_N = supports[2][i];
         int gDFP_N = gN - gCF_N - gDF1_N - gDF2_N;
-        double gCF = round(static_cast<double>(gCF_N)/gN * 10000)/100;
-        double gDF1 = round(static_cast<double>(gDF1_N)/gN * 10000)/100;
-        double gDF2 = round(static_cast<double>(gDF2_N)/gN * 10000)/100;
-        double gDFP = round(static_cast<double>(gDFP_N)/gN * 10000)/100;
+        double gCF = round(static_cast<double>(gCF_N)/gN * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+        double gDF1 = round(static_cast<double>(gDF1_N)/gN * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+        double gDF2 = round(static_cast<double>(gDF2_N)/gN * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
+        double gDFP = round(static_cast<double>(gDFP_N)/gN * NUM_ONE_E_FOUR)/NUM_ONE_ZERO_ZERO;
         PUT_ATTR(nei, gCF);
         PUT_ATTR(nei, gDF1);
         PUT_ATTR(nei, gDF2);
@@ -873,7 +873,7 @@ void PhyloTree::computeGeneConcordance(MTreeSet &trees, map<string,string> &mean
 
         stringstream tmp;
         tmp.precision(3);
-        tmp << static_cast<double>(supports[0][i])/decisive_counts[i]*100;
+        tmp << static_cast<double>(supports[0][i])/decisive_counts[i]*NUM_ONE_ZERO_ZERO;
         if (verbose_mode >= VB_MED) {
             tmp << "%" << decisive_counts[i];
         }

@@ -12,7 +12,7 @@ const double MAX_PROP = 1000.0;
 const double MAX_LEN = 1.0;
 const double LIKE_THRES = 0.1; // 10% more in team of likelihood value
 const double WEIGHT_EPSILON = 0.001;
-const int OPTIMIZE_STEPS = 10000;
+const int OPTIMIZE_STEPS = NUM_ONE_E_FOUR;
 
 // Input formats for the tree-mixture model
 // 1. linked models and site rates: GTR+G4+T
@@ -443,9 +443,9 @@ void IQTreeMix::separateModel(string modelName) {
         s = model_array[i];
         if (s.length() == 0) {
             continue;
-        } else if (s.length() > 6 && s.substr(0,5) == "TMIX{" && s.substr(s.length()-1,1) == "}") {
+        } else if (s.length() > NUM_SIX && s.substr(0, NUM_FIVE) == "TMIX{" && s.substr(s.length()-1,1) == "}") {
             // mixture model
-            s = s.substr(5,s.length()-6); // remove the beginning "MIX{" and the ending "}"
+            s = s.substr(NUM_FIVE, s.length() - NUM_SIX); // remove the beginning "MIX{" and the ending "}"
             if (i==0) {
                 // unlinked substitution models (while site rates may or may not be linked)
                 bool siteRateAppear = false;
@@ -2305,10 +2305,10 @@ string IQTreeMix::optimizeModelParameters(bool printInfo, double logl_epsilon) {
     PhyloTree *ptree;
     
     n = 1;
-    nsubstep1_start = 5;
-    nsubstep1_max = 10;
-    nsubstep2_start = 5;
-    nsubstep2_max = 10;
+    nsubstep1_start = NUM_FIVE;
+    nsubstep1_max = NUM_TEN;
+    nsubstep2_start = NUM_FIVE;
+    nsubstep2_max = NUM_TEN;
     substep2 = 0;
     
     // allocate memory
@@ -2535,7 +2535,7 @@ string IQTreeMix::optimizeModelParameters(bool printInfo, double logl_epsilon) {
                 score = optimizeTreeWeightsByBFGS(gradient_epsilon);
                 tree_weight_converge = true;
             } else {
-                m = 1 + step / 100;
+                m = 1 + step / NUM_ONE_ZERO_ZERO;
                 score = optimizeTreeWeightsByEM(pattern_mix_lh, gradient_epsilon, m, tree_weight_converge);  // loop max n times
             }
             if (verbose_mode >= VB_MED) {

@@ -59,7 +59,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
         size_t leafid = static_cast<size_t>(node->id);
         memset(dad_branch->partial_pars, 0, getBitsBlockSize()*sizeof(UINT));
         int max_sites = ((aln->num_parsimony_sites+UINT_BITS-1)/UINT_BITS)*UINT_BITS;
-        int ambi_aa[] = {2, 3, 5, 6, 9, 10}; // {4+8, 32+64, 512+1024};
+        int ambi_aa[] = {NUM_TWO, NUM_THREE, NUM_FIVE, NUM_SIX, NUM_NINE, NUM_TEN}; // {4+8, 32+64, 512+1024};
 //        if (aln->ordered_pattern.empty())
 //            aln->orderPatternByNumChars();
         ASSERT(!aln->ordered_pattern.empty());
@@ -87,7 +87,7 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
                         }
                     } else {
                         state -= 3;
-                        ASSERT(state < 15);
+                        ASSERT(state < NUM_ONE_FIVE);
                         for (int j = 0; j < freq; j++, site++) {
                             UINT *p = dad_branch->partial_pars+((site/UINT_BITS)*nstates);
                             UINT bit1 = (1 << (site%UINT_BITS));
@@ -115,12 +115,12 @@ void PhyloTree::computePartialParsimonyFast(PhyloNeighbor *dad_branch, PhyloNode
                         for (int j = 0; j < freq; j++, site++) {
                             UINT *p = dad_branch->partial_pars+((site/UINT_BITS)*nstates);
                             UINT bit1 = (1 << (site%UINT_BITS));
-                            for (int i = 0; i < 20; i++)
+                            for (int i = 0; i < NUM_TWO_ZERO; i++)
                                     p[i] |= bit1;
                         }
                     } else {
-                        ASSERT(state < 23);
-                        state = (state-20)*2;
+                        ASSERT(state < NUM_TWO_THREE);
+                        state = (state-NUM_TWO_ZERO)*2;
                         for (int j = 0; j < freq; j++, site++) {
                             UINT *p = dad_branch->partial_pars+((site/UINT_BITS)*nstates);
                             UINT bit1 = (1 << (site%UINT_BITS));
@@ -579,9 +579,9 @@ void PhyloTree::computeTipPartialParsimony() {
     ASSERT(tip_partial_pars);
     // ambiguous characters
     int ambi_aa[] = {
-        4+8, // B = N or D
-        32+64, // Z = Q or E
-        512+1024 // U = I or L
+        NUM_FOUR+NUM_EIGHT, // B = N or D
+        NUM_THREE_TWO+NUM_SIX_FOUR, // Z = Q or E
+        NUM_FIVE_ONE_TWO+NUM_ONE_ZERO_TWO_FOUR // U = I or L
     };
     
     memset(tip_partial_pars, 0, (aln->STATE_UNKNOWN+1)*nstates*sizeof(UINT));
@@ -593,7 +593,7 @@ void PhyloTree::computeTipPartialParsimony() {
     
     switch (aln->seq_type) {
         case SEQ_DNA:
-            for (state = 4; state < 18; state++) {
+            for (state = 4; state < NUM_ONE_EIGHT; state++) {
                 int cstate = state-nstates+1;
                 this_tip_partial_pars = &tip_partial_pars[static_cast<size_t>(state*nstates)];
                 for (i = 0; i < nstates; i++) {
@@ -610,7 +610,7 @@ void PhyloTree::computeTipPartialParsimony() {
             break;
         case SEQ_PROTEIN:
             for (state = 0; state < sizeof(ambi_aa)/sizeof(int); state++) {
-                this_tip_partial_pars = &tip_partial_pars[(state+20)*static_cast<size_t>(nstates)];
+                this_tip_partial_pars = &tip_partial_pars[(state+NUM_TWO_ZERO)*static_cast<size_t>(nstates)];
                 for (i = 0; i < nstates; i++) {
                     if (ambi_aa[static_cast<size_t>(state)] & (1 << i))
                         this_tip_partial_pars[i] = 0;
@@ -1250,7 +1250,7 @@ int PhyloTree::computeParsimonyTree(const char *out_prefix, Alignment *alignment
         leafNum += getNumTaxa(new_taxon, added_node);
     }
     
-    ASSERT(index == 4*leafNum-6);
+    ASSERT(index == 4*leafNum - NUM_SIX);
 
     nodeNum = 2 * leafNum - 2;
     initializeTree();

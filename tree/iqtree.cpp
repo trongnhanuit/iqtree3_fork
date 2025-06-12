@@ -61,7 +61,7 @@ void IQTree::init() {
 //    write_intermediate_trees = 0;
 //    max_candidate_trees = 0;
     logl_cutoff = 0.0;
-    len_scale = 10000;
+    len_scale = NUM_ONE_E_FOUR;
 //    save_all_br_lens = false;
     duplication_counter = 0;
     //boot_splits = new SplitGraph;
@@ -113,7 +113,7 @@ void IQTree::saveUFBoot(Checkpoint *checkpoint) {
         for (size_t id = static_cast<size_t>(sample_start); id != static_cast<size_t>(sample_end); id++) {
             checkpoint->addListElement();
             stringstream ss;
-            ss.precision(10);
+            ss.precision(NUM_TEN);
             ss << boot_counts[id] << " " << boot_logl[id] << " " << boot_orig_logl[id] << " " << boot_trees[id];
             checkpoint->put("", ss.str());
         }
@@ -126,7 +126,7 @@ void IQTree::saveUFBoot(Checkpoint *checkpoint) {
         for (size_t id = 0; id != boot_samples.size(); id++) {
             checkpoint->addListElement();
             stringstream ss;
-            ss.precision(10);
+            ss.precision(NUM_TEN);
             ss << boot_counts[id] << " " << boot_logl[id] << " " << boot_orig_logl[id] << " " << boot_trees[id];
             checkpoint->put("", ss.str());
         }
@@ -240,22 +240,22 @@ void IQTree::initSettings(Params &params) {
     } else {
         setNumThreads(params.num_threads);
     }
-    candidateTrees.init(this->aln, 200);
+    candidateTrees.init(this->aln, NUM_TWO_ZERO_ZERO);
     intermediateTrees.init(this->aln, 200000);
 
     if (params.min_iterations == -1) {
         if (!params.gbo_replicates) {
             if (params.stop_condition == SC_UNSUCCESS_ITERATION) {
-                params.min_iterations = static_cast<int>(aln->getNSeq()) * 100;
-            } else if (aln->getNSeq() < 100) {
-                params.min_iterations = 200;
+                params.min_iterations = static_cast<int>(aln->getNSeq()) * NUM_ONE_ZERO_ZERO;
+            } else if (aln->getNSeq() < NUM_ONE_ZERO_ZERO) {
+                params.min_iterations = NUM_TWO_ZERO_ZERO;
             } else {
                 params.min_iterations = static_cast<int>(aln->getNSeq()) * 2;
             }
             if (params.iteration_multiple > 1)
                 params.min_iterations = static_cast<int>(aln->getNSeq()) * params.iteration_multiple;
         } else {
-            params.min_iterations = 100;
+            params.min_iterations = NUM_ONE_ZERO_ZERO;
         }
     }
     if (!params.treeset_file.empty() && params.min_iterations == -1) {
@@ -274,13 +274,13 @@ void IQTree::initSettings(Params &params) {
             params.p_delete = 0.0; // delete nothing
         } else if (aln->getNSeq() == 4) {
             params.p_delete = 0.25; // just delete 1 leaf
-        } else if (aln->getNSeq() == 5) {
+        } else if (aln->getNSeq() == NUM_FIVE) {
             params.p_delete = 0.4; // just delete 2 leaves
         } else if (aln->getNSeq() < 51) {
             params.p_delete = 0.5;
-        } else if (aln->getNSeq() < 100) {
+        } else if (aln->getNSeq() < NUM_ONE_ZERO_ZERO) {
             params.p_delete = 0.3;
-        } else if (aln->getNSeq() < 200) {
+        } else if (aln->getNSeq() < NUM_TWO_ZERO_ZERO) {
             params.p_delete = 0.2;
         } else if (aln->getNSeq() < 400) {
             params.p_delete = 0.1;
@@ -292,13 +292,13 @@ void IQTree::initSettings(Params &params) {
     if (params.p_delete != -1.0) {
         k_delete = k_delete_min = k_delete_max = ceil(params.p_delete * leafNum);
     } else {
-        k_delete = k_delete_min = 10;
+        k_delete = k_delete_min = NUM_TEN;
         k_delete_max = leafNum / 2;
-        if (k_delete_max > 100) {
-            k_delete_max = 100;
+        if (k_delete_max > NUM_ONE_ZERO_ZERO) {
+            k_delete_max = NUM_ONE_ZERO_ZERO;
         }
-        if (k_delete_max < 20) {
-            k_delete_max = 20;
+        if (k_delete_max < NUM_TWO_ZERO) {
+            k_delete_max = NUM_TWO_ZERO;
         }
         ASSERT(k_delete >= 0);
         k_delete_stay = ceil(leafNum / static_cast<unsigned int>(k_delete));
@@ -504,7 +504,7 @@ void IQTree::createPLLPartition(Params &params, ostream &pllPartitionFileHandle)
                             modelStr = "LG4M";
                         }
                         bool name_ok = false;
-                        for (int j = 0; j < 18; j++) {
+                        for (int j = 0; j < NUM_ONE_EIGHT; j++) {
                             if (modelStr == aa_model_names_rax[j]) {
                                 name_ok = true;
                                 break;
@@ -816,7 +816,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         #pragma omp parallel
         {
             int *rstream;
-            int ran_seed = params->ran_seed + processID * 1000 + omp_get_thread_num();
+            int ran_seed = params->ran_seed + processID * NUM_ONE_E_THREE + omp_get_thread_num();
             init_random(ran_seed, false, &rstream);
             PhyloTree tree;
             if (!constraintTree.empty()) {
@@ -1927,7 +1927,7 @@ void IQTree::inputModelIQTree2PLL() {
         alpha = PLL_ALPHA_MAX;
     if (aln->num_states == 4) {
         // get the rate parameters
-        double *rate_param = new double[6];
+        double *rate_param = new double[NUM_SIX];
         getModel()->getRateMatrix(rate_param);
         // get the state frequencies
         double *state_freqs = new double[aln->num_states];
@@ -2026,11 +2026,11 @@ void IQTree::pllBuildIQTreePatternIndex(){
  */
 void IQTree::pllBaseSubstitute (char *seq, int dataType)
 {
-    char meaningDNA[256];
-    char  meaningAA[256];
+    char meaningDNA[NUM_TWO_FIVE_SIX];
+    char  meaningAA[NUM_TWO_FIVE_SIX];
     char * d;
 
-    for (size_t i = 0; i < 256; ++ i)
+    for (size_t i = 0; i < NUM_TWO_FIVE_SIX; ++ i)
     {
         meaningDNA[i] = -1;
         meaningAA[i]  = -1;
@@ -2039,35 +2039,35 @@ void IQTree::pllBaseSubstitute (char *seq, int dataType)
     /* DNA data */
 
     meaningDNA[(int)'A'] =  1;
-    meaningDNA[(int)'B'] = 14;
+    meaningDNA[(int)'B'] = NUM_ONE_FOUR;
     meaningDNA[(int)'C'] =  2;
-    meaningDNA[(int)'D'] = 13;
+    meaningDNA[(int)'D'] = NUM_ONE_THREE;
     meaningDNA[(int)'G'] =  4;
-    meaningDNA[(int)'H'] = 11;
-    meaningDNA[(int)'K'] = 12;
+    meaningDNA[(int)'H'] = NUM_ONE_ONE;
+    meaningDNA[(int)'K'] = NUM_ONE_TWO;
     meaningDNA[(int)'M'] =  3;
-    meaningDNA[(int)'R'] =  5;
-    meaningDNA[(int)'S'] =  6;
-    meaningDNA[(int)'T'] =  8;
-    meaningDNA[(int)'U'] =  8;
-    meaningDNA[(int)'V'] =  7;
-    meaningDNA[(int)'W'] =  9;
-    meaningDNA[(int)'Y'] = 10;
+    meaningDNA[(int)'R'] =  NUM_FIVE;
+    meaningDNA[(int)'S'] =  NUM_SIX;
+    meaningDNA[(int)'T'] =  NUM_EIGHT;
+    meaningDNA[(int)'U'] =  NUM_EIGHT;
+    meaningDNA[(int)'V'] =  NUM_SEVEN;
+    meaningDNA[(int)'W'] =  NUM_NINE;
+    meaningDNA[(int)'Y'] = NUM_TEN;
     meaningDNA[(int)'a'] =  1;
-    meaningDNA[(int)'b'] = 14;
+    meaningDNA[(int)'b'] = NUM_ONE_FOUR;
     meaningDNA[(int)'c'] =  2;
-    meaningDNA[(int)'d'] = 13;
+    meaningDNA[(int)'d'] = NUM_ONE_THREE;
     meaningDNA[(int)'g'] =  4;
-    meaningDNA[(int)'h'] = 11;
-    meaningDNA[(int)'k'] = 12;
+    meaningDNA[(int)'h'] = NUM_ONE_ONE;
+    meaningDNA[(int)'k'] = NUM_ONE_TWO;
     meaningDNA[(int)'m'] =  3;
-    meaningDNA[(int)'r'] =  5;
-    meaningDNA[(int)'s'] =  6;
-    meaningDNA[(int)'t'] =  8;
-    meaningDNA[(int)'u'] =  8;
-    meaningDNA[(int)'v'] =  7;
-    meaningDNA[(int)'w'] =  9;
-    meaningDNA[(int)'y'] = 10;
+    meaningDNA[(int)'r'] =  NUM_FIVE;
+    meaningDNA[(int)'s'] =  NUM_SIX;
+    meaningDNA[(int)'t'] =  NUM_EIGHT;
+    meaningDNA[(int)'u'] =  NUM_EIGHT;
+    meaningDNA[(int)'v'] =  NUM_SEVEN;
+    meaningDNA[(int)'w'] =  NUM_NINE;
+    meaningDNA[(int)'y'] = NUM_TEN;
 
     meaningDNA[(int)'N'] =
     meaningDNA[(int)'n'] =
@@ -2076,7 +2076,7 @@ void IQTree::pllBaseSubstitute (char *seq, int dataType)
     meaningDNA[(int)'X'] =
     meaningDNA[(int)'x'] =
     meaningDNA[(int)'-'] =
-    meaningDNA[(int)'?'] = 15;
+    meaningDNA[(int)'?'] = NUM_ONE_FIVE;
 
     /* AA data */
 
@@ -2085,51 +2085,51 @@ void IQTree::pllBaseSubstitute (char *seq, int dataType)
     meaningAA[(int)'N'] =  2;  /*  asparagine*/
     meaningAA[(int)'D'] =  3;  /* aspartic */
     meaningAA[(int)'C'] =  4;  /* cysteine */
-    meaningAA[(int)'Q'] =  5;  /* glutamine */
-    meaningAA[(int)'E'] =  6;  /* glutamic */
-    meaningAA[(int)'G'] =  7;  /* glycine */
-    meaningAA[(int)'H'] =  8;  /* histidine */
-    meaningAA[(int)'I'] =  9;  /* isoleucine */
-    meaningAA[(int)'L'] =  10; /* leucine */
-    meaningAA[(int)'K'] =  11; /* lysine */
-    meaningAA[(int)'M'] =  12; /* methionine */
-    meaningAA[(int)'F'] =  13; /* phenylalanine */
-    meaningAA[(int)'P'] =  14; /* proline */
-    meaningAA[(int)'S'] =  15; /* serine */
-    meaningAA[(int)'T'] =  16; /* threonine */
-    meaningAA[(int)'W'] =  17; /* tryptophan */
-    meaningAA[(int)'Y'] =  18; /* tyrosine */
-    meaningAA[(int)'V'] =  19; /* valine */
-    meaningAA[(int)'B'] =  20; /* asparagine, aspartic 2 and 3*/
-    meaningAA[(int)'Z'] =  21; /*21 glutamine glutamic 5 and 6*/
+    meaningAA[(int)'Q'] =  NUM_FIVE;  /* glutamine */
+    meaningAA[(int)'E'] =  NUM_SIX;  /* glutamic */
+    meaningAA[(int)'G'] =  NUM_SEVEN;  /* glycine */
+    meaningAA[(int)'H'] =  NUM_EIGHT;  /* histidine */
+    meaningAA[(int)'I'] =  NUM_NINE;  /* isoleucine */
+    meaningAA[(int)'L'] =  NUM_TEN; /* leucine */
+    meaningAA[(int)'K'] =  NUM_ONE_ONE; /* lysine */
+    meaningAA[(int)'M'] =  NUM_ONE_TWO; /* methionine */
+    meaningAA[(int)'F'] =  NUM_ONE_THREE; /* phenylalanine */
+    meaningAA[(int)'P'] =  NUM_ONE_FOUR; /* proline */
+    meaningAA[(int)'S'] =  NUM_ONE_FIVE; /* serine */
+    meaningAA[(int)'T'] =  NUM_ONE_SIX; /* threonine */
+    meaningAA[(int)'W'] =  NUM_ONE_SEVEN; /* tryptophan */
+    meaningAA[(int)'Y'] =  NUM_ONE_EIGHT; /* tyrosine */
+    meaningAA[(int)'V'] =  NUM_ONE_NINE; /* valine */
+    meaningAA[(int)'B'] =  NUM_TWO_ZERO; /* asparagine, aspartic 2 and 3*/
+    meaningAA[(int)'Z'] =  NUM_TWO_ONE; /*21 glutamine glutamic 5 and 6*/
     meaningAA[(int)'a'] =  0;  /* alanine */
     meaningAA[(int)'r'] =  1;  /* arginine */
     meaningAA[(int)'n'] =  2;  /*  asparagine*/
     meaningAA[(int)'d'] =  3;  /* aspartic */
     meaningAA[(int)'c'] =  4;  /* cysteine */
-    meaningAA[(int)'q'] =  5;  /* glutamine */
-    meaningAA[(int)'e'] =  6;  /* glutamic */
-    meaningAA[(int)'g'] =  7;  /* glycine */
-    meaningAA[(int)'h'] =  8;  /* histidine */
-    meaningAA[(int)'i'] =  9;  /* isoleucine */
-    meaningAA[(int)'l'] =  10; /* leucine */
-    meaningAA[(int)'k'] =  11; /* lysine */
-    meaningAA[(int)'m'] =  12; /* methionine */
-    meaningAA[(int)'f'] =  13; /* phenylalanine */
-    meaningAA[(int)'p'] =  14; /* proline */
-    meaningAA[(int)'s'] =  15; /* serine */
-    meaningAA[(int)'t'] =  16; /* threonine */
-    meaningAA[(int)'w'] =  17; /* tryptophan */
-    meaningAA[(int)'y'] =  18; /* tyrosine */
-    meaningAA[(int)'v'] =  19; /* valine */
-    meaningAA[(int)'b'] =  20; /* asparagine, aspartic 2 and 3*/
-    meaningAA[(int)'z'] =  21; /*21 glutamine glutamic 5 and 6*/
+    meaningAA[(int)'q'] =  NUM_FIVE;  /* glutamine */
+    meaningAA[(int)'e'] =  NUM_SIX;  /* glutamic */
+    meaningAA[(int)'g'] =  NUM_SEVEN;  /* glycine */
+    meaningAA[(int)'h'] =  NUM_EIGHT;  /* histidine */
+    meaningAA[(int)'i'] =  NUM_NINE;  /* isoleucine */
+    meaningAA[(int)'l'] =  NUM_TEN; /* leucine */
+    meaningAA[(int)'k'] =  NUM_ONE_ONE; /* lysine */
+    meaningAA[(int)'m'] =  NUM_ONE_TWO; /* methionine */
+    meaningAA[(int)'f'] =  NUM_ONE_THREE; /* phenylalanine */
+    meaningAA[(int)'p'] =  NUM_ONE_FOUR; /* proline */
+    meaningAA[(int)'s'] =  NUM_ONE_FIVE; /* serine */
+    meaningAA[(int)'t'] =  NUM_ONE_SIX; /* threonine */
+    meaningAA[(int)'w'] =  NUM_ONE_SEVEN; /* tryptophan */
+    meaningAA[(int)'y'] =  NUM_ONE_EIGHT; /* tyrosine */
+    meaningAA[(int)'v'] =  NUM_ONE_NINE; /* valine */
+    meaningAA[(int)'b'] =  NUM_TWO_ZERO; /* asparagine, aspartic 2 and 3*/
+    meaningAA[(int)'z'] =  NUM_TWO_ONE; /*21 glutamine glutamic 5 and 6*/
 
     meaningAA[(int)'X'] =
     meaningAA[(int)'x'] =
     meaningAA[(int)'?'] =
     meaningAA[(int)'*'] =
-    meaningAA[(int)'-'] = 22;
+    meaningAA[(int)'-'] = NUM_TWO_TWO;
 
     d = (dataType == PLL_DNA_DATA) ? meaningDNA : meaningAA;
     int seq_len = strlen(seq);
@@ -2174,7 +2174,7 @@ double IQTree::perturb(int times) {
         PhyloNode *taxon1 = (PhyloNode*) taxa[taxonid1];
         PhyloNode *taxon2;
         int *dists = new int[taxa.size()];
-        int minDist = 1000000;
+        int minDist = NUM_ONE_E_SIX;
         for (size_t i = 0; i < taxa.size(); i++) {
             if (i == taxonid1) {
                 continue;
@@ -2182,7 +2182,7 @@ double IQTree::perturb(int times) {
             taxon2 = (PhyloNode*) taxa[i];
             int dist = taxon1->calDist(taxon2);
             dists[i] = dist;
-            if (dist >= 7 && dist < minDist) {
+            if (dist >= NUM_SEVEN && dist < minDist) {
                 minDist = dist;
             }
         }
@@ -2969,7 +2969,7 @@ void IQTree::refineBootTrees() {
         delete bootstrap_alignment;
 
 
-        if ((sample+1) % 100 == 0) {
+        if ((sample+1) % NUM_ONE_ZERO_ZERO == 0) {
             cout << sample+1 << " samples done" << endl;
         }
 
@@ -3885,14 +3885,14 @@ void IQTree::summarizeBootstrap(Params &params, MTreeSet &trees) {
     if (verbose_mode >= VB_MAX) {
         for (i = 0; i < trees.size(); i++) {
             if (trees.tree_weights[i] > 0) {
-                cout << "Tree " << i + 1 << " weight= " << (double) trees.tree_weights[i] * 100 / sum_weights << endl;
+                cout << "Tree " << i + 1 << " weight= " << (double) trees.tree_weights[i] * NUM_ONE_ZERO_ZERO / sum_weights << endl;
             }
         }
     }
     int max_tree_id = max_element(trees.tree_weights.begin(), trees.tree_weights.end()) - trees.tree_weights.begin();
     if (verbose_mode >= VB_MED) {
         cout << "max_tree_id = " << max_tree_id + 1 << "   max_weight = " << trees.tree_weights[max_tree_id];
-        cout << " (" << (double) trees.tree_weights[max_tree_id] * 100 / sum_weights << "%)" << endl;
+        cout << " (" << (double) trees.tree_weights[max_tree_id] * NUM_ONE_ZERO_ZERO / sum_weights << "%)" << endl;
     }
     // assign bootstrap support
     SplitGraph sg;
@@ -4493,7 +4493,7 @@ void IQTree::printBestCandidateTree() {
 void IQTree::printPhylolibTree(const char* suffix) {
     pllTreeToNewick(pllInst->tree_string, pllInst, pllPartitions, pllInst->start->back, PLL_TRUE, 1, 0, 0, 0,
             PLL_SUMMARIZE_LH, 0, 0);
-    char phylolibTree[1024];
+    char phylolibTree[NUM_ONE_ZERO_TWO_FOUR];
     strcpy(phylolibTree, params->out_prefix);
     strcat(phylolibTree, suffix);
     FILE *phylolib_tree = fopen(phylolibTree, "w");

@@ -792,7 +792,7 @@ double PhyloSuperTree::optimizeAllBranches(int my_iterations, double tolerance, 
 			at(i)->printTree(cout, WT_BR_LEN + WT_NEWLINE);
 	}
 
-	if (my_iterations >= 100) computeBranchLengths();
+	if (my_iterations >= NUM_ONE_ZERO_ZERO) computeBranchLengths();
 	return tree_lh;
 }
 
@@ -980,7 +980,7 @@ NNIMove PhyloSuperTree::getBestNNIForBran(PhyloNode *node1, PhyloNode *node2, NN
 		nni_score1 += part_info[part].nniMoves[0].newloglh;
 		nni_score2 += part_info[part].nniMoves[1].newloglh;
 		int numlen = 1;
-		if (params->nni5) numlen = 5;
+		if (params->nni5) numlen = NUM_FIVE;
 		for (size_t i = 0; i < numlen; i++) {
 			part_info[part].nni1_brlen[brid*numlen + i] = part_info[part].nniMoves[0].newLen[i];
 			part_info[part].nni2_brlen[brid*numlen + i] = part_info[part].nniMoves[1].newLen[i];
@@ -1130,7 +1130,7 @@ void PhyloSuperTree::changeNNIBrans(NNIMove &move) {
 		part_move.node1 = (PhyloNode*)nei2_part->node;
 		part_move.node2 = (PhyloNode*)nei1_part->node;
 		int numlen = 1;
-		if (params->nni5) numlen = 5;
+		if (params->nni5) numlen = NUM_FIVE;
 		if (move.swap_id == 1) {
 			for (size_t i = 0; i < numlen; i++)
 				part_move.newLen[i] = part_info[part].nni1_brlen[brid*numlen + i];

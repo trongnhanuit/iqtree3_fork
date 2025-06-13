@@ -139,6 +139,6 @@ public:
     /**
         update relations
      */
-    void updateRelation(GenomeNode* n_parent, GenomeNode* n_left_child, GenomeNode* n_right_child);
+    // void updateRelation(GenomeNode* n_parent, GenomeNode* n_left_child, GenomeNode* n_right_child);
 };
 #endif

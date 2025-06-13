@@ -91,6 +91,7 @@ void PhyloTree::computeNonrevPartialLikelihood(TraversalInfo &info, size_t ptn_l
         
     double *eleft = echildren, *eright = echildren + block*nstates;
     
+    ASSERT(left && right);
 	if ((!left->node->isLeaf() && right->node->isLeaf())) {
 		PhyloNeighbor *tmp = left;
 		left = right;

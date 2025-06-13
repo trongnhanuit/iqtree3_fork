@@ -2983,6 +2983,7 @@ void PhyloTree::moveRoot(Node *node1, Node *node2) {
             outError("Cannot move multifurcating root branch");
         len += (*it)->length;
     }
+    ASSERT(root_nei1 && root_nei2);
     root_nei1->updateNeighbor(root_dad, root_nei2, len);
     root_nei2->updateNeighbor(root_dad, root_nei1, len);
 
@@ -4807,6 +4808,7 @@ double PhyloTree::assessSPRMove(double cur_score, const SPRMove &spr) {
     }
     // remove the subtree leading to node
     double sum_len = sibling1_len + sibling2_len;
+    ASSERT(sibling1 && sibling2);
     sibling1->updateNeighbor(dad, sibling2, sum_len);
     sibling2->updateNeighbor(dad, sibling1, sum_len);
     // now try to move the subtree to somewhere else
@@ -5932,6 +5934,7 @@ void PhyloTree::forceConvertingToUnrooted()
             len += (*it)->length;
             attributes.insert((*it)->attributes.begin(),(*it)->attributes.end());
         }
+        ASSERT(node1 && node2);
         node1->updateNeighbor(node, node2, len);
         node2->updateNeighbor(node, node1, len);
         node1->findNeighbor(node2)->attributes = attributes;

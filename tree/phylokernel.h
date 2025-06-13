@@ -1857,7 +1857,7 @@ void PhyloTree::computePartialParsimonySankoffSIMD(PhyloNeighbor *dad_branch, Ph
         else
             right = ((PhyloNeighbor*)*it);
     }
-    
+    ASSERT(left && right);
     if (!left->node->isLeaf() && right->node->isLeaf()) {
         // swap leaf and internal node
         PhyloNeighbor *tmp = left;

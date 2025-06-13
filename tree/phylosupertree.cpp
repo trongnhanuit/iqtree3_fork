@@ -444,6 +444,7 @@ void PhyloSuperTree::linkBranch(int part, SuperNeighbor *nei, SuperNeighbor *dad
 		}
 	}
 	nei->link_neighbors[part] = (PhyloNeighbor*)node_part->findNeighbor(dad_part);
+    ASSERT(dad_part);
 	dad_nei->link_neighbors[part] = (PhyloNeighbor*)dad_part->findNeighbor(node_part);
 }
 

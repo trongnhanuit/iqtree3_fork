@@ -1976,6 +1976,7 @@ void MTree::convertToUnrooted() {
             if (!node1) node1 = (*it)->node; else node2 = (*it)->node;
             len += (*it)->length;
         }
+        ASSERT(node1 && node2);
         node1->updateNeighbor(node, node2, len);
         node2->updateNeighbor(node, node1, len);
         delete node;

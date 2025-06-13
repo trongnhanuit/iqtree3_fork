@@ -1317,7 +1317,9 @@ double PhyloTree::computeLikelihoodFromBufferEigenSIMD() {
 		// ascertaiment bias correction
 		lh_final = 0.0;
 		lh_ptn = 0.0;
-		double prob_const;// df_const, ddf_const;
+        // NHANLT: initialize prob_const to avoid warning Uninitialized variable
+        // though prob_const will be computed later, the initialized value won't be used
+		double prob_const = 0.0;// df_const, ddf_const;
 		double *theta = &theta_all[orig_nptn*block];
 
         UBYTE sum_scale_num[(nstates+VCSIZE)*ncat_mix];

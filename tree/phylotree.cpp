@@ -1070,7 +1070,7 @@ void PhyloTree::getMemoryRequired(uint64_t &partial_lh_entries, uint64_t &scale_
         block_size *= model->getNMixtures();
         scale_size *= model->getNMixtures();
     }
-
+    ASSERT(model);
     uint64_t tip_partial_lh_size = aln->num_states * (aln->STATE_UNKNOWN+1) * model->getNMixtures();
     uint64_t tip_partial_pars_size = aln->num_states * (aln->STATE_UNKNOWN+1);
 
@@ -4645,6 +4645,7 @@ double PhyloTree::swapSPR(double cur_score, int cur_depth, PhyloNode *node1, Phy
     PhyloNeighbor *node1_nei = static_cast<PhyloNeighbor*>(node1->findNeighbor(dad1));
     PhyloNeighbor *dad1_nei = static_cast<PhyloNeighbor*>(dad1->findNeighbor(node1));
     double node1_dad1_len = node1_nei->length;
+    ASSERT(dad2);
     PhyloNeighbor *node2_nei = static_cast<PhyloNeighbor*>(node2->findNeighbor(dad2));
     PhyloNeighbor *dad2_nei = static_cast<PhyloNeighbor*>(dad2->findNeighbor(node2));
 

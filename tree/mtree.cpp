@@ -1530,7 +1530,7 @@ void MTree::getTaxaID(vector<int> &taxa, Node *node, Node *dad) {
     }
 }
 
-bool MTree::containsSplits(SplitGraph& splits) {
+/* bool MTree::containsSplits(SplitGraph& splits) {
 	SplitGraph treeSplits;
 	convertSplits(treeSplits);
 	//check if treeSplits contains all splits in splits
@@ -1541,7 +1541,7 @@ bool MTree::containsSplits(SplitGraph& splits) {
 	//treeSplits.report(cout);
 	//splits.report(cout);
 	return true;
-}
+}*/
 
 Split* MTree::getSplit(Node* node1, Node* node2) {
     Neighbor* node12 = node1->findNeighbor(node2);
@@ -2023,13 +2023,13 @@ int MTree::sortTaxa(Node *node, Node *dad) {
     return taxid_nei_map.begin()->first;
 }
 
-void MTree::setExtendedFigChar() {
+/* void MTree::setExtendedFigChar() {
 	//fig_char[0] = 179;
 	//fig_char[1] = 196;
 	fig_char[2] = '/';
 	//fig_char[3] = 195;
 	fig_char[4] = '\\';
-}
+}*/
 
 void MTree::drawTree(ostream &out, int brtype, double zero_epsilon) {
     IntVector sub_tree_br;
@@ -2204,7 +2204,7 @@ void MTree::drawTree2(ostream &out, int brtype, double brscale, IntVector &subtr
     }
 }
 
-bool MTree::equalTopology(MTree *tree) {
+/* bool MTree::equalTopology(MTree *tree) {
 	ASSERT(root->isLeaf());
 	Node *root2 = tree->findLeafName(root->name);
 	if (!root2) return false;
@@ -2212,7 +2212,7 @@ bool MTree::equalTopology(MTree *tree) {
 	printTree(ostr, WT_TAXON_ID | WT_SORT_TAXA);
 	tree->printTree(ostr2, WT_TAXON_ID | WT_SORT_TAXA, root2);
 	return ostr.str() == ostr2.str();
-}
+}*/
 
 void MTree::calcDist(char *filename) {
     vector<string> taxname;

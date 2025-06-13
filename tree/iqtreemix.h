@@ -126,7 +126,7 @@ public:
     // node and dad are always nullptr
     void setBranchLengths(vector<DoubleVector> &len, Node *node = nullptr, Node *dad = nullptr);
     
-    virtual void showTree();
+    // virtual void showTree();
     
     /** set the root by name
      @param my_root root node name
@@ -200,7 +200,7 @@ public:
      4. The tree weights are estimated according to the proportion of the sites assigned to each tree.
      */
     void initializeTreeWeights();
-    void initializeTreeWeights2();
+    // void initializeTreeWeights2();
 
     virtual string optimizeModelParameters(bool printInfo, double logl_epsilon) override;
 

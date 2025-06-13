@@ -29,13 +29,13 @@ ParsTree::~ParsTree() {
 //    if(cost_matrix == nullptr) loadCostMatrixFile(pars_params->sankoff_cost_file);
 //}
 
-void ParsTree::printPatternScore() {
+/* void ParsTree::printPatternScore() {
 //    for(int i = 0; i < aln->getNPattern(); i++)
 //        cout << _pattern_pars[i] << ", ";
-}
+}*/
 
 // find minimum spanning tree score for a given pattern
-UINT ParsTree::findMstScore(int ptn) {
+/* UINT ParsTree::findMstScore(int ptn) {
 
 	//--- Initialize site_states to mark which state character is present in the pattern # 'ptn'
 	UINT * site_states = new UINT[aln->num_states];
@@ -108,5 +108,5 @@ UINT ParsTree::findMstScore(int ptn) {
 	delete [] added;
 	return score;
 
-}
+}*/
 

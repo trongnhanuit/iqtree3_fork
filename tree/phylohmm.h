@@ -150,13 +150,13 @@ public:
     double computeFwdLikeArray();
 
     // show the array site_like_cat
-    void showSiteLikeCat();
+    // void showSiteLikeCat();
     
     // show the array TransiteLog
-    void showTransiteLog();
+    // void showTransiteLog();
 
     // verify the backLikeArray and FwdLikeArray
-    void checkEachSiteBackFwdLikeArray();
+    // void checkEachSiteBackFwdLikeArray();
     
     // compute the marginal probabilities for each site
     void computeMarginalProb(ostream* out = nullptr);

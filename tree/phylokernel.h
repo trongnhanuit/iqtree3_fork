@@ -1438,7 +1438,7 @@ inline UINT fast_popcount(Vec8ui &x) {
 
 }
 
-inline void horizontal_popcount(Vec4ui &x) {
+/*inline void horizontal_popcount(Vec4ui &x) {
     MEM_ALIGN_BEGIN UINT vec[4] MEM_ALIGN_END;
     x.store_a(vec);
     vec[0] = vml_popcnt(vec[0]);
@@ -1446,9 +1446,9 @@ inline void horizontal_popcount(Vec4ui &x) {
     vec[2] = vml_popcnt(vec[2]);
     vec[3] = vml_popcnt(vec[3]);
     x.load_a(vec);
-}
+}*/
 
-inline void horizontal_popcount(Vec8ui &x) {
+/*inline void horizontal_popcount(Vec8ui &x) {
     MEM_ALIGN_BEGIN UINT vec[8] MEM_ALIGN_END;
     x.store_a(vec);
     vec[0] = vml_popcnt(vec[0]);
@@ -1460,7 +1460,7 @@ inline void horizontal_popcount(Vec8ui &x) {
     vec[6] = vml_popcnt(vec[6]);
     vec[7] = vml_popcnt(vec[7]);
     x.load_a(vec);
-}
+}*/
 
 template<class VectorClass>
 void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, PhyloNode *dad) {

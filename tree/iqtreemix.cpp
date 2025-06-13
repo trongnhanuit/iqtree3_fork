@@ -1603,14 +1603,14 @@ double IQTreeMix::optimizeTreeWeightsByBFGS(double gradient_epsilon) {
     return score;
 }
 
-void IQTreeMix::showTree() {
+/* void IQTreeMix::showTree() {
     size_t i;
     for (i=0; i<size(); i++) {
         cout << "Tree " << i+1 << ": ";
         at(i)->printTree(cout);
         cout << endl;
     }
-}
+}*/
 
 void IQTreeMix::setRootNode(const char *my_root, bool multi_taxa) {
     size_t i;
@@ -2016,14 +2016,14 @@ void IQTreeMix::optimizeTreesSeparately(bool printInfo, double logl_epsilon, dou
     #endif
 }
 
-void showDoubleArrayContent(string name, int dim, double* arr) {
+/* void showDoubleArrayContent(string name, int dim, double* arr) {
     int i;
     // show the values of array
     cout << name << ":";
     for (i=1; i<=dim; i++)
         cout << " " << arr[i];
     cout << endl;
-}
+}*/
 
 /**
     Initialize the tree weights using parsimony scores
@@ -2126,7 +2126,7 @@ void IQTreeMix::initializeTreeWeights() {
     5. Repeat the steps 3 and 4 until the sum of the absolute changes in the tree weights <= 0.0001
     6. Report the final tree weights
  */
-void IQTreeMix::initializeTreeWeights2() {
+/* void IQTreeMix::initializeTreeWeights2() {
     size_t i, j, k;
     int* parsimony_scores;
     int min_par_score;
@@ -2254,7 +2254,7 @@ void IQTreeMix::initializeTreeWeights2() {
         cout << endl;
          */
         // compute the sum of difference
-        diff_sum = 0.0;
+/*        diff_sum = 0.0;
         for (i=0; i<ntree; i++)
             diff_sum += fabs(weights[i] - pre_weights[i]);
     }
@@ -2278,7 +2278,7 @@ void IQTreeMix::initializeTreeWeights2() {
         cout << weights[i];
     }
     cout << endl;
-}
+}*/
 
 // reset the ptn_freq array to the original frequencies of the patterns
 void IQTreeMix::resetPtnOrigFreq() {

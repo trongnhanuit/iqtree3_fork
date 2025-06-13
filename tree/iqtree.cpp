@@ -987,7 +987,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 
 }
 
-string IQTree::generateParsimonyTree(int randomSeed) {
+/* string IQTree::generateParsimonyTree(int randomSeed) {
     string parsimonyTreeString;
     if (params->start_tree == STT_PLL_PARSIMONY) {
         pllInst->randomNumberSeed = randomSeed;
@@ -1014,7 +1014,7 @@ string IQTree::generateParsimonyTree(int randomSeed) {
     }
     return parsimonyTreeString;
 
-}
+}*/
 
 void IQTree::initializePLL(Params &params) {
     pllAttr.rateHetModel = PLL_GAMMA;
@@ -1126,13 +1126,13 @@ double IQTree::getProbDelete() {
     return (double) k_delete / leafNum;
 }
 
-void IQTree::resetKDelete() {
+/* void IQTree::resetKDelete() {
     k_delete = k_delete_min;
     ASSERT(k_delete >= 0);
     k_delete_stay = ceil(leafNum / static_cast<unsigned int>(k_delete));
-}
+}*/
 
-void IQTree::increaseKDelete() {
+/* void IQTree::increaseKDelete() {
     if (k_delete >= k_delete_max) {
         return;
     }
@@ -1146,7 +1146,7 @@ void IQTree::increaseKDelete() {
     if (verbose_mode >= VB_MED) {
         cout << "Increase k_delete to " << k_delete << endl;
     }
-}
+}*/
 
 //void IQTree::setIQPIterations(STOP_CONDITION stop_condition, double stop_confidence, int min_iterations,
 //        int max_iterations) {
@@ -1238,7 +1238,7 @@ RepresentLeafSet* IQTree::findRepresentLeaves(vector<RepresentLeafSet*> &leaves_
  }
  }*/
 
-void IQTree::deleteNonCherryLeaves(PhyloNodeVector &del_leaves) {
+/* void IQTree::deleteNonCherryLeaves(PhyloNodeVector &del_leaves) {
     NodeVector cherry_taxa;
     NodeVector noncherry_taxa;
     // get the vector of non cherry taxa
@@ -1287,7 +1287,7 @@ void IQTree::deleteNonCherryLeaves(PhyloNodeVector &del_leaves) {
         }
     }
     root = cherry_taxa[j];
-}
+}*/
 
 void IQTree::deleteLeaves(PhyloNodeVector &del_leaves) {
     NodeVector taxa;
@@ -1567,16 +1567,16 @@ void IQTree::reinsertLeaves(PhyloNodeVector &del_leaves) {
         drawTree(cout, WT_BR_SCALE | WT_INT_NODE | WT_TAXON_ID | WT_NEWLINE | WT_BR_ID);
 }
 
-void IQTree::doParsimonyReinsertion() {
+/* void IQTree::doParsimonyReinsertion() {
     PhyloNodeVector del_leaves;
 
     deleteLeaves(del_leaves);
 
     reinsertLeavesByParsimony(del_leaves);
     fixNegativeBranch(false);
-}
+}*/
 
-void IQTree::getNonTabuBranches(Branches& allBranches, SplitGraph& tabuSplits, Branches& nonTabuBranches, Branches* tabuBranches) {
+/* void IQTree::getNonTabuBranches(Branches& allBranches, SplitGraph& tabuSplits, Branches& nonTabuBranches, Branches* tabuBranches) {
     if (tabuSplits.size() == 0) {
         return;
     }
@@ -1597,7 +1597,7 @@ void IQTree::getNonTabuBranches(Branches& allBranches, SplitGraph& tabuSplits, B
         }
 
     }
-}
+}*/
 
 void IQTree::getSplitBranches(Branches &branches, SplitIntMap &splits, Node *node, Node *dad) {
     if (!node) {
@@ -3396,7 +3396,7 @@ double IQTree::pllOptimizeNNI(int &totalNNICount, int &nniSteps, SearchInfo &sea
     return searchinfo.curLogl;
 }
 
-void IQTree::pllLogBootSamples(int** pll_boot_samples, int nsamples, int npatterns){
+/* void IQTree::pllLogBootSamples(int** pll_boot_samples, int nsamples, int npatterns){
     ofstream bfile("boot_samples.log");
     bfile << "Original freq:" << endl;
     int sum = 0;
@@ -3418,7 +3418,7 @@ void IQTree::pllLogBootSamples(int** pll_boot_samples, int nsamples, int npatter
     }
     bfile.close();
 
-}
+}*/
 
 void IQTree::pllInitUFBootData(){
     if(pllUFBootDataPtr == nullptr){
@@ -3567,7 +3567,7 @@ void IQTree::getCompatibleNNIs(vector<NNIMove> &nniMoves, vector<NNIMove> &compa
 //    }
 //}
 
-double IQTree::getAvgNumNNI() {
+/* double IQTree::getAvgNumNNI() {
     if (vecNumNNI.size() == 0) {
         return 0;
     } else {
@@ -3581,9 +3581,9 @@ double IQTree::getAvgNumNNI() {
         }
         return median;
     }
-}
+}*/
 
-double IQTree::estDeltaMedian() {
+/* double IQTree::estDeltaMedian() {
     if (vecImpProNNI.size() == 0) {
         return 0;
     } else {
@@ -3597,7 +3597,7 @@ double IQTree::estDeltaMedian() {
         }
         return median;
     }
-}
+}*/
 
 //inline double IQTree::estDelta95() {
 //    if (vecImpProNNI.size() == 0) {
@@ -3613,9 +3613,9 @@ int IQTree::getDelete() const {
     return k_delete;
 }
 
-void IQTree::setDelete(int _delete) {
+/* void IQTree::setDelete(int _delete) {
     k_delete = _delete;
-}
+}*/
 
 void IQTree::evaluateNNIs(Branches &nniBranches, vector<NNIMove>  &positiveNNIs) {
     for (Branches::iterator it = nniBranches.begin(); it != nniBranches.end(); it++) {
@@ -3640,13 +3640,13 @@ void IQTree::evaluateNNIs(Branches &nniBranches, vector<NNIMove>  &positiveNNIs)
 //    }
 //}
 
-double IQTree::optimizeNNIBranches(Branches &nniBranches) {
+/* double IQTree::optimizeNNIBranches(Branches &nniBranches) {
     for (Branches::iterator it = nniBranches.begin(); it != nniBranches.end(); it++) {
         optimizeOneBranch((PhyloNode*) it->second.first, (PhyloNode*) it->second.second, true, PLL_NEWZPERCYCLE);
     }
     curScore = computeLikelihoodFromBuffer();
     return curScore;
-}
+}*/
 
 /**
  *  Currently not used, commented out to simplify the interface of getBestNNIForBran
@@ -4490,7 +4490,7 @@ void IQTree::printBestCandidateTree() {
 }
 
 
-void IQTree::printPhylolibTree(const char* suffix) {
+/* void IQTree::printPhylolibTree(const char* suffix) {
     pllTreeToNewick(pllInst->tree_string, pllInst, pllPartitions, pllInst->start->back, PLL_TRUE, 1, 0, 0, 0,
             PLL_SUMMARIZE_LH, 0, 0);
     char phylolibTree[NUM_ONE_ZERO_TWO_FOUR];
@@ -4499,7 +4499,7 @@ void IQTree::printPhylolibTree(const char* suffix) {
     FILE *phylolib_tree = fopen(phylolibTree, "w");
     fprintf(phylolib_tree, "%s", pllInst->tree_string);
     cout << "Tree optimized by Phylolib was written to " << phylolibTree << endl;
-}
+}*/
 
 void IQTree::printIntermediateTree(int brtype) {
     setRootNode(params->root);
@@ -4546,7 +4546,7 @@ void IQTree::printIntermediateTree(int brtype) {
 }
 
 
-void IQTree::convertNNI2Splits(SplitIntMap &nniSplits, int numNNIs, vector<NNIMove> &compatibleNNIs) {
+/* void IQTree::convertNNI2Splits(SplitIntMap &nniSplits, int numNNIs, vector<NNIMove> &compatibleNNIs) {
     for (size_t i = 0; i < numNNIs; i++) {
         Split *sp = new Split(*getSplit(compatibleNNIs[i].node1, compatibleNNIs[i].node2));
         if (sp->shouldInvert()) {
@@ -4554,7 +4554,7 @@ void IQTree::convertNNI2Splits(SplitIntMap &nniSplits, int numNNIs, vector<NNIMo
         }
         nniSplits.insertSplit(sp, 1);
     }
-}
+}*/
 
 double IQTree::getBestScore() {
     return candidateTrees.getBestScore();

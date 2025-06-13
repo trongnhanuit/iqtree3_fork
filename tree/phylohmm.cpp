@@ -441,7 +441,7 @@ double PhyloHmm::computeFwdLikeArray() {
 }
 
 // verify the backLikeArray and FwdLikeArray
-void PhyloHmm::checkEachSiteBackFwdLikeArray() {
+/* void PhyloHmm::checkEachSiteBackFwdLikeArray() {
     double score;
     double* f_array = fwd_array;
     double* b_array = bwd_array;
@@ -451,7 +451,7 @@ void PhyloHmm::checkEachSiteBackFwdLikeArray() {
         f_array += ncat;
         b_array += ncat;
     }
-}
+}*/
 
 // compute the marginal probabilities for each site
 void PhyloHmm::computeMarginalProb(ostream* out) {
@@ -535,7 +535,7 @@ void PhyloHmm::computeMarginalTransitProb() {
     delete[] t2;
 }
 
-void PhyloHmm::showSiteLikeCat() {
+/* void PhyloHmm::showSiteLikeCat() {
     int k = 0;
     cout << "Array site_like_cat :" << endl;
     for (int i=0; i<nsite; i++) {
@@ -545,9 +545,9 @@ void PhyloHmm::showSiteLikeCat() {
         }
         cout << endl;
     }
-}
+}*/
 
-void PhyloHmm::showTransiteLog() {
+/* void PhyloHmm::showTransiteLog() {
     double* transit_arr = modelHmm->getTransitLog(1);
     int k = 0;
     cout << "Array TransiteLog :" << endl;
@@ -559,6 +559,6 @@ void PhyloHmm::showTransiteLog() {
         }
         cout << endl;
     }
-}
+}*/
 
 

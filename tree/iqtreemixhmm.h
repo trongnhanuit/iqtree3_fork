@@ -150,7 +150,7 @@ private:
     void setAllBranchLengths();
     
     // show the branch lengths of all trees
-    void showAllBranchLengths();
+    // void showAllBranchLengths();
     
     //--------------------------------------------
     // optimization of branch lengths using BFGS

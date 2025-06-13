@@ -729,7 +729,7 @@ void IQTreeMixHmm::setAllBranchLengths() {
 }
 
 // show the branch lengths of all trees
-void IQTreeMixHmm::showAllBranchLengths() {
+/* void IQTreeMixHmm::showAllBranchLengths() {
     getAllBranchLengths();
     for (size_t i=0; i<ntree; i++) {
         cout << "The branch lengths of tree " << i+1 << endl;
@@ -741,7 +741,7 @@ void IQTreeMixHmm::showAllBranchLengths() {
         cout << endl;
     }
 
-}
+}*/
 
 //--------------------------------------
 // optimization of branch lengths

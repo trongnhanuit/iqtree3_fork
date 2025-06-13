@@ -1025,6 +1025,7 @@ protected:
      */
     inline string getBranchID(Node* node1, Node* node2) {
         string key("");
+        ASSERT(node1 && node2);
         if (node1->id < node2->id) {
             key += convertIntToString(node1->id) + "-"
                     + convertIntToString(node2->id);

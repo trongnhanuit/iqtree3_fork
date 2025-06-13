@@ -88,9 +88,9 @@ public:
         @param taxname taxon name to search for
         @return TRUE if constraint tree has a taxon, FALSE otherwise
     */
-    bool hasTaxon(string &taxname) {
+    /* bool hasTaxon(string &taxname) {
         return taxname_index.find(taxname) != taxname_index.end();
-    }
+    }*/
 
 protected:
 

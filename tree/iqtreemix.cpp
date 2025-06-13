@@ -1484,7 +1484,9 @@ double IQTreeMix::optimizeTreeWeightsByEM(double* pattern_mix_lh, double logl_ep
     size_t ptn, c;
     double *this_lk_cat;
     double lk_ptn;
-    double prev_score, score;
+    // NHANLT: initialize score to avoid warning Uninitialized variable
+    // though score will be computed later, the initialized value won't be used
+    double prev_score, score = 0.0;
     int step;
 
     prev_score = computeLikelihood();

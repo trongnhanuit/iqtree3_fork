@@ -578,7 +578,7 @@ inline void productVecMat(VectorClass *A, Numeric *M, VectorClass *X, VectorClas
     @param[in/out] X += A.D
     @param[in/out] Y += B.D
 */
-#ifdef KERNEL_FIX_STATES
+/* #ifdef KERNEL_FIX_STATES
 template <class VectorClass, class Numeric, const size_t N, const bool FMA>
 inline void dotProductPairAdd(Numeric *A, Numeric *B, VectorClass *D,
     VectorClass &X, VectorClass &Y)
@@ -646,7 +646,7 @@ inline void dotProductPairAdd(Numeric *A, Numeric *B, VectorClass *D,
         Y += mul_add(B[N-1], D[N-1], BD[0] + BD[1]);
     }
 #endif
-}
+} */
 
 /**
     compute dot-products of 3 vectors A, B, C with a single vector D and returns X, Y, Z:
@@ -841,7 +841,7 @@ inline void dotProductExp(VectorClass *A, VectorClass *B, Numeric D, VectorClass
         X = mul_add(exp(A[i]*D), B[i], X);
 }
 
-#ifdef KERNEL_FIX_STATES
+/* #ifdef KERNEL_FIX_STATES
 template <class VectorClass, const bool SAFE_NUMERIC, const size_t nstates>
 inline void scaleLikelihood(VectorClass &lh_max, double *invar, double *dad_partial_lh, UBYTE *dad_scale_num,
     size_t ncat_mix)
@@ -881,7 +881,7 @@ inline void scaleLikelihood(VectorClass &lh_max, double *invar, double *dad_part
             }
         }
     }
-}
+}*/
 
 
 /*******************************************************

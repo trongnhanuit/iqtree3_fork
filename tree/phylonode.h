@@ -138,10 +138,10 @@ public:
 	/**
 	 * true if this Neighbor is directed towards the root
 	 */
-	bool isTowardsRoot() {
+	/* bool isTowardsRoot() {
 		ASSERT(direction != UNDEFINED_DIRECTION);
 		return (direction == TOWARD_ROOT);
-	}
+	}*/
 
     int getSize() {
         return size;

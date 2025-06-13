@@ -809,7 +809,7 @@ public:
     /**
             allocate memory for a scale num vector
      */
-    UBYTE *newScaleNum();
+    // UBYTE *newScaleNum();
 
     /** get the number of bytes occupied by scale_num */
     size_t getScaleNumBytes();
@@ -1031,7 +1031,7 @@ public:
             @param dad its dad, used to direct the tranversal
             @return tree likelihood
      */
-    virtual double computeLikelihoodZeroBranch(PhyloNeighbor *dad_branch, PhyloNode *dad);
+    // virtual double computeLikelihoodZeroBranch(PhyloNeighbor *dad_branch, PhyloNode *dad);
 
     /**
         compute likelihood of rooted tree with virtual root (FOR TINA)
@@ -1107,7 +1107,7 @@ public:
     /**
      	 compute the joint ancestral states at a pattern (Pupko et al. 2000)
      */
-    void computeJointAncestralSequences(int *ancestral_seqs);
+    // void computeJointAncestralSequences(int *ancestral_seqs);
 
     /**
      * compute max ancestral likelihood according to
@@ -1207,7 +1207,7 @@ public:
 
     double correctBranchLengthF81(double observedBran, double alpha);
 
-    double computeCorrectedBayesianBranchLength(PhyloNeighbor *dad_branch, PhyloNode *dad);
+    // double computeCorrectedBayesianBranchLength(PhyloNeighbor *dad_branch, PhyloNode *dad);
 
     /**
             Compute the variance in log-likelihood difference
@@ -1684,7 +1684,7 @@ public:
             grow the tree by step-wise addition
             @param alignment input alignment
      */
-    void growTreeML(Alignment *alignment);
+    // void growTreeML(Alignment *alignment);
 
     /**
             used internally by growTreeML() to find the best target branch to add into the tree
@@ -1775,7 +1775,7 @@ public:
             @param dist_mat (IN/OUT) the shortest path between all pairs of taxa
     @return the longest distance
      */
-    double correctDist(double *dist_mat);
+    // double correctDist(double *dist_mat);
 
     /**
     compute the distance between two nodes on a tree.
@@ -1878,7 +1878,7 @@ public:
             no tree improvement found.
             @return the likelihood of the tree
      */
-    double optimizeSPRBranches();
+    // double optimizeSPRBranches();
 
     /**
             search by Subtree pruning and regrafting at a current subtree
@@ -1910,10 +1910,10 @@ public:
 
     double assessSPRMove(double cur_score, const SPRMove &spr);
 
-    void pruneSubtree(PhyloNode *node, PhyloNode *dad, PruningInfo &info);
+    // void pruneSubtree(PhyloNode *node, PhyloNode *dad, PruningInfo &info);
 
-    void regraftSubtree(PruningInfo &info,
-            PhyloNode *in_node, PhyloNode *in_dad);
+    /*void regraftSubtree(PruningInfo &info,
+            PhyloNode *in_node, PhyloNode *in_dad);*/
 
     /****************************************************************************
             Approximate Likelihood Ratio Test with SH-like interpretation
@@ -2506,7 +2506,7 @@ protected:
             allocate new memory for a bit block vector
             @return the allocated memory
      */
-    UINT *newBitsBlock();
+    // UINT *newBitsBlock();
 
     virtual void saveCurrentTree(double logl) {
     } // save current tree

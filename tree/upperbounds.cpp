@@ -9,7 +9,7 @@
 #include <string.h>
 #include "timeutil.h"
 
-void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
+/*void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 
 // Output details --------------------------------------------------
 // UpperBounds File
@@ -70,7 +70,7 @@ void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 	 *
 	 * ------------------------------------------------------------------------------------------------------ */
 
-	int i=0;//, h=0;
+//	int i=0;//, h=0;
 
 	// Printing info about the TreeLogL changes during the tree search
 /*	cout<<"mlInitial  = "<<tree->mlInitial<<endl;
@@ -83,7 +83,7 @@ void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 	/* ------------------------------------------------------------------------------------------------------
 	 * Main PART
 	 * ------------------------------------------------------------------------------------------------------ */
-	cout<<"Starting Upper Bounds analysis.."<<endl;
+/*	cout<<"Starting Upper Bounds analysis.."<<endl;
 
 	NodeVector branch1, branch2;
 	tree->getBranches(branch1, branch2);
@@ -100,7 +100,7 @@ void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 		/* ------------------------------------------------------------------------------------------------------------
 		 * TEST 1: This is the part for tests on [ai/(ai+bi)] and [bi/(ai+bi)] fractions
 		 */
-		int test1 = 1;
+/*		int test1 = 1;
 		if(test1 == 1){
 			if(taxaA.size() > 3 && taxaB.size() > 3){ // IQTree does not compute lh of tree with less than 4 taxa.
 				allSplits++;
@@ -111,7 +111,7 @@ void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 		/* ------------------------------------------------------------------------------------------------------------
 		 * TEST 2: This is the part for tests on random trees and evaluation of Upper Bounds for each split on the input tree
 		 */
-		int test2 = 0;
+/*		int test2 = 0;
 		if(test2 == 1){
 		if(taxaA.size() > 3 && taxaB.size() > 3){ // IQTree does not compute lh of tree with less than 4 taxa.
 			allSplits++;
@@ -270,7 +270,7 @@ void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 
 	// END: Printing out the results -----------------------------------------------------
 */
-		}} // END: if taxaA.size() and taxaB.size() >3
+/*		}} // END: if taxaA.size() and taxaB.size() >3
 
 	}
 	// END: the loop over all A|B present on tree T
@@ -279,7 +279,7 @@ void UpperBounds(Params *params, Alignment* alignment, IQTree* tree){
 	out_between.close();
 	out.close();
 	out_split.close();
-}
+}*/
 
 PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw) {
 	string taxa_set;
@@ -306,7 +306,7 @@ PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw)
 	return treeCopy;
 }
 
-void printTreeUB(MTree *tree){
+/*void printTreeUB(MTree *tree){
 	int i=0, j=0;
 
 	NodeVector nodeLeaves;
@@ -332,7 +332,7 @@ void printTreeUB(MTree *tree){
 			cout<<")"<<endl;
 		}
 	}
-}
+}*/
 
 MTree* generateRandomYH_UB(Params &params, PhyloTree *tree){
 	MExtTree* treeR = new MExtTree();
@@ -412,7 +412,7 @@ MTree* generateRandomYH_UB(Params &params, PhyloTree *tree){
 	return (MTree*)treeR;
 }
 
-double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBorgn, IntVector &taxaA, IntVector &taxaB, Params* params, double brLen){
+/*double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBorgn, IntVector &taxaA, IntVector &taxaB, Params* params, double brLen){
 	PhyloTree *tree  = new PhyloTree();
 	MTree *treeA = new MTree();
 	MTree *treeB = new MTree();
@@ -432,8 +432,8 @@ double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBo
 	// -------------------------
 */
 
-	extendingTree(treeA,params);
-	extendingTree(treeB,params);
+/*	extendingTree(treeA,params);
+	extendingTree(treeB,params);*/
 
 /*
 	// PrintTree ---------------
@@ -448,7 +448,7 @@ double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBo
 	// -------------------------
 */
 
-	treeA->root->name = "NewNodeA";
+/*	treeA->root->name = "NewNodeA";
 	treeB->root->name = "NewNodeB";
 	treeA->root->addNeighbor(treeB->root,0.0,tree->branchNum);
 	treeB->root->addNeighbor(treeA->root,0.0,tree->branchNum);
@@ -461,7 +461,7 @@ double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBo
 	//tree->printTree(cout);
 	//cout<<endl;
 
-	NodeVector brID;
+/*	NodeVector brID;
 	//brID= getBranchABid(brLen, tree);
 	brID.push_back(tree->findNodeName(treeA->root->name));
 	brID.push_back(tree->findNodeName(treeB->root->name));
@@ -509,7 +509,7 @@ double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBo
 
 	out.close();
 	return U;
-}
+}*/
 
 double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params *params){
 	double U = 0.0;
@@ -523,7 +523,7 @@ double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params 
 	return U;
 }
 
-NodeVector getBranchABid(double brLen, PhyloTree* tree){
+/*NodeVector getBranchABid(double brLen, PhyloTree* tree){
 	NodeVector branch1, branch2;
 	NodeVector branch;
 	tree->getBranches(branch1, branch2);
@@ -536,7 +536,7 @@ NodeVector getBranchABid(double brLen, PhyloTree* tree){
 	}
 	outError("UpperBounds: did not find matching branch:(");
 	return branch;
-}
+}*/
 
 void extendingTree(MTree *tree, Params* params){
 
@@ -595,7 +595,7 @@ void extendingTree(MTree *tree, Params* params){
 
 }
 
-NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
+/*NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
 
 	NNIMove nniMoves[2];
 
@@ -649,7 +649,7 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
      * corresponding coef: q2
      */
 
-    double L[4]; // likelihoods of 4 subtrees
+/*    double L[4]; // likelihoods of 4 subtrees
     double score[4];
     L[0] = L[1] = L[2] = L[3] = 0.0;
     score[0] = score[1] = score[2] = score[3] = 0.0;
@@ -737,7 +737,7 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
     //cout<<"Clear_pl_lh:"<<clear_pl_lh[0]<<" "<<clear_pl_lh[1]<<" "<<clear_pl_lh[2]<<" "<<clear_pl_lh[3]<<endl;
 
     //double logNcat = log(((double)ncat));
-    L[0] = L[0] + ((PhyloNeighbor*) (*nniMoves[0].node1Nei_it))->get_lh_scale_factor();
+/*    L[0] = L[0] + ((PhyloNeighbor*) (*nniMoves[0].node1Nei_it))->get_lh_scale_factor();
     L[1] = L[1] + ((PhyloNeighbor*) (*node1Nei2_it))->get_lh_scale_factor();
     L[2] = L[2] + ((PhyloNeighbor*) (*nniMoves[0].node2Nei_it))->get_lh_scale_factor();
     L[3] = L[3] + ((PhyloNeighbor*) (*nniMoves[1].node2Nei_it))->get_lh_scale_factor();
@@ -750,7 +750,7 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
     cout<<"Node"<<(*nniMoves[0].node2Nei_it)->node->id<<": L[2] = "<<L[2]<<endl;
     cout<<"Node"<<(*nniMoves[1].node2Nei_it)->node->id<<": L[3] = "<<L[3]<<endl;*/
 
-    UB += L[0] + L[1] + L[2] + L[3];
+/*    UB += L[0] + L[1] + L[2] + L[3];
 
     double q1 = logC(t[0]+t[3],tree) + logC(t[1]+t[2],tree);
     double q2 = logC(t[0]+t[2],tree) + logC(t[1]+t[3],tree);
@@ -778,7 +778,7 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
     		tree->maxUB = UBq1;
     	}*/
     	//cout<<"----------------- UBq1 < L !!!"<<endl;
-    }
+/*    }
     if(UBq2 < tree->getCurScore()){
     	tree->skippedNNIub += 1;
     	/*tree->meanUB += UBq2;
@@ -788,7 +788,7 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
     		tree->maxUB = UBq2;
     	}*/
     	//cout<<"----------------- UBq2 < L !!!"<<endl;
-    }
+/*    }
 
 	// Decide which NNI has a larger UB (we base our decision on q coefficients)
 	if(q1 > q2){
@@ -804,7 +804,7 @@ NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree)
 		//cout<<"q2 and NNI2 is chosen with UB "<<UBq2<<endl;
 		return nniMoves[1];
 	}
-}
+}*/
 
 double logC(double t, PhyloTree* tree){
 	//double c = log((1+3*exp(-t)))-log(1-exp(-t));

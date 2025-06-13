@@ -1465,7 +1465,7 @@ void PhyloSuperTreePlen::linkCheckRe(int part,Node* node, Node* dad, PhyloNeighb
 //	mapTrees();
 //}
 
-bool PhyloSuperTreePlen::checkBranchLen(){
+/*bool PhyloSuperTreePlen::checkBranchLen(){
 
 //	NodeVector nodes1,nodes2;
 //	int i;
@@ -1492,7 +1492,7 @@ bool PhyloSuperTreePlen::checkBranchLen(){
 //	delete [] checkVAL;
 
 	return true;
-}
+}*/
 
 void PhyloSuperTreePlen::mapBranchLen()
 {

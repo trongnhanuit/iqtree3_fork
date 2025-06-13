@@ -1687,7 +1687,7 @@ void PhyloTree::computeMarginalAncestralProbability(PhyloNeighbor *dad_branch, P
 }
 */
 
-void PhyloTree::computeJointAncestralSequences(int *ancestral_seqs) {
+/*void PhyloTree::computeJointAncestralSequences(int *ancestral_seqs) {
 
     // step 1-3 of the dynamic programming algorithm of Pupko et al. 2000, MBE 17:890-896
     ASSERT(root->isLeaf());
@@ -1700,7 +1700,7 @@ void PhyloTree::computeJointAncestralSequences(int *ancestral_seqs) {
     clearAllPartialLH();
     
     delete[] C;
-}
+}*/
 
 void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode *dad, int *C) {
     PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);

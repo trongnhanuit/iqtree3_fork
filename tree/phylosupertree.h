@@ -110,7 +110,7 @@ public:
             Assing taxa ids according to their position in the alignment
             @param alignment associated alignment
      */
-    virtual void setSuperAlignment(Alignment *alignment);
+    // virtual void setSuperAlignment(Alignment *alignment);
 
     /** remove identical sequences from the tree */
     virtual void removeIdenticalSeqs(Params &params) override;
@@ -400,7 +400,7 @@ public:
      */
     virtual int fixNegativeBranch(bool force = false, Node *node = nullptr, Node *dad = nullptr) override;
 
-    virtual int computeParsimonyBranchObsolete(PhyloNeighbor *dad_branch, PhyloNode *dad, int *branch_subst = nullptr);
+    // virtual int computeParsimonyBranchObsolete(PhyloNeighbor *dad_branch, PhyloNode *dad, int *branch_subst = nullptr);
 
     /****************************************************************************
             ancestral sequence reconstruction

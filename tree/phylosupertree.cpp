@@ -129,13 +129,13 @@ void PhyloSuperTree::setPartInfo(PhyloSuperTree *tree) {
 }
 
 
-void PhyloSuperTree::setSuperAlignment(Alignment *alignment) {
+/* void PhyloSuperTree::setSuperAlignment(Alignment *alignment) {
     PhyloTree::setAlignment(alignment);
 
     SuperAlignment *saln = (SuperAlignment*)aln;
     for (size_t i = 0; i < size(); i++)
         at(i)->setAlignment(saln->partitions.at(i));
-}
+}*/
 
 void PhyloSuperTree::setCheckpoint(Checkpoint *checkpoint) {
 	IQTree::setCheckpoint(checkpoint);
@@ -637,7 +637,7 @@ void PhyloSuperTree::clearAllPartialLH(bool make_null) {
     }
 }
 
-int PhyloSuperTree::computeParsimonyBranchObsolete(PhyloNeighbor *dad_branch, PhyloNode *dad, int *branch_subst) {
+/* int PhyloSuperTree::computeParsimonyBranchObsolete(PhyloNeighbor *dad_branch, PhyloNode *dad, int *branch_subst) {
     int score = 0, part = 0;
     SuperNeighbor *dad_nei = (SuperNeighbor*)dad_branch;
     SuperNeighbor *node_nei = (SuperNeighbor*)(dad_branch->node->findNeighbor(dad));
@@ -657,7 +657,7 @@ int PhyloSuperTree::computeParsimonyBranchObsolete(PhyloNeighbor *dad_branch, Ph
             branch_subst += this_subst;
     }
     return score;
-}
+}*/
 
 void PhyloSuperTree::computePartitionOrder() {
     if (!part_order.empty())

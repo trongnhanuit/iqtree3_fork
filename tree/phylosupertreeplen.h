@@ -225,7 +225,7 @@ public:
 	*/
 	virtual void computeBranchLengths() override;
 
-	bool checkBranchLen();
+	// bool checkBranchLen();
 	void mapBranchLen();
 	void mapBranchLen(int part);
 	virtual void printMapInfo() override;

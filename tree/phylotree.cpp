@@ -840,9 +840,9 @@ size_t PhyloTree::getBitsBlockSize() {
     return len;
 }
 
-UINT *PhyloTree::newBitsBlock() {
+/* UINT *PhyloTree::newBitsBlock() {
     return aligned_alloc<UINT>(getBitsBlockSize());
-}
+}*/
 
 
 void PhyloTree::computePartialParsimony(PhyloNeighbor *dad_branch, PhyloNode *dad) {
@@ -1239,9 +1239,9 @@ size_t PhyloTree::getScaleNumBytes() {
     return getScaleNumSize()*sizeof(UBYTE);
 }
 
-UBYTE *PhyloTree::newScaleNum() {
+/* UBYTE *PhyloTree::newScaleNum() {
     return aligned_alloc<UBYTE>(getScaleNumSize());
-}
+}*/
 
 Node *findFirstFarLeaf(Node *node, Node *dad = nullptr) {
     do {
@@ -2440,10 +2440,10 @@ double PhyloTree::correctBranchLengthF81(double observedBran, double alpha) {
     return correctedBranLen;
 }
 
-double PhyloTree::computeCorrectedBayesianBranchLength(PhyloNeighbor *dad_branch, PhyloNode *dad) {
+/* double PhyloTree::computeCorrectedBayesianBranchLength(PhyloNeighbor *dad_branch, PhyloNode *dad) {
     double observedBran = computeBayesianBranchLength(dad_branch, dad);
     return correctBranchLengthF81(observedBran, site_rate->getGammaShape());
-}
+}*/
 
 void PhyloTree::computeAllBayesianBranchLengths(Node *node, Node *dad) {
 
@@ -2460,7 +2460,7 @@ void PhyloTree::computeAllBayesianBranchLengths(Node *node, Node *dad) {
 }
 
 
-double PhyloTree::computeLikelihoodZeroBranch(PhyloNeighbor *dad_branch, PhyloNode *dad) {
+/* double PhyloTree::computeLikelihoodZeroBranch(PhyloNeighbor *dad_branch, PhyloNode *dad) {
     double lh_zero_branch;
     double saved_len = dad_branch->length;
     PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(dad_branch->node->findNeighbor(dad));
@@ -2472,7 +2472,7 @@ double PhyloTree::computeLikelihoodZeroBranch(PhyloNeighbor *dad_branch, PhyloNo
     node_branch->length = saved_len;
 
     return lh_zero_branch;
-}
+}*/
 
 
 /****************************************************************************
@@ -3202,7 +3202,7 @@ double PhyloTree::addTaxonML(Node *added_node, Node* &target_node, Node* &target
     return best_score;
 }
 
-void PhyloTree::growTreeML(Alignment *alignment) {
+/* void PhyloTree::growTreeML(Alignment *alignment) {
     cout << "Stepwise addition using ML..." << endl;
     aln = alignment;
     size_t size = aln->getNSeq();
@@ -3250,7 +3250,7 @@ void PhyloTree::growTreeML(Alignment *alignment) {
     }
 
     nodeNum = 2 * leafNum - 2;
-}
+}*/
 
 /****************************************************************************
  Precalculation of "flattened" structure to speed determination of distance functions
@@ -3364,7 +3364,7 @@ double PhyloTree::computeDist(int seq1, int seq2, double initial_dist) {
     return computeDist(seq1, seq2, initial_dist, var);
 }
 
-double PhyloTree::correctDist(double *dist_mat) {
+/*double PhyloTree::correctDist(double *dist_mat) {
     size_t n = aln->getNSeq();
     size_t nsqr = n * n;
     // use Floyd algorithm to find shortest path between all pairs of taxa
@@ -3385,7 +3385,7 @@ double PhyloTree::correctDist(double *dist_mat) {
         }
     }
     return longest_dist;
-}
+}*/
 
 double PhyloTree::pairDist(Node *node1, Node *node2, Node *node, Node *dad) {
     if (!node) return -1;
@@ -4884,7 +4884,7 @@ double PhyloTree::optimizeSPR() {
     //return optimizeAllBranches();
 }
 
-double PhyloTree::optimizeSPRBranches() {
+/* double PhyloTree::optimizeSPRBranches() {
     cout << "Search with Subtree Pruning and Regrafting (SPR) using ML..." << endl;
     double cur_score = computeLikelihood();
     for (int i = 0; i < NUM_ONE_ZERO_ZERO; i++) {
@@ -4895,9 +4895,9 @@ double PhyloTree::optimizeSPRBranches() {
         cur_score = score;
     }
     return cur_score;
-}
+}*/
 
-void PhyloTree::pruneSubtree(PhyloNode *node, PhyloNode *dad, PruningInfo &info) {
+/* void PhyloTree::pruneSubtree(PhyloNode *node, PhyloNode *dad, PruningInfo &info) {
 
     bool first = true;
     info.node = node;
@@ -4928,16 +4928,16 @@ void PhyloTree::pruneSubtree(PhyloNode *node, PhyloNode *dad, PruningInfo &info)
     info.right_node->updateNeighbor(info.right_it, info.dad_nei_left);
     (static_cast<PhyloNeighbor*>(info.dad_nei_right))->partial_lh = newPartialLh();
     (static_cast<PhyloNeighbor*>(info.dad_nei_left))->partial_lh = newPartialLh();
-}
+}*/
 
-void PhyloTree::regraftSubtree(PruningInfo &info, PhyloNode *in_node, PhyloNode *in_dad) {
+/* void PhyloTree::regraftSubtree(PruningInfo &info, PhyloNode *in_node, PhyloNode *in_dad) {
     NeighborVec::iterator in_node_it = in_node->findNeighborIt(in_dad);
     NeighborVec::iterator in_dad_it = in_dad->findNeighborIt(in_node);
     Neighbor *in_dad_nei = (*in_dad_it);
     Neighbor *in_node_nei = (*in_node_it);
     info.dad->updateNeighbor(info.dad_it_right, in_dad_nei);
     info.dad->updateNeighbor(info.dad_it_left, in_node_nei);
-}
+}*/
 
 /****************************************************************************
  Approximate Likelihood Ratio Test with SH-like interpretation

@@ -19,11 +19,11 @@
 class PhyloTree;
 class IQTree;
 
-void UpperBounds(Params* params, Alignment* alignment, IQTree* tree);
+// void UpperBounds(Params* params, Alignment* alignment, IQTree* tree);
 
 void printUB();
 
-void printTreeUB(MTree *tree);
+// void printTreeUB(MTree *tree);
 
 /**
  * extracting subtree spanned by corresponding taxa together with subalignment
@@ -59,7 +59,7 @@ MTree* generateRandomYH_UB(Params &params, PhyloTree *tree);
  * One can also specify the length of corresponding branch.
  * t(A|B) = brLen
  */
-double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBorgn, IntVector &taxaA, IntVector &taxaB, Params *params, double brLen = 0.0);
+// double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBorgn, IntVector &taxaA, IntVector &taxaB, Params *params, double brLen = 0.0);
 
 /*
  * This function computes the product of logLhs of two subtrees corresponding to a given split A|B on tree.
@@ -71,12 +71,12 @@ double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params 
  */
 void extendingTree(MTree* tree, Params* params);
 
-NodeVector getBranchABid(double brLen, PhyloTree* tree);
+// NodeVector getBranchABid(double brLen, PhyloTree* tree);
 
 /*
  * Applying UBs to NNI search
  */
-NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree);
+// NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree);
 double logC(double t, PhyloTree* tree);
 
 /**

@@ -36,7 +36,7 @@ void printUB();
  * 			 this is used for the subtree with "artificial root",
  * 			 this will be a leaf without any nucleotide fixed at any site
  */
-PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw = 0);
+// PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw = 0);
 
 // Slightly changed functions from usual MTree.copy, to allow for non collapsed branches: type=1
 void copyTreeUB(MTree *tree, MTree *treeCopy, string &taxa_set);
@@ -52,7 +52,7 @@ void reindexTaxonIDs(MTree *tree);
  * input tree - is a subtree,
  * output - log-likelihood of generated subtree
  */
-MTree* generateRandomYH_UB(Params &params, PhyloTree *tree);
+// MTree* generateRandomYH_UB(Params &params, PhyloTree *tree);
 
 /*
  * This function generates a random tree that has A|B split.
@@ -64,12 +64,12 @@ MTree* generateRandomYH_UB(Params &params, PhyloTree *tree);
 /*
  * This function computes the product of logLhs of two subtrees corresponding to a given split A|B on tree.
  */
-double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params *params);
+// double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params *params);
 
 /*
  * Auxiliary function for RandomTreeAB, chooses randomly node and inserts new branch with randomLen
  */
-void extendingTree(MTree* tree, Params* params);
+// void extendingTree(MTree* tree, Params* params);
 
 // NodeVector getBranchABid(double brLen, PhyloTree* tree);
 
@@ -77,13 +77,13 @@ void extendingTree(MTree* tree, Params* params);
  * Applying UBs to NNI search
  */
 // NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree);
-double logC(double t, PhyloTree* tree);
+// double logC(double t, PhyloTree* tree);
 
 /**
  * Tests on fractions ai/(ai+bi) and bi/(ai+bi)
  * (fractions of sums for matching and non-matching pairs of nucleotides on the ends of branch)
  */
 
-void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree);
+// void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree);
 
 #endif /* UPPERBOUNDS_H_ */

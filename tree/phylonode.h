@@ -127,9 +127,10 @@ public:
 	return partial_lh;
 	}
 
-	double get_lh_scale_factor(){
+    // get_lh_scale_factor is only used in upperbounds.cpp but that function was commented so get_lh_scale_factor is never used anywhere else
+	/* double get_lh_scale_factor(){
 	return lh_scale_factor;
-	}
+	}*/
 
 	int get_partial_lh_computed(){
 	return partial_lh_computed;

@@ -854,8 +854,8 @@ void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
     double score[3];
     score[0] = score[1] = score[2] = 0.0;
 
-    double plh[3];
-    plh[0]=plh[1]=plh[2]=0.0;
+    /* double plh[3];
+    plh[0]=plh[1]=plh[2]=0.0;*/
 
     int nptn = tree->aln->getNPattern();
     int nstates = tree->aln->num_states;

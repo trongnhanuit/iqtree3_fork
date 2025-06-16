@@ -1347,7 +1347,7 @@ void PhyloSuperTree::initMarginalAncestralState(ostream &out, bool &orig_kernel_
 
     size_t total_size = 0, total_ptn = 0;
 
-    bool mixed_data = false;
+    // bool mixed_data = false;
 
     for (auto it = begin(); it != end(); it++) {
         size_t nptn = (*it)->aln->size();
@@ -1355,8 +1355,9 @@ void PhyloSuperTree::initMarginalAncestralState(ostream &out, bool &orig_kernel_
         (*it)->_pattern_lh_cat_state = (*it)->newPartialLh();
         total_size += nptn*nstates;
         total_ptn += nptn;
-        if (nstates != front()->model->num_states)
-            mixed_data = true;
+        // NHANLT: mixed_data is never used
+        /* if (nstates != front()->model->num_states)
+            mixed_data = true; */
     }
 
     ptn_ancestral_prob = aligned_alloc<double>(total_size);

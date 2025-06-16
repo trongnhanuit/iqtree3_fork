@@ -23,7 +23,7 @@ void PhyloTree::computeNonrevPartialLikelihood(TraversalInfo &info, size_t ptn_l
 //    if (dad_branch->partial_lh_computed & 1)
 //        return;
 //    dad_branch->partial_lh_computed |= 1;
-    PhyloNode *node = (PhyloNode*)(dad_branch->node);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
 
     ASSERT(dad_branch->direction != UNDEFINED_DIRECTION);
 
@@ -53,7 +53,7 @@ void PhyloTree::computeNonrevPartialLikelihood(TraversalInfo &info, size_t ptn_l
 	PhyloNeighbor *left = NULL, *right = NULL; // left & right are two neighbors leading to 2 subtrees
 	FOR_NEIGHBOR_IT(node, dad, it) {
 //        PhyloNeighbor *nei = (PhyloNeighbor*)*it;
-		if (!left) left = (PhyloNeighbor*)(*it); else right = (PhyloNeighbor*)(*it);
+		if (!left) left = static_cast<PhyloNeighbor*>(*it); else right = static_cast<PhyloNeighbor*>(*it);
 //        if ((nei->partial_lh_computed & 1) == 0)
 //            computeNonrevPartialLikelihood(nei, node);
 //        dad_branch->lh_scale_factor += nei->lh_scale_factor;
@@ -119,7 +119,7 @@ void PhyloTree::computeNonrevPartialLikelihood(TraversalInfo &info, size_t ptn_l
             double *echild = echildren;
 
             FOR_NEIGHBOR_IT(node, dad, it) {
-                PhyloNeighbor *child = (PhyloNeighbor*)*it;
+                PhyloNeighbor *child = static_cast<PhyloNeighbor*>(*it);
                 if (child->node->isLeaf()) {
                     // external node
                     int state_child;
@@ -372,8 +372,8 @@ void PhyloTree::computeNonrevLikelihoodDerv(PhyloNeighbor *dad_branch, PhyloNode
 
     ASSERT(rooted);
 
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (!central_partial_lh)
         initializeAllPartialLh();
     if (node->isLeaf() || (dad_branch->direction == AWAYFROM_ROOT && dad != root)) {
@@ -601,8 +601,8 @@ double PhyloTree::computeNonrevLikelihoodBranch(PhyloNeighbor *dad_branch, Phylo
 
     ASSERT(rooted);
 
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (!central_partial_lh)
         initializeAllPartialLh();
     if (node->isLeaf() || (dad_branch->direction == AWAYFROM_ROOT && dad != root)) {

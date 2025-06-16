@@ -1488,7 +1488,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
         // external node
         vector<Alignment*> *partitions = nullptr;
         if (aln->isSuperAlignment())
-            partitions = &((SuperAlignment*)aln)->partitions;
+            partitions = &(static_cast<SuperAlignment*>(aln))->partitions;
         else {
             partitions = new vector<Alignment*>;
             partitions->push_back(aln);
@@ -1682,9 +1682,9 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
         ASSERT(node->degree() == 3); // it works only for strictly bifurcating tree
         PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
         FOR_NEIGHBOR_IT(node, dad, it) {
-            PhyloNeighbor* pit = (PhyloNeighbor*) (*it);
+            PhyloNeighbor* pit = static_cast<PhyloNeighbor*>(*it);
             if ((pit->partial_lh_computed & 2) == 0) {
-                computePartialParsimonyFastSIMD<VectorClass>(pit, (PhyloNode*) node);
+                computePartialParsimonyFastSIMD<VectorClass>(pit, static_cast<PhyloNode*>(node));
             }
             if (!left) left = pit; else right = pit;
         }
@@ -1747,8 +1747,8 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
 
 template<class VectorClass>
 int PhyloTree::computeParsimonyBranchFastSIMD(PhyloNeighbor *dad_branch, PhyloNode *dad, int *branch_subst) {
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     ASSERT(node_branch);
     if (!central_partial_pars)
         initializeAllPartialPars();
@@ -1855,11 +1855,11 @@ void PhyloTree::computePartialParsimonySankoffSIMD(PhyloNeighbor *dad_branch, Ph
     FOR_NEIGHBOR_IT(node, dad, it)
     if ((*it)->node->name != ROOT_NAME) {
         if (!(*it)->node->isLeaf())
-            computePartialParsimonySankoffSIMD<VectorClass>((PhyloNeighbor*) (*it), (PhyloNode*) node);
+            computePartialParsimonySankoffSIMD<VectorClass>(static_cast<PhyloNeighbor*>(*it), static_cast<PhyloNode*>(node));
         if (!left)
-            left = ((PhyloNeighbor*)*it);
+            left = (static_cast<PhyloNeighbor*>(*it));
         else
-            right = ((PhyloNeighbor*)*it);
+            right = (static_cast<PhyloNeighbor*>(*it));
     }
     ASSERT(left && right);
     if (!left->node->isLeaf() && right->node->isLeaf()) {
@@ -1891,7 +1891,7 @@ void PhyloTree::computePartialParsimonySankoffSIMD(PhyloNeighbor *dad_branch, Ph
                     }
                 } else {
                     // internal node
-                    VectorClass *partial_pars_child_ptr = (VectorClass*)&((PhyloNeighbor*) (*it))->partial_pars[ptn_start_index];
+                    VectorClass *partial_pars_child_ptr = (VectorClass*)&(static_cast<PhyloNeighbor*> (*it))->partial_pars[ptn_start_index];
                     UINT *cost_matrix_ptr = cost_matrix;
                     
                     for (size_t i = 0; i < nstates; i++){
@@ -2004,8 +2004,8 @@ int PhyloTree::computeParsimonyBranchSankoffSIMD(PhyloNeighbor *dad_branch, Phyl
     if ((tip_partial_lh_computed & 2) == 0)
         computeTipPartialParsimony();
     
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     assert(node_branch);
     
     if (!central_partial_pars)

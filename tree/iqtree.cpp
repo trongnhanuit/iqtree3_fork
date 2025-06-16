@@ -481,7 +481,7 @@ extern const char *aa_model_names_rax[];
 
 void IQTree::createPLLPartition(Params &params, ostream &pllPartitionFileHandle) {
     if (isSuperTree()) {
-        PhyloSuperTree *siqtree = (PhyloSuperTree*) this;
+        PhyloSuperTree *siqtree = static_cast<PhyloSuperTree*>(this);
         // additional check for PLL hard limit
         if (params.pll) {
             if (siqtree->size() > PLL_NUM_BRANCHES) {
@@ -1072,13 +1072,13 @@ void IQTree::initializeModel(Params &params, string model_name, ModelsBlock *mod
         if (!getModelFactory()) {
             if (isSuperTree()) {
                 if (params.partition_type == BRLEN_OPTIMIZE || params.partition_type == TOPO_UNLINKED) {
-                    setModelFactory(new PartitionModel(params, (PhyloSuperTree*) this, models_block));
+                    setModelFactory(new PartitionModel(params, static_cast<PhyloSuperTree*>(this), models_block));
                 } else {
                     setModelFactory(new PartitionModelPlen(params, (PhyloSuperTreePlen*) this, models_block));
                 }
                 // mapTrees again in case of different rooting
                 if (root) {
-                    ((PhyloSuperTree*)this)->mapTrees();
+                    (static_cast<PhyloSuperTree*>(this))->mapTrees();
                 }
             } else {
                 setModelFactory(new ModelFactory(params, model_name, this, models_block));
@@ -1156,7 +1156,7 @@ double IQTree::getProbDelete() {
 //}
 
 RepresentLeafSet* IQTree::findRepresentLeaves(vector<RepresentLeafSet*> &leaves_vec, int nei_id, PhyloNode *dad) {
-    PhyloNode *node = (PhyloNode*) (dad->neighbors[static_cast<size_t>(nei_id)]->node);
+    PhyloNode *node = static_cast<PhyloNode*>(dad->neighbors[static_cast<size_t>(nei_id)]->node);
     size_t set_id = static_cast<size_t>((dad->id * 3) + nei_id);
     if (leaves_vec[set_id]) {
         return leaves_vec[set_id];
@@ -1312,7 +1312,7 @@ void IQTree::deleteLeaves(PhyloNodeVector &del_leaves) {
         } else {
             i++;
         }
-        PhyloNode *taxon = (PhyloNode*) taxa[id];
+        PhyloNode *taxon = static_cast<PhyloNode*>(taxa[id]);
         del_leaves.push_back(taxon);
         deleteLeaf(taxon);
         taxa[id] = nullptr;
@@ -1377,10 +1377,10 @@ int IQTree::assessQuartetParsimony(Node *leaf0, Node *leaf1, Node *leaf2, Node *
 
 void IQTree::initializeBonus(PhyloNode *node, PhyloNode *dad) {
     if (!node)
-        node = (PhyloNode*) root;
+        node = static_cast<PhyloNode*>(root);
     if (dad) {
-        PhyloNeighbor *node_nei = (PhyloNeighbor*) node->findNeighbor(dad);
-        PhyloNeighbor *dad_nei = (PhyloNeighbor*) dad->findNeighbor(node);
+        PhyloNeighbor *node_nei = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
+        PhyloNeighbor *dad_nei = static_cast<PhyloNeighbor*>(dad->findNeighbor(node));
         node_nei->lh_scale_factor = 0.0;
         node_nei->partial_lh_computed = 0;
         dad_nei->lh_scale_factor = 0.0;
@@ -1388,12 +1388,12 @@ void IQTree::initializeBonus(PhyloNode *node, PhyloNode *dad) {
     }
 
     FOR_NEIGHBOR_IT(node, dad, it){
-    initializeBonus((PhyloNode*) ((*it)->node), node);
+    initializeBonus(static_cast<PhyloNode*>((*it)->node), node);
 }
 }
 
 void IQTree::raiseBonus(Neighbor *nei, Node *dad, double bonus) {
-    ((PhyloNeighbor*) nei)->lh_scale_factor += bonus;
+    (static_cast<PhyloNeighbor*>(nei))->lh_scale_factor += bonus;
     if (verbose_mode >= VB_DEBUG)
         cout << dad->id << " - " << nei->node->id << " : " << bonus << endl;
 
@@ -1402,7 +1402,7 @@ void IQTree::raiseBonus(Neighbor *nei, Node *dad, double bonus) {
 }
 
 double IQTree::computePartialBonus(Node *node, Node* dad) {
-    PhyloNeighbor *node_nei = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNeighbor *node_nei = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (node_nei->partial_lh_computed)
         return node_nei->lh_scale_factor;
 
@@ -1532,7 +1532,7 @@ void IQTree::reinsertLeaves(PhyloNodeVector &del_leaves) {
             drawTree(cout, WT_BR_SCALE | WT_INT_NODE | WT_TAXON_ID | WT_NEWLINE | WT_BR_ID);
         //printTree(cout, WT_BR_LEN | WT_INT_NODE | WT_TAXON_ID | WT_NEWLINE);
         for (NodeVector::iterator it = nodes.begin(); it != nodes.end(); it++) {
-            assessQuartets(leaves_vec, (PhyloNode*) (*it), (*it_leaf));
+            assessQuartets(leaves_vec, static_cast<PhyloNode*>(*it), (*it_leaf));
         }
         NodeVector best_nodes, best_dads;
         double best_bonus;
@@ -1754,7 +1754,7 @@ string IQTree::perturbStableSplits(double suppValue) {
     clearAllPartialLH();
 
     if (isSuperTree()) {
-        ((PhyloSuperTree*) this)->mapTrees();
+        (static_cast<PhyloSuperTree*>(this))->mapTrees();
     }
     if (params->pll) {
         pllReadNewick(getTreeString());
@@ -1816,7 +1816,7 @@ string IQTree::doRandomNNIs(bool storeTabu) {
     setRootNode(params->root);
 
     if (isSuperTree()) {
-        ((PhyloSuperTree*) this)->mapTrees();
+        (static_cast<PhyloSuperTree*>(this))->mapTrees();
     }
     if (params->pll) {
         pllReadNewick(getTreeString());
@@ -1846,7 +1846,7 @@ void IQTree::doIQP() {
 //    lhComputed = false;
 
     if (isSuperTree()) {
-        ((PhyloSuperTree*) this)->mapTrees();
+        (static_cast<PhyloSuperTree*>(this))->mapTrees();
     }
 
 //    if (enable_parsimony) {
@@ -1914,10 +1914,10 @@ void IQTree::inputModelPLL2IQTree() {
     // TODO add support for partitioned model
     getRate()->setGammaShape(pllPartitions->partitionData[0]->alpha);
     if (aln->num_states == 4) {
-        ((ModelMarkov*) getModel())->setRateMatrix(pllPartitions->partitionData[0]->substRates);
+        (static_cast<ModelMarkov*>(getModel()))->setRateMatrix(pllPartitions->partitionData[0]->substRates);
         getModel()->decomposeRateMatrix();
     }
-    ((ModelMarkov*) getModel())->setStateFrequency(pllPartitions->partitionData[0]->empiricalFrequencies);
+    (static_cast<ModelMarkov*>(getModel()))->setStateFrequency(pllPartitions->partitionData[0]->empiricalFrequencies);
 }
 
 void IQTree::inputModelIQTree2PLL() {
@@ -2143,8 +2143,8 @@ double IQTree::swapTaxa(PhyloNode *node1, PhyloNode *node2) {
     ASSERT(node1->isLeaf());
     ASSERT(node2->isLeaf());
 
-    PhyloNeighbor *node1nei = (PhyloNeighbor*) *(node1->neighbors.begin());
-    PhyloNeighbor *node2nei = (PhyloNeighbor*) *(node2->neighbors.begin());
+    PhyloNeighbor *node1nei = static_cast<PhyloNeighbor*>(*(node1->neighbors.begin()));
+    PhyloNeighbor *node2nei = static_cast<PhyloNeighbor*>(*(node2->neighbors.begin()));
 
     node2nei->node->updateNeighbor(node2, node1);
     node1nei->node->updateNeighbor(node1, node2);
@@ -2153,13 +2153,13 @@ double IQTree::swapTaxa(PhyloNode *node1, PhyloNode *node2) {
     node1->updateNeighbor(node1->neighbors.begin(), node2nei);
     node2->updateNeighbor(node2->neighbors.begin(), node1nei);
 
-    PhyloNeighbor *node1NewNei = (PhyloNeighbor*) *(node1->neighbors.begin());
-    PhyloNeighbor *node2NewNei = (PhyloNeighbor*) *(node2->neighbors.begin());
+    PhyloNeighbor *node1NewNei = static_cast<PhyloNeighbor*>(*(node1->neighbors.begin()));
+    PhyloNeighbor *node2NewNei = static_cast<PhyloNeighbor*>(*(node2->neighbors.begin()));
 
     // Reoptimize the branch lengths
-    optimizeOneBranch(node1, (PhyloNode*) node1NewNei->node);
+    optimizeOneBranch(node1, static_cast<PhyloNode*>(node1NewNei->node));
 //    this->curScore = optimizeOneBranch(node2, (PhyloNode*) node2NewNei->node);
-    optimizeOneBranch(node2, (PhyloNode*) node2NewNei->node);
+    optimizeOneBranch(node2, static_cast<PhyloNode*>(node2NewNei->node));
     //drawTree(cout, WT_BR_SCALE | WT_INT_NODE | WT_TAXON_ID | WT_NEWLINE);
     this->curScore = computeLikelihoodFromBuffer();
     return this->curScore;
@@ -2171,7 +2171,7 @@ double IQTree::perturb(int times) {
         // get the vector of taxa
         getTaxa(taxa);
         int taxonid1 = random_int(taxa.size());
-        PhyloNode *taxon1 = (PhyloNode*) taxa[taxonid1];
+        PhyloNode *taxon1 = static_cast<PhyloNode*>(taxa[taxonid1]);
         PhyloNode *taxon2;
         int *dists = new int[taxa.size()];
         int minDist = NUM_ONE_E_SIX;
@@ -2179,7 +2179,7 @@ double IQTree::perturb(int times) {
             if (i == taxonid1) {
                 continue;
             }
-            taxon2 = (PhyloNode*) taxa[i];
+            taxon2 = static_cast<PhyloNode*>(taxa[i]);
             int dist = taxon1->calDist(taxon2);
             dists[i] = dist;
             if (dist >= NUM_SEVEN && dist < minDist) {
@@ -2194,7 +2194,7 @@ double IQTree::perturb(int times) {
             }
         }
 
-        taxon2 = (PhyloNode*) taxa[taxonid2];
+        taxon2 = static_cast<PhyloNode*>(taxa[taxonid2]);
 
         cout << "Swapping node " << taxon1->id << " and node " << taxon2->id << endl;
         cout << "Distance " << minDist << endl;
@@ -2247,7 +2247,7 @@ string IQTree::optimizeModelParameters(bool printInfo, double logl_epsilon) {
             modOptScore = getModelFactory()->optimizeParameters(params->fixed_branch_length, printInfo, logl_epsilon);
         }
         if (isSuperTree()) {
-            ((PhyloSuperTree*) this)->computeBranchLengths();
+            (static_cast<PhyloSuperTree*>(this))->computeBranchLengths();
         }
         if (getModelFactory()->isUnstableParameters() && aln->seq_type != SEQ_CODON) {
             cout << endl;
@@ -2284,7 +2284,7 @@ string IQTree::ensureModelParametersAreSet(double initEpsilon) {
     } else {
         initTree = optimizeModelParameters(true, initEpsilon);
         if (isMixlen()) {
-            initTree = ((ModelFactoryMixlen*)getModelFactory())->sortClassesByTreeLength();
+            initTree = (static_cast<ModelFactoryMixlen*>(getModelFactory()))->sortClassesByTreeLength();
         }
         saveCheckpoint();
         getModelFactory()->saveCheckpoint();
@@ -2492,7 +2492,7 @@ double IQTree::doTreeSearch() {
         }
 
         if (isSuperTree()) {
-            ((PhyloSuperTree *) this)->computeBranchLengths();
+            (static_cast<PhyloSuperTree*>(this))->computeBranchLengths();
         }
 
         /*----------------------------------------
@@ -2866,9 +2866,9 @@ void IQTree::refineBootTrees() {
         IQTree *boot_tree;
         if (aln->isSuperAlignment()){
             if(params->partition_type != BRLEN_OPTIMIZE){
-                boot_tree = new PhyloSuperTreePlen((SuperAlignment*) bootstrap_alignment, (PhyloSuperTree*) this);
+                boot_tree = new PhyloSuperTreePlen(static_cast<SuperAlignment*>(bootstrap_alignment), static_cast<PhyloSuperTree*>(this));
             } else {
-                boot_tree = new PhyloSuperTree((SuperAlignment*) bootstrap_alignment, (PhyloSuperTree*) this);
+                boot_tree = new PhyloSuperTree(static_cast<SuperAlignment*>(bootstrap_alignment), static_cast<PhyloSuperTree*>(this));
             }
         } else {
             // allocate heterotachy tree if neccessary
@@ -2898,7 +2898,7 @@ void IQTree::refineBootTrees() {
 
         // 2019-06-03: bug fix setting part_info properly
         if (boot_tree->isSuperTree()) {
-            ((PhyloSuperTree*)boot_tree)->setPartInfo((PhyloSuperTree*)this);
+            (static_cast<PhyloSuperTree*>(boot_tree))->setPartInfo(static_cast<PhyloSuperTree*>(this));
         }
 
         // copy model
@@ -2906,7 +2906,7 @@ void IQTree::refineBootTrees() {
         boot_tree->initializeModel(*params, aln->model_name, models_block);
         boot_tree->getModelFactory()->setCheckpoint(getCheckpoint());
         if (isSuperTree()) {
-            ((PartitionModel*)boot_tree->getModelFactory())->PartitionModel::restoreCheckpoint();
+            (static_cast<PartitionModel*>(boot_tree->getModelFactory()))->PartitionModel::restoreCheckpoint();
         } else {
             boot_tree->getModelFactory()->restoreCheckpoint();
         }
@@ -2920,7 +2920,7 @@ void IQTree::refineBootTrees() {
         }
         
         if (boot_tree->isSuperTree() && params->partition_type == BRLEN_OPTIMIZE) {
-            if (((PhyloSuperTree*)boot_tree)->size() > 1) {
+            if ((static_cast<PhyloSuperTree*>(boot_tree))->size() > 1) {
                 // re-initialize branch lengths for unlinked model
                 boot_tree->wrapperFixNegativeBranch(true);
             }
@@ -3141,7 +3141,7 @@ pair<int, int> IQTree::doNNISearch(bool write_info) {
         nniInfos = optimizeNNI(Params::getInstance().speednni);
         doneComputingDistances();
         if (isSuperTree()) {
-            ((PhyloSuperTree*) this)->computeBranchLengths();
+            (static_cast<PhyloSuperTree*>(this))->computeBranchLengths();
         }
         if (params->print_trees_site_posterior)
             computePatternCategories();
@@ -3202,7 +3202,7 @@ pair<int, int> IQTree::optimizeNNI(bool speedNNI) {
         if (verbose_mode >= VB_DEBUG && !progress_display::getProgressDisplay()) {
             cout << "Doing NNI round " << numSteps << endl;
             if (isSuperTree()) {
-                ((PhyloSuperTree*) this)->printMapInfo();
+                (static_cast<PhyloSuperTree*>(this))->printMapInfo();
             }
         }
 
@@ -3232,7 +3232,7 @@ pair<int, int> IQTree::optimizeNNI(bool speedNNI) {
             filterNNIBranches(appliedNNIs, filteredNNIBranches);
             for (Branches::iterator it = filteredNNIBranches.begin(); it != filteredNNIBranches.end(); it++) {
                 Branch curBranch = it->second;
-                PhyloNeighbor* nei = (PhyloNeighbor*) curBranch.first->findNeighbor(curBranch.second);
+                PhyloNeighbor* nei = static_cast<PhyloNeighbor*>(curBranch.first->findNeighbor(curBranch.second));
                 Split* curSplit = nei->split;
                 bool tabu = false;
                 bool stable = false;
@@ -3422,7 +3422,7 @@ double IQTree::pllOptimizeNNI(int &totalNNICount, int &nniSteps, SearchInfo &sea
 
 void IQTree::pllInitUFBootData(){
     if(pllUFBootDataPtr == nullptr){
-        pllUFBootDataPtr = (pllUFBootData *) malloc(sizeof(pllUFBootData));
+        pllUFBootDataPtr = static_cast<pllUFBootData *>(malloc(sizeof(pllUFBootData)));
         pllUFBootDataPtr->boot_samples = nullptr;
         pllUFBootDataPtr->candidate_trees_count = 0;
 
@@ -3447,13 +3447,13 @@ void IQTree::pllInitUFBootData(){
 
             // aln->createBootstrapAlignment() must be called before this fragment
             pllUFBootDataPtr->boot_samples =
-                (int **) malloc(params->gbo_replicates * sizeof(int *));
+                static_cast<int **>(malloc(params->gbo_replicates * sizeof(int *)));
             if(!pllUFBootDataPtr->boot_samples) {
                 outError("Not enough dynamic memory!");
             }
             for(size_t i = 0; i < params->gbo_replicates; i++){
                 pllUFBootDataPtr->boot_samples[i] =
-                    (int *) malloc(pllAlignment->sequenceLength * sizeof(int));
+                    static_cast<int *>(malloc(pllAlignment->sequenceLength * sizeof(int)));
                 if(!pllUFBootDataPtr->boot_samples[i]) {
                     outError("Not enough dynamic memory!");
                 }
@@ -3465,7 +3465,7 @@ void IQTree::pllInitUFBootData(){
 
 
             pllUFBootDataPtr->boot_logl =
-                (double *) malloc(params->gbo_replicates * (sizeof(double)));
+                static_cast<double *>(malloc(params->gbo_replicates * (sizeof(double))));
             if(!pllUFBootDataPtr->boot_logl) {
                 outError("Not enough dynamic memory!");
             }
@@ -3474,7 +3474,7 @@ void IQTree::pllInitUFBootData(){
             }
 
             pllUFBootDataPtr->boot_counts =
-                (int *) malloc(params->gbo_replicates * (sizeof(int)));
+                static_cast<int *>(malloc(params->gbo_replicates * (sizeof(int))));
             if(!pllUFBootDataPtr->boot_counts) {
                 outError("Not enough dynamic memory!");
             }
@@ -3619,7 +3619,7 @@ int IQTree::getDelete() const {
 
 void IQTree::evaluateNNIs(Branches &nniBranches, vector<NNIMove>  &positiveNNIs) {
     for (Branches::iterator it = nniBranches.begin(); it != nniBranches.end(); it++) {
-        NNIMove nni = getBestNNIForBran((PhyloNode*) it->second.first, (PhyloNode*) it->second.second, nullptr);
+        NNIMove nni = getBestNNIForBran(static_cast<PhyloNode*>(it->second.first), static_cast<PhyloNode*>(it->second.second), nullptr);
         if (nni.newloglh > curScore) {
             positiveNNIs.push_back(nni);
         }
@@ -3866,7 +3866,7 @@ void IQTree::saveCurrentTree(double cur_logl) {
 
 void IQTree::saveNNITrees(PhyloNode *node, PhyloNode *dad) {
     if (!node) {
-        node = (PhyloNode*) root;
+        node = static_cast<PhyloNode*>(root);
     }
     if (dad && !node->isLeaf() && !dad->isLeaf()) {
         double *pat_lh1 = new double[aln->getNPattern()];
@@ -3876,7 +3876,7 @@ void IQTree::saveNNITrees(PhyloNode *node, PhyloNode *dad) {
         delete[] pat_lh2;
         delete[] pat_lh1;
     }
-    FOR_NEIGHBOR_IT(node, dad, it)saveNNITrees((PhyloNode*) (*it)->node, node);
+    FOR_NEIGHBOR_IT(node, dad, it)saveNNITrees(static_cast<PhyloNode*>((*it)->node), node);
 }
 
 void IQTree::summarizeBootstrap(Params &params, MTreeSet &trees) {
@@ -4883,7 +4883,7 @@ int PhyloTree::testNumThreads() {
     
     // clear the relative treelength arrays if it is GHOST model
     if (isMixlen()) {
-        ((PhyloTreeMixlen*)this)->clear_relative_treelen();
+        (static_cast<PhyloTreeMixlen*>(this))->clear_relative_treelen();
     }
 
     return bestProc+1;

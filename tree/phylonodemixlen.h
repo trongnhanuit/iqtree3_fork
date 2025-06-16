@@ -122,7 +122,7 @@ public:
     */
     virtual void setLength(Neighbor *nei) override {
         length = nei->length;
-        lengths = ((PhyloNeighborMixlen*)nei)->lengths;
+        lengths = (static_cast<PhyloNeighborMixlen*>(nei))->lengths;
     }
     
     /**

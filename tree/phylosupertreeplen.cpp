@@ -211,7 +211,7 @@ void PhyloSuperTreePlen::mapTrees() {
 	}
 	for (it = begin(); it != end(); it++, part++) {
 		string taxa_set;
-        Pattern taxa_pat = ((SuperAlignment*)aln)->getPattern(part);
+        Pattern taxa_pat = (static_cast<SuperAlignment*>(aln))->getPattern(part);
         taxa_set.insert(taxa_set.begin(), taxa_pat.begin(), taxa_pat.end());
 		(*it)->copyTree(this, taxa_set);
 
@@ -227,7 +227,7 @@ void PhyloSuperTreePlen::mapTrees() {
 		for (i = 0; i < leafNum; i++) {
             int id;
             if (i < aln->getNSeq())
-                id = ((SuperAlignment*)aln)->taxa_index[i][part];
+                id = (static_cast<SuperAlignment*>(aln))->taxa_index[i][part];
             else if ((*it)->rooted)
                 id = (*it)->leafNum-1;
             else

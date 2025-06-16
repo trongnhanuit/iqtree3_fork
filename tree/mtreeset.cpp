@@ -183,7 +183,7 @@ void MTreeSet::readTrees(const char *infile, bool &is_rooted, int burnin, int ma
 		if (compressed) in = new igzstream; else in = new ifstream;
 		in->exceptions(ios::failbit | ios::badbit);
 		
-		if (compressed) ((igzstream*)in)->open(infile); else ((ifstream*)in)->open(infile);
+		if (compressed) (static_cast<igzstream*>(in))->open(infile); else (static_cast<ifstream*>(in))->open(infile);
 		if (burnin > 0) {
 			int cnt = 0;
 			while (cnt < burnin && !in->eof()) {
@@ -230,7 +230,7 @@ void MTreeSet::readTrees(const char *infile, bool &is_rooted, int burnin, int ma
 		cout << size() << " tree(s) loaded (" << countRooted() << " rooted and " << countUnrooted() << " unrooted)" << endl;
 		if (omitted) cout << omitted << " tree(s) omitted" << endl;
 		//in->exceptions(ios::failbit | ios::badbit);
-		if (compressed) ((igzstream*)in)->close(); else ((ifstream*)in)->close();
+		if (compressed) (static_cast<igzstream*>(in))->close(); else (static_cast<ifstream*>(in))->close();
 		// following line was missing which caused small memory leak
 		delete in;
 	} catch (ios::failure) {

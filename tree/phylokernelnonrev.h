@@ -41,7 +41,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     PhyloNode *dad = info.dad;
     
     ASSERT(dad);
-    PhyloNode *node = (PhyloNode*)(dad_branch->node);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
     
     //    assert(dad_branch->direction != UNDEFINED_DIRECTION);
     
@@ -68,7 +68,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
     // internal node
     PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
     FOR_NEIGHBOR_IT(node, dad, it) {
-        if (!left) left = (PhyloNeighbor*)(*it); else right = (PhyloNeighbor*)(*it);
+        if (!left) left = static_cast<PhyloNeighbor*>(*it); else right = static_cast<PhyloNeighbor*>(*it);
         if ((*it)->node->isLeaf())
             num_leaves++;
     }
@@ -124,7 +124,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
             double *echild = echildren;
             
             FOR_NEIGHBOR_IT(node, dad, it) {
-                PhyloNeighbor *child = (PhyloNeighbor*)*it;
+                PhyloNeighbor *child = static_cast<PhyloNeighbor*>(*it);
                 UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + (ptn*ncat_mix) : nullptr;
                 if (child->node->isLeaf()) {
                     // external node
@@ -589,8 +589,8 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
 
 //    assert(rooted);
 
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (!central_partial_lh) {
         initializeAllPartialLh();
     }
@@ -1066,8 +1066,8 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
 
 //    assert(rooted);
 
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (!central_partial_lh)
         initializeAllPartialLh();
     if (node->isLeaf() || (dad_branch->direction == AWAYFROM_ROOT && !isRootLeaf(dad))) {

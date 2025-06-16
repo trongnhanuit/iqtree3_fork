@@ -923,7 +923,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
 	double *evec = model->getEigenvectors();
 	double *eval = model->getEigenvalues();
 
-    PhyloNode *dad = info.dad, *node = (PhyloNode*)info.dad_branch->node;
+    PhyloNode *dad = info.dad, *node = static_cast<PhyloNode*>(info.dad_branch->node);
     double *echild = echildren;
     if (echild == nullptr)
         echild = info.echildren;
@@ -937,7 +937,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
         size_t nstatesqr = nstates*nstates;
         // non-reversible model
         FOR_NEIGHBOR_IT(node, dad, it) {
-            PhyloNeighbor *child = (PhyloNeighbor*)*it;
+            PhyloNeighbor *child = static_cast<PhyloNeighbor*>(*it);
             // precompute information buffer
             if (child->direction == TOWARD_ROOT) {
                 // transpose probability matrix
@@ -1014,7 +1014,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
         // vectorized version
         VectorClass *expchild = (VectorClass*)buffer;
         FOR_NEIGHBOR_IT(node, dad, it) {
-            PhyloNeighbor *child = (PhyloNeighbor*)*it;
+            PhyloNeighbor *child = static_cast<PhyloNeighbor*>(*it);
             VectorClass *echild_ptr = (VectorClass*)echild;
             // precompute information buffer
             for (c = 0; c < ncat_mix; c++) {
@@ -1066,7 +1066,7 @@ void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, dou
         // non-vectorized version
         double expchild[nstates];
         FOR_NEIGHBOR_IT(node, dad, it) {
-            PhyloNeighbor *child = (PhyloNeighbor*)*it;
+            PhyloNeighbor *child = static_cast<PhyloNeighbor*>(*it);
             // precompute information buffer
             double *echild_ptr = echild;
             for (c = 0; c < ncat_mix; c++) {
@@ -1190,8 +1190,8 @@ void PhyloTree::computeTraversalInfo(PhyloNode *node, PhyloNode *dad, bool compu
 
     }
 
-    PhyloNeighbor *dad_branch = (PhyloNeighbor*)dad->findNeighbor(node);
-    PhyloNeighbor *node_branch = (PhyloNeighbor*)node->findNeighbor(dad);
+    PhyloNeighbor *dad_branch = static_cast<PhyloNeighbor*>(dad->findNeighbor(node));
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     bool dad_locked = computeTraversalInfo(dad_branch, dad, buffer);
     bool node_locked = computeTraversalInfo(node_branch, node, buffer);
     if (params->lh_mem_save == LM_MEM_SAVE) {
@@ -1309,7 +1309,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
 //    if (dad_branch->partial_lh_computed & 1)
 //        return;
 //    dad_branch->partial_lh_computed |= 1;
-    PhyloNode *node = (PhyloNode*)(dad_branch->node);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
 
 
 #ifndef KERNEL_FIX_STATES
@@ -1347,7 +1347,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
 	// internal node
 	PhyloNeighbor *left = nullptr, *right = nullptr; // left & right are two neighbors leading to 2 subtrees
 	FOR_NEIGHBOR_IT(node, dad, it) {
-        PhyloNeighbor *nei = (PhyloNeighbor*)(*it);
+        PhyloNeighbor *nei = static_cast<PhyloNeighbor*>(*it);
         // make sure that the partial_lh of children are different!
         ASSERT(dad_branch->partial_lh != nei->partial_lh);
 		if (!left) left = nei; else right = nei;
@@ -1441,7 +1441,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
 
             FOR_NEIGHBOR_IT(node, dad, it) {
                 if (SITE_MODEL) {
-                    PhyloNeighbor *child = (PhyloNeighbor*)*it;
+                    PhyloNeighbor *child = static_cast<PhyloNeighbor*>(*it);
                     UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + (ptn*ncat_mix) : nullptr;
                     VectorClass *partial_lh = partial_lh_all;
                     if (child->node->isLeaf()) {
@@ -1494,7 +1494,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
                     len_child += ncat;
                 } else {
                     // non site specific model
-                    PhyloNeighbor *child = (PhyloNeighbor*)*it;
+                    PhyloNeighbor *child = static_cast<PhyloNeighbor*>(*it);
                     auto stateRow = this->getConvertedSequenceByNumber(child->node->id);
                     int unknown  = static_cast<int>(aln->STATE_UNKNOWN);
                     UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + (ptn*ncat_mix) : nullptr;
@@ -2061,8 +2061,8 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
                                                    , size_t ptn_lower, size_t ptn_upper, int packet_id)
 #endif
 {
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
 
 #ifndef KERNEL_FIX_STATES
     ASSERT(aln->num_states >= 0);
@@ -2245,8 +2245,8 @@ template <class VectorClass, const bool SAFE_NUMERIC, const bool FMA, const bool
 void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, PhyloNode *dad, double *df, double *ddf)
 #endif
 {
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (!central_partial_lh)
         initializeAllPartialLh();
     if (node->isLeaf()) {
@@ -2669,8 +2669,8 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
 #endif
 {
     // cout << "PhyloTree::computeLikelihoodBrachGenericSIMD enter" << endl << flush;
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (!central_partial_lh)
         initializeAllPartialLh();
     if (node->isLeaf()) {
@@ -3510,8 +3510,8 @@ template <class VectorClass, const bool SAFE_NUMERIC, const bool FMA, const bool
 void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch, PhyloNode *dad, double &df, double &ddf)
 #endif
 {
-    PhyloNode *node = (PhyloNode*) dad_branch->node;
-    PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
+    PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
+    PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
     if (!central_partial_lh) {
         initializeAllPartialLh();
     }

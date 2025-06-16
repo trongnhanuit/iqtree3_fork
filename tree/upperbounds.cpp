@@ -281,7 +281,7 @@
 	out_split.close();
 }*/
 
-PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw) {
+/* PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw) {
 	string taxa_set;
 	int i;
 	for(i = 0; i < tree->leafNum; i++)
@@ -304,7 +304,7 @@ PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw)
 	}
 
 	return treeCopy;
-}
+}*/
 
 /*void printTreeUB(MTree *tree){
 	int i=0, j=0;
@@ -334,7 +334,7 @@ PhyloTree* extractSubtreeUB(IntVector &ids, MTree* tree, Params *params, int sw)
 	}
 }*/
 
-MTree* generateRandomYH_UB(Params &params, PhyloTree *tree){
+/* MTree* generateRandomYH_UB(Params &params, PhyloTree *tree){
 	MExtTree* treeR = new MExtTree();
 	bool binary = TRUE;
 
@@ -410,7 +410,7 @@ MTree* generateRandomYH_UB(Params &params, PhyloTree *tree){
 		(*it)->name = tree->aln->getSeqName((*it)->id);
 
 	return (MTree*)treeR;
-}
+}*/
 
 /*double RandomTreeAB(PhyloTree* treeORGN, PhyloTree* treeAorgn, PhyloTree* treeBorgn, IntVector &taxaA, IntVector &taxaB, Params* params, double brLen){
 	PhyloTree *tree  = new PhyloTree();
@@ -511,7 +511,7 @@ MTree* generateRandomYH_UB(Params &params, PhyloTree *tree){
 	return U;
 }*/
 
-double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params *params){
+/* double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params *params){
 	double U = 0.0;
 
 	PhyloTree *treeA, *treeB;
@@ -521,7 +521,7 @@ double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params 
 	U = treeA->getCurScore() + treeB->getCurScore();
 
 	return U;
-}
+}*/
 
 /*NodeVector getBranchABid(double brLen, PhyloTree* tree){
 	NodeVector branch1, branch2;
@@ -538,7 +538,7 @@ double UpperBoundAB(IntVector &taxaA, IntVector &taxaB, PhyloTree* tree, Params 
 	return branch;
 }*/
 
-void extendingTree(MTree *tree, Params* params){
+/* void extendingTree(MTree *tree, Params* params){
 
 	// Choose random internal node
 	int maxR = tree->nodeNum-1;
@@ -593,7 +593,7 @@ void extendingTree(MTree *tree, Params* params){
 
 	tree->root = newNode1;
 
-}
+}*/
 
 /*NNIMove getBestNNIForBranUB(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
 
@@ -806,7 +806,7 @@ void extendingTree(MTree *tree, Params* params){
 	}
 }*/
 
-double logC(double t, PhyloTree* tree){
+/* double logC(double t, PhyloTree* tree){
 	//double c = log((1+3*exp(-t)))-log(1-exp(-t));
 
 	int i, m = tree->aln->num_states*tree->aln->num_states, n = tree->aln->num_states;
@@ -831,9 +831,9 @@ double logC(double t, PhyloTree* tree){
 	//tree->minStateFreq = 0.25;
 	//assert(isnormal(log(maxTransProb/tree->minStateFreq)));
 	return log(maxTransProb/tree->minStateFreq);
-}
+}*/
 
-void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
+/* void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
 	PhyloNeighbor* nei1 = (PhyloNeighbor*) node1->findNeighbor(node2);
 	PhyloNeighbor* nei2 = (PhyloNeighbor*) node2->findNeighbor(node1);
 
@@ -854,8 +854,8 @@ void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
     double score[3];
     score[0] = score[1] = score[2] = 0.0;
 
-    /* double plh[3];
-    plh[0]=plh[1]=plh[2]=0.0;*/
+    // double plh[3];
+    // plh[0]=plh[1]=plh[2]=0.0;
 
     int nptn = tree->aln->getNPattern();
     int nstates = tree->aln->num_states;
@@ -904,4 +904,4 @@ void sumFraction(PhyloNode *node1, PhyloNode *node2, PhyloTree *tree){
     }
 
 
-}
+}*/

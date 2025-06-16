@@ -1682,7 +1682,7 @@ int PhyloTree::computePatternCategories(IntVector *pattern_ncat) {
 //        cat_prob[c] = getRate()->getProp(c);
 //    cout << "Ptn\tFreq\tNumMix\tBestMix" << endl;
     
-    size_t sum_nmix = 0;
+    // size_t sum_nmix = 0;
     for (size_t ptn = 0; ptn < npattern; ptn++) {
         double sum_prob = 0.0, acc_prob = 0.0;
         memset(lh_mixture, 0, nmixture*sizeof(double));
@@ -1718,7 +1718,8 @@ int PhyloTree::computePatternCategories(IntVector *pattern_ncat) {
         if (m > num_best_mixture) {
             num_best_mixture = m;
         }
-        sum_nmix += m;
+        // NHANLT: sum_nmix is unused since the line "cout << 100*(double(sum_nmix)/nmixture)/npattern << "% computation necessary" << endl;" was already commented
+        // sum_nmix += m;
         if (pattern_ncat) {
             (*pattern_ncat)[ptn] = m;
         }
@@ -2869,7 +2870,7 @@ double PhyloTree::computeFundiLikelihood() {
 
     auto orig_optimize_by_newton = optimize_by_newton;
     optimize_by_newton = false;
-    double cur_length = central_branch.second->length;
+    // double cur_length = central_branch.second->length;
     double best_length, best_score;
 
     if (params->alisim_fundi_proportion > 0.0) {
@@ -6279,8 +6280,8 @@ void PhyloTree::doNNI_simple(NNIMove &move) {
 
     ASSERT(node1->degree() == 3 && node2->degree() == 3);
 
-    PhyloNeighbor *node12_it = static_cast<PhyloNeighbor*>(node1->findNeighbor(node2)); // return neighbor of node1 which points to node 2
-    PhyloNeighbor *node21_it = static_cast<PhyloNeighbor*>(node2->findNeighbor(node1)); // return neighbor of node2 which points to node 1
+    // PhyloNeighbor *node12_it = static_cast<PhyloNeighbor*>(node1->findNeighbor(node2)); // return neighbor of node1 which points to node 2
+    // PhyloNeighbor *node21_it = static_cast<PhyloNeighbor*>(node2->findNeighbor(node1)); // return neighbor of node2 which points to node 1
 
     // do the NNI swap
     node1->updateNeighbor(node1Nei_it, node2Nei);

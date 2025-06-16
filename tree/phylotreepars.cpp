@@ -423,7 +423,8 @@ int PhyloTree::setParsimonyBranchLengths() {
         done[static_cast<size_t>(node->id)] = true;
         // now determine states of node
         dad_branch = static_cast<PhyloNeighbor*>(dad->findNeighbor(node));
-        node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
+        // NHANLT: node_branch is unused since the line "UINT *y = node_branch->partial_pars + offset;" was commented out
+        // node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));
         subst = 0;
         for (site = 0, real_site = 0; site < nsites; site++) {
             size_t offset = static_cast<size_t>(nstates*site);
@@ -901,7 +902,7 @@ UINT PhyloTree::computeParsimonyOutOfTreeSankoff(UINT* ptn_scores) {
 
     PhyloNeighbor *dad_branch = static_cast<PhyloNeighbor*>(root->neighbors[0]);
     PhyloNode *dad = static_cast<PhyloNode*>(root);
-    int *branch_subst = nullptr;
+    // int *branch_subst = nullptr;
 
     PhyloNode *node = static_cast<PhyloNode*>(dad_branch->node);
     PhyloNeighbor *node_branch = static_cast<PhyloNeighbor*>(node->findNeighbor(dad));

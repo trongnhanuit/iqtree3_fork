@@ -389,7 +389,8 @@ void PhyloHmm::computeLogProb() {
 // prerequisite: array site_like_cat has been updated (i.e. computeLogLikelihoodSiteTree() has been invoked)
 // and save all the intermediate results to the bwd_array array
 double PhyloHmm::computeBackLikeArray() {
-    size_t pre_k = 0;
+    // pre_k is never used
+    // size_t pre_k = 0;
     size_t k;
     double* pre_work;
     double* work;
@@ -416,7 +417,8 @@ double PhyloHmm::computeBackLikeArray() {
 // compute forward log-likelihood
 // and save all the intermediate results to the fwd_array array
 double PhyloHmm::computeFwdLikeArray() {
-    size_t pre_k = 0;
+    // pre_k is never used
+    // size_t pre_k = 0;
     size_t k;
     double* pre_work;
     double* work;
@@ -491,7 +493,7 @@ void PhyloHmm::computeMarginalProb(ostream* out) {
 
 // compute the marginal probabilities for transitions between every pair of sites
 void PhyloHmm::computeMarginalTransitProb() {
-    double score, sum;
+    double score; // , sum;
     double* f_array = fwd_array;
     double* b_array = bwd_array + ncat;
     double* catlike_array = site_like_cat + (ncat * (nsite - 1));
@@ -519,10 +521,11 @@ void PhyloHmm::computeMarginalTransitProb() {
         }
         score = logDotProd(t1, t2, sq_ncat);
         // cout << "[" << score << "]";
-        sum = 0.0;
+        // sum = 0.0;
         for (k=0; k<sq_ncat; k++) {
             mprob[k] = exp(t1[k] + t2[k] - score);
-            sum += mprob[k];
+            // NHANLT: sum is never used since the line " cout << " {" << sum << "}" << endl;" was commented
+            // sum += mprob[k];
             // cout << " " << mprob[k];
         }
         // cout << " {" << sum << "}" << endl;

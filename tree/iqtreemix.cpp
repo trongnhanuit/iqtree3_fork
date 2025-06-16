@@ -750,7 +750,8 @@ void IQTreeMix::computeSiteTreeLogLike(int update_which_tree) {
 
 double IQTreeMix::computeLikelihood(double *pattern_lh, bool save_log_value) {
     // size_t i,j;
-    double logLike = 0.0;
+    // logLike is never used
+    // double logLike = 0.0;
     double subLike;
     double score;
     
@@ -2294,19 +2295,24 @@ void IQTreeMix::resetPtnOrigFreq() {
 
 string IQTreeMix::optimizeModelParameters(bool printInfo, double logl_epsilon) {
     size_t i, ptn;
-    int step, n, m, substep1, nsubstep1, nsubstep1_start, nsubstep1_max, nsubstep2_start, nsubstep2_max, substep2, nsubstep2, substep2_tot;
+    // substep2_tot is never used
+    // n is never used
+    int step, m, substep1, nsubstep1, nsubstep1_start, nsubstep1_max, nsubstep2_start, nsubstep2_max, substep2, nsubstep2; // , substep2_tot;
     double* pattern_mix_lh;
     double curr_epsilon;
     double prev_score, prev_score1, prev_score2, score, t_score;
     double* prev_ptn_invar;
     bool tree_weight_converge = false;
-    bool firsttime_substmodel = true;
-    bool firsttime_RHASmodel = true;
-    bool firsttime_branchlen = true;
+    // firsttime_substmodel is never used
+    // bool firsttime_substmodel = true;
+    // firsttime_RHASmodel is never used
+    // bool firsttime_RHASmodel = true;
+    // firsttime_branchlen is never used
+    // bool firsttime_branchlen = true;
     double gradient_epsilon = 0.0001;
     PhyloTree *ptree;
     
-    n = 1;
+    // n = 1;
     nsubstep1_start = NUM_FIVE;
     nsubstep1_max = NUM_TEN;
     nsubstep2_start = NUM_FIVE;
@@ -2358,7 +2364,8 @@ string IQTreeMix::optimizeModelParameters(bool printInfo, double logl_epsilon) {
     for (step = 0; step < optimize_steps; step++) {
         
         prev_score1 = score;
-        substep2_tot = 0;
+        // substep2_tot is assigned but never be used
+        // substep2_tot = 0;
 
         for (substep1 = 0; substep1<nsubstep1; substep1++) {
             
@@ -2470,7 +2477,8 @@ string IQTreeMix::optimizeModelParameters(bool printInfo, double logl_epsilon) {
                 prev_score2 = score;
             }
 
-            substep2_tot += substep2;
+            // substep2_tot is assigned but never be used
+            // substep2_tot += substep2;
 
             // optimize the linked site rate model
             if (anySiteRate && isLinkSiteRate) {

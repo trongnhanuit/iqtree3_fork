@@ -4191,7 +4191,8 @@ void IQTree::computeRootstrapUnrooted(MTreeSet &trees, const char* outgroup, boo
     
     Split outgroup_split(leafNum);
     getTaxa(outgroup_split, outgroup_branch.first, outgroup_branch.second->node);
-    int first_outgroup_id = outgroup_split.firstTaxon();
+    // first_outgroup_id is never used
+    // int first_outgroup_id = outgroup_split.firstTaxon();
     
     // sanity check
     if (outgroup_split.countTaxa() != outgroup_vec.size()) {

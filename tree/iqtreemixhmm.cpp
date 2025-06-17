@@ -181,7 +181,7 @@ void IQTreeMixHmm::computeLogLikelihoodSiteTree(int updateTree) {
     for (int j = 0; j < ntree; j++) {
         int k = nsite;
         int l = j;
-        double* ptn_lh_arr = _ptn_like_cat + (nptn * j);
+        const double* ptn_lh_arr = _ptn_like_cat + (nptn * j);
         for (int i = 0; i < nsite; i++) {
             k--;
             int ptn = aln->getPatternID(k);

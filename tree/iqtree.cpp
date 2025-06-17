@@ -4419,7 +4419,7 @@ double IQTree::computeBootstrapCorrelation() {
     for (i = 0; i < sg->size(); i++) {
         if ((*sg)[i]->trivial() == -1) {
             int index;
-            Split *sp = split_map.findSplit((*sg)[i], index);
+            const Split *sp = split_map.findSplit((*sg)[i], index);
             if (sp) {
                 // split found
                 split_supports_new[index] = (int) ((*sg)[i]->getWeight());

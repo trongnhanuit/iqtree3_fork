@@ -820,7 +820,7 @@ double IQTreeMix::computeLikelihood(double *pattern_lh, bool save_log_value) {
     #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
     for (size_t ptn=0; ptn<nptn; ptn++) {
         double* pattern_lh_tree = ptn_like_cat + (ntree * ptn);
-        double* pattern_scale_tree = ptn_scale_cat + (ntree * ptn);
+        const double* pattern_scale_tree = ptn_scale_cat + (ntree * ptn);
         // find the max scaling factor among the trees
         double max_scale = pattern_scale_tree[0];
         int max_tree = 0;
@@ -940,7 +940,7 @@ double IQTreeMix::computePatternLhCat(SiteLoglType wsl) {
         for (size_t ptn=0; ptn<nptn; ptn++) {
             // find the max scaling factor among the trees
             double* pattern_lh_tree = ptn_like_cat + (ptn * ntree);
-            double* pattern_scale_tree = ptn_scale_cat + (ptn * ntree);
+            const double* pattern_scale_tree = ptn_scale_cat + (ptn * ntree);
             double max_scale = at(0)->_pattern_scaling[ptn];
             int max_tree = 0;
             for (size_t t=1; t<ntree; t++) {
@@ -973,7 +973,7 @@ double IQTreeMix::computePatternLhCat(SiteLoglType wsl) {
         #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_threads > 1)
         for (size_t ptn=0; ptn<nptn; ptn++) {
             size_t idx = ptn * ntree;
-            double* pattern_lh_tree = ptn_like_cat + idx;
+            const double* pattern_lh_tree = ptn_like_cat + idx;
             double* pattern_lh_cat = _pattern_lh_cat + idx;
             double scaling_factor = exp(_pattern_scaling[ptn]);
             for (size_t t=0; t<ntree; t++) {
@@ -1198,7 +1198,7 @@ void IQTreeMix::computePatternLikelihood(double *pattern_lh, double *cur_logl,
     for (size_t ptn=0; ptn<nptn; ptn++) {
         // find the max scaling factor among the trees
         double* pattern_lh_tree = ptn_like_cat + (ptn * ntree);
-        double* pattern_scale_tree = ptn_scale_cat + (ptn * ntree);
+        const double* pattern_scale_tree = ptn_scale_cat + (ptn * ntree);
         double max_scale = pattern_scale_tree[0];
         int max_tree = 0;
         for (size_t t=1; t<ntree; t++) {

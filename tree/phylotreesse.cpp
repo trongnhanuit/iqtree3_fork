@@ -271,7 +271,7 @@ void PhyloTree::computeTipPartialLikelihood() {
             auto stateRow = getConvertedSequenceByNumber(nodeid);
             double *partial_lh = tip_partial_lh + (tip_block_size*nodeid);
             for (size_t ptn = 0; ptn < nptn; ptn+=vector_size, partial_lh += nstates*vector_size) {
-                double *inv_evec = &model->getInverseEigenvectors()[ptn*static_cast<size_t>(nstates*nstates)];
+                const double *inv_evec = &model->getInverseEigenvectors()[ptn*static_cast<size_t>(nstates*nstates)];
                 for (size_t v = 0; v < vector_size; v++) {
                     int state = 0;
                     if (ptn+v < nptn) {
@@ -1521,7 +1521,7 @@ void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, doubl
 //        if (params->print_ancestral_sequence == AST_JOINT)
 //            out << aln->convertStateBackStr(joint_ancestral_node[ptn]) << "\t";
         out << aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
-        double *state_prob = ptn_ancestral_prob + (ptn*nstates);
+        const double *state_prob = ptn_ancestral_prob + (ptn*nstates);
         for (size_t j = 0; j < nstates; j++) {
             out << "\t" << state_prob[j];
         }
@@ -1830,18 +1830,18 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
         double sumlh[nstates];
         memset(sumlh, 0, sizeof(double)*nstates);
         FOR_NEIGHBOR(node, dad, it) {
-            PhyloNeighbor *childnei = static_cast<PhyloNeighbor*>(*it);
+            const PhyloNeighbor *childnei = static_cast<PhyloNeighbor*>(*it);
             if ((*it)->node->isLeaf()) {
                 double *lh_leaf = lh_leaves+leafid*nstates*(aln->STATE_UNKNOWN+1); 
                 // external node
                 int state_child;
                 state_child = (aln->at(ptn))[static_cast<size_t>((*it)->node->id)];
-                double *child_lh = lh_leaf + (state_child*nstates);
+                const double *child_lh = lh_leaf + (state_child*nstates);
                 for (child = 0; child < nstates; child++)
                     sumlh[child] += child_lh[child];
                 leafid++;
             } else {
-                double *child_lh = childnei->partial_lh + (ptn*nstates);
+                const double *child_lh = childnei->partial_lh + (ptn*nstates);
                 for (child = 0; child < nstates; child++)
                     sumlh[child] += child_lh[child];
             }
@@ -1891,11 +1891,11 @@ void PhyloTree::computeAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad,
     ASSERT(model->num_states >= 0);
     size_t nstates = static_cast<size_t>(model->num_states);
 
-    int *C_node = C + ((node->id-leafNum)*nptn*nstates);
+    const int *C_node = C + ((node->id-leafNum)*nptn*nstates);
     int *ancestral_seqs_node = ancestral_seqs + ((node->id-leafNum)*nptn);
     if (dad) {
         // at an internal node
-        int *ancestral_seqs_dad = ancestral_seqs + ((dad->id-leafNum)*nptn);
+        const int *ancestral_seqs_dad = ancestral_seqs + ((dad->id-leafNum)*nptn);
         for (size_t ptn = 0; ptn < nptn; ptn++)
             ancestral_seqs_node[ptn] = C_node[(ptn*nstates)+ancestral_seqs_dad[ptn]];
         

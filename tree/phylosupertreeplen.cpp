@@ -1802,7 +1802,7 @@ void PhyloSuperTreePlen::initializeAllPartialLh() {
     }
 
     // 2016-09-29: redirect partial_lh when root does not occur in partition tree
-    SuperNeighbor *root_nei = static_cast<SuperNeighbor*>(root->neighbors[0]);
+    const SuperNeighbor *root_nei = static_cast<SuperNeighbor*>(root->neighbors[0]);
     for (it = begin(), part = 0; it != end(); it++, part++) {
         if (root_nei->link_neighbors[part])
             continue;

@@ -105,8 +105,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
         
         /*--------------------- multifurcating node ------------------*/
         double *vec_tip = buffer_partial_lh_ptr + (block*2)*VectorClass::size() * packet_id;
-        VectorClass *vtip = (VectorClass*)vec_tip;
-        
+        const VectorClass *vtip = (VectorClass*)vec_tip;
         // now for-loop computing partial_lh over all site-patterns
         for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {
             VectorClass *partial_lh_all = (VectorClass*)(dad_branch->partial_lh + (ptn*block));
@@ -124,7 +123,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
             
             FOR_NEIGHBOR_IT(node, dad, it) {
                 PhyloNeighbor *child = (PhyloNeighbor*)*it;
-                UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + (ptn*ncat_mix) : nullptr;
+                const UBYTE *scale_child = SAFE_NUMERIC ? child->scale_num + (ptn*ncat_mix) : nullptr;
                 if (child->node->isLeaf()) {
                     // external node
                     // load data for tip
@@ -147,7 +146,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                         } else {
                             state = unknown;
                         }
-                        double *tip_child = partial_lh_leaf + block * state;
+                        const double *tip_child = partial_lh_leaf + block * state;
                         double *this_vec_tip = vec_tip+x;
                         for (size_t i = 0; i < block; i++) {
                             *this_vec_tip = tip_child[i];
@@ -294,7 +293,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                     } else {
                         state = aln->STATE_UNKNOWN;
                     }
-                    double *tip_right = partial_lh_right + block * state;
+                    const double *tip_right = partial_lh_right + block * state;
                     double *this_vec_right = vright+x;
                     for (size_t i = 0; i < block; i++) {
                         *this_vec_right = tip_right[i];
@@ -311,8 +310,8 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
             auto unknown  = aln->STATE_UNKNOWN;
             for (size_t ptn = ptn_lower; ptn < ptn_upper; ptn+=VectorClass::size()) {
                 VectorClass *partial_lh = (VectorClass*)(dad_branch->partial_lh + (ptn*block));
-                VectorClass *vleft = (VectorClass*)vec_left;
-                VectorClass *vright = (VectorClass*)vec_right;
+                const VectorClass *vleft = (VectorClass*)vec_left;
+                const VectorClass *vright = (VectorClass*)vec_right;
                 // load data for tip
                 for (size_t x = 0; x < VectorClass::size(); x++) {
                     int leftState;
@@ -335,8 +334,8 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                         leftState  = unknown;
                         rightState = unknown;
                     }
-                    double *tip_left   = partial_lh_left  + block * leftState;
-                    double *tip_right  = partial_lh_right + block * rightState;
+                    const double *tip_left   = partial_lh_left  + block * leftState;
+                    const double *tip_right  = partial_lh_right + block * rightState;
                     double *this_vec_left = vec_left+x;
                     double *this_vec_right = vec_right+x;
                     for (size_t i = 0; i < block; i++) {
@@ -421,7 +420,7 @@ void PhyloTree::computeNonrevPartialLikelihoodGenericSIMD(TraversalInfo &info
                 } else {
                     state = unknown;
                 }
-                double *tip = partial_lh_left + block * state;
+                const double *tip = partial_lh_left + block * state;
                 double *this_vec_left = vec_left+x;
                 for (size_t i = 0; i < block; i++) {
                     *this_vec_left = tip[i];
@@ -696,7 +695,7 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
                 double *lh_node  = partial_lh_node +state*block;
                 double *lh_derv1 = partial_lh_derv1 +state*block;
                 double *lh_derv2 = partial_lh_derv2 +state*block;
-                double *lh_tip          = tip_partial_lh + state*nstates;
+                const double *lh_tip          = tip_partial_lh + state*nstates;
                 double *trans_mat_tmp   = trans_mat;
                 double *trans_derv1_tmp = trans_derv1;
                 double *trans_derv2_tmp = trans_derv2;
@@ -796,9 +795,9 @@ void PhyloTree::computeNonrevLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch
                         state_dad = unknown;
                     }
                     auto   step_dad  = state_dad * block;
-                    double *lh_tip   = partial_lh_node  + step_dad;
-                    double *lh_derv1 = partial_lh_derv1 + step_dad;
-                    double *lh_derv2 = partial_lh_derv2 + step_dad;
+                    const double *lh_tip   = partial_lh_node  + step_dad;
+                    const double *lh_derv1 = partial_lh_derv1 + step_dad;
+                    const double *lh_derv2 = partial_lh_derv2 + step_dad;
 
                     double *this_vec_tip = vec_tip+i;
                     double *this_derv1 = this_vec_tip + block*VectorClass::size();
@@ -1162,7 +1161,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
             // precompute information from one tip
             for (int state = 0; state <= aln->STATE_UNKNOWN; state++) {
                 double *lh_node = partial_lh_node + state*block;
-                double *lh_tip = tip_partial_lh + state*nstates;
+                const double *lh_tip = tip_partial_lh + state*nstates;
                 double *trans_mat_tmp = trans_mat;
                 for (size_t c = 0; c < ncat_mix; c++) {
                     for (size_t i = 0; i < nstates; i++) {
@@ -1220,7 +1219,7 @@ double PhyloTree::computeNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_br
                     } else {
                         dadState = unknown;
                     }
-                    double *lh_tip = partial_lh_node + block * dadState;
+                    const double *lh_tip = partial_lh_node + block * dadState;
                     double *this_vec_tip = vec_tip+i;
                     for (size_t c = 0; c < block; c++) {
                         *this_vec_tip = lh_tip[c];

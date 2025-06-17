@@ -1644,7 +1644,7 @@ void PhyloTree::computePartialParsimonyFastSIMD(PhyloNeighbor *dad_branch, Phylo
 			for (site = 0; site<nsites; site++) {
                 size_t offset = entry_size*site;
                 VectorClass *x = (VectorClass*)(left->partial_pars + offset);
-                VectorClass *y = (VectorClass*)(right->partial_pars + offset);
+                const VectorClass *y = (VectorClass*)(right->partial_pars + offset);
                 VectorClass *z = (VectorClass*)(dad_branch->partial_pars + offset);
                 z[0] = x[0] & y[0];
                 z[1] = x[1] & y[1];
@@ -1736,7 +1736,7 @@ int PhyloTree::computeParsimonyBranchFastSIMD(PhyloNeighbor *dad_branch, PhyloNo
 		for (site = 0; site < nsites; site++) {
             size_t offset = entry_size*site;
             VectorClass *x = (VectorClass*)(dad_branch->partial_pars + offset);
-            VectorClass *y = (VectorClass*)(node_branch->partial_pars + offset);
+            const VectorClass *y = (VectorClass*)(node_branch->partial_pars + offset);
             VectorClass w = (x[0] & y[0]) | (x[1] & y[1]) | (x[2] & y[2]) | (x[3] & y[3]);
 			w = ~w;
 //			horizontal_popcount(w);
@@ -1755,7 +1755,7 @@ int PhyloTree::computeParsimonyBranchFastSIMD(PhyloNeighbor *dad_branch, PhyloNo
 		for (site = 0; site < nsites; site++) {
             size_t offset = entry_size*site;
             VectorClass *x = (VectorClass*)(dad_branch->partial_pars + offset);
-            VectorClass *y = (VectorClass*)(node_branch->partial_pars + offset);
+            const VectorClass *y = (VectorClass*)(node_branch->partial_pars + offset);
             VectorClass w = x[0] & y[0];
 			for (int i = 1; i < nstates; i++) {
                 w |= x[i] & y[i];

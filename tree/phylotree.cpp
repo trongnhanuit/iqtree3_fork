@@ -1971,8 +1971,8 @@ void PhyloTree::updateSubtreeDists(NNIMove &nnimove) {
     PhyloNode *node2 = nnimove.node2;
     NeighborVec::iterator node1Nei_it = nnimove.node1Nei_it;
     NeighborVec::iterator node2Nei_it = nnimove.node2Nei_it;
-    Neighbor *node1Nei = *(node1Nei_it);
-    Neighbor *node2Nei = *(node2Nei_it);
+    const Neighbor *node1Nei = *(node1Nei_it);
+    const Neighbor *node2Nei = *(node2Nei_it);
 
     // ((A,C),(B,D))
     // C and D are the 2 subtree that get swapped
@@ -2363,8 +2363,8 @@ double PhyloTree::computeBayesianBranchLength(PhyloNeighbor *dad_branch, PhyloNo
         // Compute the probability of each state for the current site
         double sum_prob1 = 0.0, sum_prob2 = 0.0;
         size_t offset = ptn * block;
-        double *partial_lh_site = node_branch->partial_lh + (offset);
-        double *partial_lh_child = dad_branch->partial_lh + (offset);
+        const double *partial_lh_site = node_branch->partial_lh + (offset);
+        const double *partial_lh_child = dad_branch->partial_lh + (offset);
         for (size_t state = 0; state < nstates; state++) {
             tmp_anscentral_state_prob1[state] = 0.0;
             tmp_anscentral_state_prob2[state] = 0.0;
@@ -3017,7 +3017,7 @@ double PhyloTree::optimizeRootPosition(int root_dist, bool write_info, double lo
     NodeVector nodes1, nodes2;
     getBranches(root_dist+1, nodes1, nodes2);
     int i;
-    Node *root_dad = root->neighbors[0]->node;
+    const Node *root_dad = root->neighbors[0]->node;
 
     double best_score = curScore;
     string best_tree = getTreeString();
@@ -3167,7 +3167,7 @@ double PhyloTree::testRootPosition(bool write_info, double logl_epsilon, IntVect
 
 double PhyloTree::addTaxonML(Node *added_node, Node* &target_node, Node* &target_dad, Node *node, Node *dad) {
 
-    Neighbor *dad_nei = dad->findNeighbor(node);
+    const Neighbor *dad_nei = dad->findNeighbor(node);
 
     // now insert the new node in the middle of the branch node-dad
     double len = dad_nei->length;
@@ -4816,7 +4816,7 @@ double PhyloTree::assessSPRMove(double cur_score, const SPRMove &spr) {
     // now try to move the subtree to somewhere else
 
     bool first = true;
-    PhyloNeighbor *node2_nei = (PhyloNeighbor*) node2->findNeighbor(dad2);
+    const PhyloNeighbor *node2_nei = (PhyloNeighbor*) node2->findNeighbor(dad2);
     //PhyloNeighbor *dad2_nei = (PhyloNeighbor*) dad2->findNeighbor(node2);
     double len2 = node2_nei->length;
 
@@ -5468,7 +5468,7 @@ void PhyloTree::reinsertLeaf(Node *leaf, Node *node, Node *dad) {
 
     bool first = true;
     Node *adjacent_node = leaf->neighbors[0]->node;
-    Neighbor *nei = node->findNeighbor(dad);
+    const Neighbor *nei = node->findNeighbor(dad);
     //double len = nei->length;
     double len = max(nei->length, params->min_branch_length * 2);
     // to avoid too small branch length when reinserting leaf

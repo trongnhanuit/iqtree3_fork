@@ -468,7 +468,7 @@ void PhyloTreeMixlen::optimizeOneBranch(PhyloNode *node1, PhyloNode *node2, bool
             computePtnFreq();
             
             for (cur_mixture = 0; cur_mixture < mixlen; cur_mixture++) {
-                double *this_lk_cat = _pattern_lh_cat+cur_mixture;
+                const double *this_lk_cat = _pattern_lh_cat+cur_mixture;
                 for (size_t ptn = 0; ptn < nptn; ptn++) {
                     ptn_freq[ptn] = this_lk_cat[ptn*nmix];
                 }                
@@ -789,11 +789,11 @@ void PhyloTreeMixlen::computeFuncDerv(double value, double &df, double &ddf) {
 #pragma omp parallel for
 #endif
             for (size_t ptn = 0; ptn < nptn; ptn++) {
-                double *partial_lh_dad = dad_branch->partial_lh + (ptn*block);
+                const double *partial_lh_dad = dad_branch->partial_lh + (ptn*block);
                 double *theta = theta_all + (ptn*block);
                 
                 // TODO: check with vectorclass!
-                double *lh_tip = tip_partial_lh +
+                const double *lh_tip = tip_partial_lh +
                 ((int)((ptn < orig_nptn) ? (aln->at(ptn))[dad->id] :  model_factory->unobserved_ptns[ptn-orig_nptn][dad->id]))*statemix;
                 for (size_t m = 0; m < nmixture; m++) {
                     for (size_t i = 0; i < statecat; i++) {
@@ -804,8 +804,8 @@ void PhyloTreeMixlen::computeFuncDerv(double value, double &df, double &ddf) {
 			// ascertainment bias correction
 	    } else {
 	    	// both dad and node are internal nodes
-		    double *partial_lh_node = node_branch->partial_lh;
-		    double *partial_lh_dad = dad_branch->partial_lh;
+		    const double *partial_lh_node = node_branch->partial_lh;
+		    const double *partial_lh_dad = dad_branch->partial_lh;
 
             size_t all_entries = nptn*block;
 #ifdef _OPENMP
@@ -846,7 +846,7 @@ void PhyloTreeMixlen::computeFuncDerv(double value, double &df, double &ddf) {
 #endif
     for (size_t ptn = 0; ptn < nptn; ptn++) {
         double lh_ptn = ptn_invar[ptn], df_ptn = 0.0, ddf_ptn = 0.0;
-        double *theta = theta_all + (ptn*block) + (cur_mixture*statecat);
+        const double *theta = theta_all + (ptn*block) + (cur_mixture*statecat);
         for (size_t i = 0; i < statecat; i++) {
             lh_ptn += val0[i] * theta[i];
             df_ptn += val1[i] * theta[i];

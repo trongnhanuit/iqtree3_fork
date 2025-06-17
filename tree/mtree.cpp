@@ -1541,7 +1541,7 @@ void MTree::getTaxaID(vector<int> &taxa, Node *node, Node *dad) {
 }*/
 
 Split* MTree::getSplit(Node* node1, Node* node2) {
-    Neighbor* node12 = node1->findNeighbor(node2);
+    const Neighbor* node12 = node1->findNeighbor(node2);
     return node12->split;
 }
 

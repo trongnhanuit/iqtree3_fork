@@ -403,7 +403,7 @@ double PhyloSuperTree::computeDist(int seq1, int seq2, double initial_dist, doub
 
 void PhyloSuperTree::linkBranch(int part, SuperNeighbor *nei, SuperNeighbor *dad_nei) {
 	SuperNode *node = static_cast<SuperNode*>(dad_nei->node);
-	SuperNode *dad = static_cast<SuperNode*>(nei->node);
+	const SuperNode *dad = static_cast<SuperNode*>(nei->node);
 	nei->link_neighbors[part] = nullptr;
 	dad_nei->link_neighbors[part] = nullptr;
 	vector<PhyloNeighbor*> part_vec;
@@ -1437,7 +1437,7 @@ void PhyloSuperTree::writeMarginalAncestralState(ostream &out, PhyloNode *node,
             int ptn = (*it)->aln->getPatternID(static_cast<int>(site));
             out << node->name << "\t" << part << "\t" << site+1 << "\t";
             out << (*it)->aln->convertStateBackStr(ptn_ancestral_seq[ptn]);
-            double *state_prob = ptn_ancestral_prob + (ptn*nstates);
+            const double *state_prob = ptn_ancestral_prob + (ptn*nstates);
             for (int j = 0; j < nstates; ++j) {
                 out << "\t" << state_prob[j];
             }
@@ -1502,12 +1502,12 @@ void PhyloSuperTree::writeBranch(ostream &out, Node* node1, Node* node2) {
     for (size_t part = 0; part != size(); part++) {
         bool present = true;
         FOR_NEIGHBOR_DECLARE(node1, nullptr, it) {
-            SuperNeighbor *nei = static_cast<SuperNeighbor*>(*it);
+            const SuperNeighbor *nei = static_cast<SuperNeighbor*>(*it);
             if (!nei->link_neighbors[part])
                 present = false;
         }
         FOR_NEIGHBOR(node2, nullptr, it) {
-            SuperNeighbor *nei = static_cast<SuperNeighbor*>(*it);
+            const SuperNeighbor *nei = static_cast<SuperNeighbor*>(*it);
             if (!nei->link_neighbors[part])
                 present = false;
         }

@@ -160,6 +160,7 @@ double RateHeterotachy::optimizeWithEM() {
     // first compute _pattern_lh_cat
     phylo_tree->computePatternLhCat(WSL_RATECAT);
     size_t nptn = phylo_tree->aln->getNPattern();
+    ASSERT(ncategory >= 0);
     size_t nmix = ncategory;
     
     double *new_prop = aligned_alloc<double>(nmix);

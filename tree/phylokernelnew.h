@@ -2087,6 +2087,7 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
     // reserve 3*block for computeLikelihoodDerv
     double *buffer_partial_lh_ptr = buffer_partial_lh + 3*get_safe_upper_limit(block);
     if (isMixlen()) {
+        ASSERT(getMixlen() >= 0);
         size_t nmix = getMixlen();
         buffer_partial_lh_ptr += nmix*(nmix+1)*VectorClass::size() + (nmix+3)*nmix*VectorClass::size()*num_packets;
     }

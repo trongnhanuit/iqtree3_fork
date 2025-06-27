@@ -23,6 +23,7 @@ void PhyloTree::computeSiteConcordance(map<string,string> &meanings) {
         initMarginalAncestralState(cout, orig_kernel_nonrev, marginal_ancestral_prob, marginal_ancestral_seq);
         if (verbose_mode >= VB_MED) {
             cout << "Node\tSite\tState";
+            ASSERT(aln->num_states >= 0);
             for (size_t i = 0; i < aln->num_states; i++)
                 cout << "\tp_" << aln->convertStateBackStr(i);
             cout << endl;

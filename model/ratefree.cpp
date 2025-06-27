@@ -506,6 +506,7 @@ void RateFree::writeParameters(ostream &out) {
 double RateFree::optimizeWithEM() {
     size_t ptn, c;
     size_t nptn = phylo_tree->aln->getNPattern();
+    ASSERT(ncategory >= 0);
     size_t nmix = ncategory;
     const double MIN_PROP = 1e-4;
     

@@ -376,6 +376,7 @@ void IQTree::initSettings(Params &params) {
 #else
         size_t nptn = get_safe_upper_limit(orig_nptn);
 #endif
+        ASSERT(params.gbo_replicates >= 0);
         BootValType *mem = aligned_alloc<BootValType>(nptn * (size_t)(params.gbo_replicates));
         memset(mem, 0, nptn * (size_t)(params.gbo_replicates) * sizeof(BootValType));
         for (i = 0; i < params.gbo_replicates; i++) {

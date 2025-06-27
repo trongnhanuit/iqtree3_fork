@@ -1351,6 +1351,7 @@ void PhyloSuperTree::initMarginalAncestralState(ostream &out, bool &orig_kernel_
 
     for (auto it = begin(); it != end(); it++) {
         size_t nptn = (*it)->aln->size();
+        assert((*it)->model->num_states >= 0);
         size_t nstates = (*it)->model->num_states;
         (*it)->_pattern_lh_cat_state = (*it)->newPartialLh();
         total_size += nptn*nstates;
@@ -1379,6 +1380,7 @@ void PhyloSuperTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, Ph
     int part = 0;
     for (auto it = begin(); it != end(); it++, part++) {
         size_t nptn = (*it)->getAlnNPattern();
+        assert((*it)->model->num_states >= 0);
         size_t nstates = (*it)->model->num_states;
         if (snei->link_neighbors[part]) {
             (*it)->computeMarginalAncestralState(snei->link_neighbors[part], (PhyloNode*)snei_back->link_neighbors[part]->node,
@@ -1405,6 +1407,7 @@ void PhyloSuperTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, Phy
     int part = 0;
     for (auto it = begin(); it != end(); it++, part++) {
         size_t nptn = (*it)->getAlnNPattern();
+        assert((*it)->model->num_states >= 0);
         size_t nstates = (*it)->model->num_states;
         if (snei->link_neighbors[part]) {
             (*it)->computeSubtreeAncestralState(snei->link_neighbors[part], (PhyloNode*)snei_back->link_neighbors[part]->node,

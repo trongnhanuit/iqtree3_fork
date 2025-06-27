@@ -275,6 +275,7 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
 
         support[0] = support[1] = support[2] = 0;
         aln->computeQuartetSupports(quartet, support);
+        assert(support[0] + support[1] + support[2] >= 0);
         size_t sum = support[0] + support[1] + support[2];
         sum_sites += sum;
         if (sum > 0) {
@@ -286,6 +287,7 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
             sDF2_N += support[2];
         }
         if (params->print_cf_quartets) {
+            assert(sum != 0);
             // print sCF for each quartet
             stringstream ss;
             ss << quartet[0]+1 << '\t' << quartet[1]+1 << '\t' << quartet[2]+1 << '\t' << quartet[3]+1
@@ -296,6 +298,7 @@ void PhyloTree::computeSiteConcordance(Branch &branch, int nquartets, int *rstre
             nei->putAttr("q" + convertIntToString(i), ss.str());
         }
     }
+    assert(nquartets != 0);
     sN = (double)sum_sites / nquartets;
     // rounding
     sCF = round(sCF / nquartets * 10000)/100;
@@ -446,6 +449,7 @@ double* PhyloTree::newAncestralProb() {
         size_t total_size = 0;
         for (auto it = stree->begin(); it != stree->end(); it++) {
             size_t nptn = (*it)->getAlnNPattern();
+            assert((*it)->model->num_states >= 0);
             size_t nstates = (*it)->model->num_states;
             total_size += nptn*nstates;
         }
@@ -556,6 +560,7 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
             size_t start_pos_seq = 0;
             for (auto it = stree->begin(); it != stree->end(); it++) {
                 size_t nptn = (*it)->getAlnNPattern();
+                assert((*it)->model->num_states >= 0);
                 size_t nstates = (*it)->model->num_states;
                 for (size_t ptn = 0; ptn < nptn; ptn++) {
                     // FIX sCFL: ignore sites if at least one subtree shows all gap/ambiguitity
@@ -584,6 +589,7 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
             }
         } else {
             size_t nptn = getAlnNPattern();
+            assert(model->num_states >= 0);
             size_t nstates = model->num_states;
             for (size_t ptn = 0; ptn < nptn; ptn++) {
                 if (first_ancestral_seq[first_id0][ptn] >= nstates ||
@@ -604,6 +610,7 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
                     support[2] += aln->at(ptn).frequency;
             }
         }
+        assert(support[0] + support[1] + support[2] >= 0);
         size_t sum = support[0] + support[1] + support[2];
         sum_sites += sum;
         if (sum > 0) {
@@ -615,6 +622,7 @@ void PhyloTree::computeAncestralSiteConcordance(Branch &branch, int nquartets, i
             sDF2_N += support[2];
         }
     }
+    assert(nquartets != 0);
     sN = (double)sum_sites / nquartets;
     // rounding
     sCF = round(sCF / nquartets * 10000)/100;
@@ -982,6 +990,7 @@ double PhyloTree::computeQuartetConcordance(Branch &branch, MTreeSet &trees) {
             sum_support += ((double)quartetCF[0]) / sum;
         }
     }
+    assert(num_quartets != 0);
     return sum_support / num_quartets;
 }
 

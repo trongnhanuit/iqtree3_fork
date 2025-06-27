@@ -507,6 +507,7 @@ void MTreeSet::convertSplits(vector<string> &taxname, SplitGraph &sg, SplitIntMa
 			int value = 0;
 			if (!hash_ss.findSplit(*itg, value))
 				outError("Internal error ", __func__);
+            assert(value != 0);
 			(*itg)->setWeight((*itg)->getWeight() / value);
 		}
 	} else if (weighting_type == SW_AVG_ALL) {

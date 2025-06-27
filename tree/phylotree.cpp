@@ -1752,6 +1752,7 @@ double PhyloTree::computeLogLVariance(double *ptn_lh, double tree_lh) {
         for (size_t i = 0; i < nptn; ++i)
             tree_lh += pattern_lh[i] * pattern_freq[i];
     }
+    assert(nsite != 0);
     double avg_site_lh = tree_lh / nsite;
     double variance = 0.0;
     for (size_t i = 0; i < nptn; ++i) {
@@ -1762,6 +1763,7 @@ double PhyloTree::computeLogLVariance(double *ptn_lh, double tree_lh) {
         delete[] pattern_lh;
     if (nsite <= 1)
         return 0.0;
+    assert(nsite - 1 != 0);
     return variance * ((double) nsite / (nsite - 1.0));
 }
 
@@ -1789,6 +1791,7 @@ double PhyloTree::computeLogLDiffVariance(double *pattern_lh_other, double *ptn_
         delete[] pattern_lh;
     if (nsite <= 1)
         return 0.0;
+    assert(nsite - 1 != 0);
     return variance * ((double) nsite / (nsite - 1.0));
 }
 
@@ -3419,6 +3422,7 @@ template <class L, class F> double computeDistanceMatrix
     
     std::vector<double> rowMaxDistance;
     rowMaxDistance.resize(nseqs, 0.0);
+    assert(num_states - 1 != 0);
     double z = num_states / (num_states - 1.0);
     //Compute the upper-triangle of the distance matrix
     //(and write the row maximum onto the firt cell in the row)
@@ -3889,6 +3893,7 @@ int PhyloTree::fixNegativeBranch(bool force, Node *node, Node *dad) {
         int branch_subst;
         int pars_score = computeParsimonyBranch((PhyloNeighbor*) (*it), (PhyloNode*) node, &branch_subst);
         // first compute the observed parsimony distance
+        assert(getAlnNSite() != 0);
         double branch_length = (branch_subst > 0) ? ((double) branch_subst / getAlnNSite()) : (1.0 / getAlnNSite());
 
         branch_length = correctBranchLengthF81(branch_length, alpha);

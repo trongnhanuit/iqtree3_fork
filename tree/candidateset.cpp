@@ -435,12 +435,14 @@ int CandidateSet::computeSplitOccurences(double supportThreshold) {
             Split *sp = candSplits.findSplit(*itg, value);
             if (sp != nullptr) {
                 int newHashWeight = value + 1;
+                assert(candSplits.getNumTree() != 0);
                 double newSupport = (double) newHashWeight / (double) candSplits.getNumTree();
                 sp->setWeight(newSupport);
                 candSplits.setValue(sp, newHashWeight);
             }
             else {
                 sp = new Split(*(*itg));
+                assert(candSplits.getNumTree() != 0);
                 sp->setWeight(1.0 / (double) candSplits.getNumTree());
                 candSplits.insertSplit(sp, 1);
             }
@@ -448,6 +450,7 @@ int CandidateSet::computeSplitOccurences(double supportThreshold) {
     }
     int newNumStableSplits = countStableSplits(supportThreshold);
     if (verbose_mode >= VB_MED) {
+        assert(aln->getNSeq() - 3 != 0);
         cout << ((double) newNumStableSplits / (aln->getNSeq() - 3)) * 100;
         cout << " % of the splits are stable (support threshold " << supportThreshold;
         cout << " from " << candSplits.getNumTree() << " trees)" << endl;

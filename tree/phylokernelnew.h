@@ -2603,6 +2603,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
     if (ASC_Holder) {
         // Mark Holder's ascertainment bias correction for missing data
         double *const_lh = _pattern_lh + max_orig_nptn;
+        assert(nstates != 0);
         size_t step_unobserved_ptns = model_factory->unobserved_ptns.size() / nstates;
         double *const_lh_next = const_lh + step_unobserved_ptns;
         double *const_df_next = const_df + step_unobserved_ptns;
@@ -3234,6 +3235,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
     if (ASC_Holder) {
         // Mark Holder's ascertainment bias correction for missing data
         double *const_lh = _pattern_lh + max_orig_nptn;
+        assert(nstates != 0);
         size_t step_unobserved_ptns = model_factory->unobserved_ptns.size() / nstates;
         double *const_lh_next = const_lh + step_unobserved_ptns;
         for (int step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {
@@ -3460,6 +3462,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
     if (ASC_Holder) {
         // Mark Holder's ascertainment bias correction for missing data
         double *const_lh = _pattern_lh + max_orig_nptn;
+        assert(nstates != 0);
         size_t step_unobserved_ptns = model_factory->unobserved_ptns.size() / nstates;
         double *const_lh_next = const_lh + step_unobserved_ptns;
         for (int step = 1; step < nstates; step++, const_lh_next += step_unobserved_ptns) {

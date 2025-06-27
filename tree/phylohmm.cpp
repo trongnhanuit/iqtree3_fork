@@ -350,6 +350,7 @@ void PhyloHmm::showSiteCatMaxLike(ostream& out, bool show_assignment, int cat_as
     if (show_assignment)
         out << "[" << pre_site + 1 << "," << i << "]\t" << pre_max_cat+1 << endl;
     
+    assert(nsite != 0);
     for (i=0; i<ncat; i++)
         rateSites[i] = (double) numSites[i] / nsite;
     

@@ -763,6 +763,7 @@ double IQTreeMixHmm::setSingleVariable() {
     getAllBranchLengths();
     ndim = getNDim();
     if (ndim > 0) {
+        assert(nbranch != 0);
         treeidx = branch_group[optimBranchGrp].at(0) / nbranch;
         branchidx = branch_group[optimBranchGrp].at(0) % nbranch;
         if (treeidx < ntree && branchidx < allbranchlens[treeidx].size())
@@ -784,6 +785,7 @@ void IQTreeMixHmm::getSingleVariable(double x) {
     ndim = getNDim();
     if (ndim == 0)
         cout << "[IQTreeMixHmm::getSingleVariable] Error occurs! ndim = " << ndim << endl;
+    assert(nbranch != 0);
     for (i = 0; i < ndim; i++) {
         treeidx = branch_group[optimBranchGrp].at(i) / nbranch;
         branchidx = branch_group[optimBranchGrp].at(i) % nbranch;
@@ -824,6 +826,7 @@ void IQTreeMixHmm::setVariables(double *variables) {
     // collect the branch lengths of the tree
     getAllBranchLengths();
     ndim = getNDim();
+    assert(nbranch != 0);
     for (i=0; i<ndim; i++) {
         treeidx = branch_group[optimBranchGrp].at(i) / nbranch;
         branchidx = branch_group[optimBranchGrp].at(i) % nbranch;
@@ -849,6 +852,7 @@ void IQTreeMixHmm::getVariables(double *variables) {
     // collect the branch lengths of the tree
     getAllBranchLengths();
     ndim = getNDim();
+    assert(nbranch != 0);
     for (i=0; i<ndim; i++) {
         treeidx = branch_group[optimBranchGrp].at(i) / nbranch;
         branchidx = branch_group[optimBranchGrp].at(i) % nbranch;
@@ -922,7 +926,7 @@ void IQTreeMixHmm::setAvgLenEachBranchGrp() {
     
     // collect the branch lengths of the tree
     getAllBranchLengths();
-    
+    assert(nbranch != 0);
     for (i = 0; i < branch_group.size(); i++) {
         grp_len = 0.0;
         dim = branch_group[i].size();
@@ -934,6 +938,7 @@ void IQTreeMixHmm::setAvgLenEachBranchGrp() {
             else
                 grp_len += allbranchlens[treeIdx].at(branchIdx);
         }
+        assert(dim != 0);
         grp_len = grp_len / (double)dim;
         for (j = 0; j < dim; j++) {
             treeIdx = branch_group[i].at(j) / nbranch;

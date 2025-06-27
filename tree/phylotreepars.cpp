@@ -315,6 +315,7 @@ void PhyloTree::computeAllPartialPars(PhyloNode *node, PhyloNode *dad) {
 }
 
 double PhyloTree::JukesCantorCorrection(double dist, double alpha) {
+    assert(aln->num_states - 1 != 0);
     double z = (double) aln->num_states / (aln->num_states - 1);
     double x = 1.0 - (z * dist);
     if (x > 0) {

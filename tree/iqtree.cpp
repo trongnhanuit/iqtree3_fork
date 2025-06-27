@@ -293,6 +293,7 @@ void IQTree::initSettings(Params &params) {
         if (k_delete_max < 20) {
             k_delete_max = 20;
         }
+        assert(k_delete != 0);
         k_delete_stay = ceil(leafNum / k_delete);
     }
 

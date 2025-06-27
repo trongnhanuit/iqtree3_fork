@@ -130,6 +130,7 @@ IQTreeMix::IQTreeMix(Params &params, Alignment *aln) : IQTree(aln) {
     // get the number of trees for tree-mixture model
     ntree = getTreeMixNum(params);
     
+    assert(ntree != 0);
     // create the trees and initialize tree-weights
     double init_weight = 1.0 / (double) ntree;
     double init_weight_log = log(init_weight);
@@ -356,6 +357,7 @@ void IQTreeMix::separateModel(string modelName) {
                 resize(ntree);
                 weights.resize(ntree);
                 weight_logs.resize(ntree);
+                assert(ntree != 0);
                 double init_weight = 1.0 / (double) ntree;
                 double init_weight_log = log(init_weight);
                 for (i=0; i<ntree; i++) {
@@ -1452,6 +1454,8 @@ void IQTreeMix::checkBranchGrp() {
     // collect the branch lengths of the tree
     getBranchLengths(branch_len);
     
+    assert(nbranch != 0);
+    
     for (i = 0; i < branch_group.size(); i++) {
         sum_treeweight = 0.0;
         for (j = 0; j < branch_group[i].size(); j++) {
@@ -1515,6 +1519,7 @@ double IQTreeMix::optimizeTreeWeightsByEM(double* pattern_mix_lh, double logl_ep
         }
 
         // M-step
+        assert(getAlnNSite() != 0);
         for (c = 0; c < ntree; c++) {
             weights[c] = weights[c] / getAlnNSite();
             if (weights[c] < 1e-10) weights[c] = 1e-10;
@@ -1582,6 +1587,7 @@ double IQTreeMix::optimizeTreeWeightsByBFGS(double gradient_epsilon) {
     optim_type = 1;
 
     // special case: ndim = 1, i.e. all tree weights are forced the same
+    assert(size() != 0);
     if (ndim == 1) {
         double w = 1.0 / size();
         double w_log = log(w);
@@ -1926,6 +1932,7 @@ void IQTreeMix::setNumThreads(int num_threads) {
         if (num_threads % size() != 0)
             cout << "Warnings: setting number of threads as the multiples of the number of trees will be more efficient!";
         // distribute threads among the trees
+        assert(size() != 0);
         int threads_per_tree = num_threads / size();
         int* nthreads = new int[size()];
         int i;
@@ -3064,6 +3071,7 @@ void IQTreeMix::setVariables(double *variables) {
             variables[i+1] = tmp_weights[i];
         }
     } else {
+        assert(nbranch != 0);
         // optimization on branch length
         ndim = branch_group.size();
         for (i=0; i<ndim; i++) {
@@ -3101,6 +3109,7 @@ void IQTreeMix::getVariables(double *variables) {
     } else {
         // for branch length
         ndim = branch_group.size();
+        assert(nbranch != 0);
         for (i=0; i<ndim; i++) {
             for (j=0; j<branch_group[i].size(); j++) {
                 treeidx = branch_group[i].at(j) / nbranch;

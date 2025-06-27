@@ -104,6 +104,7 @@ void PhyloSuperHmm::printResults(string prefix, string ext, int cat_assign_metho
     
     // print out overall percentage of sites over the trees
     cout << "Overall percentage of sites over the trees:";
+    assert(numSiteSum != 0);
     for (k = 0; k < ntree; k++)
         cout << " " << (double) numSiteCatTot[k] / numSiteSum;
     cout << endl;

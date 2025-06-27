@@ -1225,6 +1225,7 @@ void AliSimulator::initVariables(int sequence_length, string output_filepath, ve
     }
     #endif
     
+    assert(num_simulating_threads != 0);
     default_segment_length = sequence_length / num_simulating_threads;
     
     // for Windows only, the line break is \r\n instead of only \n
@@ -2132,6 +2133,7 @@ void AliSimulator::validataSeqLengthCodon()
 *  update the expected_num_sites due to the change of the sequence_length
 */
 void AliSimulator::refreshExpectedNumSites(){
+    assert(num_sites_per_state != 0);
     expected_num_sites = round(params->alisim_sequence_length / num_sites_per_state * length_ratio);
 }
 
@@ -3387,6 +3389,7 @@ void AliSimulator::computeSwitchingParam(int seq_length)
         }
         
         // compute the switching param
+        assert(seq_length != 0);
         params->alisim_simulation_thresh = a / seq_length;
     }
 }
@@ -3677,6 +3680,7 @@ void AliSimulator::separateSeqIntoChunks(Node* node)
         vector<short int> root_seq = node->sequence->sequence_chunks[0];
         assert(root_seq.size() == expected_num_sites);
         node->sequence->sequence_chunks.resize(num_simulating_threads);
+        assert(num_simulating_threads != 0);
         int default_segment_length = expected_num_sites / num_simulating_threads;
         
         // resize the first chunk from the root sequence

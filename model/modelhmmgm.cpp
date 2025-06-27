@@ -39,6 +39,7 @@ void ModelHmmGm::initialize_transitLog() {
 
     // the transition probability going to the same state is initialized to INITIAL_PROB_SAME_CAT
     // and the other probabilities are initialized as equally distributed
+    assert(ncat - 1 != 0);
     double init_other_tran = (1.0 - INITIAL_PROB_SAME_CAT) / ((double) ncat - 1.0);
     for (i = 0; i < ncat; i++) {
         for (j = 0; j < i; j++)
@@ -107,6 +108,7 @@ double ModelHmmGm::optimizeParametersByEM() {
         }
         marginalTran += sq_ncat;
     }
+    assert(dim != 0);
     for (i=0; i<sq_ncat; i++) {
         transit[i] = transit[i] / (double) 2 * dim;
     }

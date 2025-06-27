@@ -247,6 +247,7 @@ void ModelHmmTm::setBounds(double *lower_bound, double *upper_bound, bool *bound
 void ModelHmmTm::updateTransits() {
     int i,j,k;
     double* curr_transit = transit;
+    assert(ncat - 1 != 0);
     // the other probabilities are set as equally distributed
     for (k = 0; k < ntypepair; k++) {
         double other_tran = (1.0 - tranSameCats[k]) / ((double) ncat - 1.0);

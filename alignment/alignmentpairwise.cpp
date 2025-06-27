@@ -502,6 +502,7 @@ double AlignmentPairwise::recomputeDist
                 }
             }
             if (0<distance) {
+                assert(denominator != 0);
                 initial_dist = (double)distance / (double)denominator;
             }
             if (tree->params->compute_obs_dist) {

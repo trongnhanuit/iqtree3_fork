@@ -1662,6 +1662,7 @@ double SuperAlignment::computeObsDist(int seq1, int seq2) {
     if (!total_pos) {
         return MAX_GENETIC_DIST; // return +INF if no overlap between two sequences
     }
+    assert(total_pos != 0);
 	return ((double)diff_pos) / total_pos;
 }
 
@@ -1672,7 +1673,7 @@ double SuperAlignment::computeDist(int seq1, int seq2) {
     }
 	double obs_dist = computeObsDist(seq1, seq2);
     int num_states = partitions[0]->num_states;
-    ASSERT(num_states >= 0);
+    ASSERT(num_states >= 0 && (num_states-1) != 0);
     double z = (double)num_states / (num_states-1);
     double x = 1.0 - (z * obs_dist);
 
@@ -1703,6 +1704,7 @@ double SuperAlignment::computeDist(int seq1, int seq2) {
         // two sequences are not overlapping at all!
         return MAX_GENETIC_DIST;
     }
+    assert(num != 0);
 	return dist / num;
 }
 

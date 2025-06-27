@@ -448,6 +448,7 @@ void reportNexusFile(ostream &out, ModelSubst *m, string part_name) {
         }
     }
     // print out the frequencies with same rate
+    assert(m->num_states != 0);
     double f = 1.0 / m->num_states;
     for (i = 0; i < m->num_states; i++)
         out << " " << f;
@@ -882,6 +883,7 @@ void reportRate(ostream &out, PhyloTree &tree) {
 
 void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, double lh_variance, double main_tree) {
     size_t ssize = tree.getAlnNSite();
+    assert(ssize != 0);
     double epsilon = 1.0 / ssize;
     double totalLen;
     vector<double> totalLens; // for tree mixture
@@ -2811,6 +2813,7 @@ void printFinalSearchInfo(Params &params, IQTree &iqtree, double search_cpu_time
         cout<<"Details for subtrees:"<<endl;
         int part = 0;
         for(auto it = stree->begin(); it != stree->end(); it++,part++){
+            assert(stree->size() != 0);
             cout << part+1 << ". " << (*it)->aln->name << ": " << stree->part_info[part].evalNNIs<<" ( "
                 << (int)(((stree->part_info[part].evalNNIs+1.0)/((stree->totalNNIs+1.0) / stree->size()))*100.0)
                 << " %)" << endl;
@@ -5147,6 +5150,7 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
     } else if (params.min_branch_length <= 0.0) {
         params.min_branch_length = 1e-6;
         if (!tree->isSuperTree() && tree->getAlnNSite() >= 100000) {
+            assert(tree->getAlnNSite() != 0);
             params.min_branch_length = 0.1 / (tree->getAlnNSite());
             tree->num_precision = max((int)ceil(-log10(Params::getInstance().min_branch_length))+1, 6);
             cout.precision(12);

@@ -1669,6 +1669,7 @@ void ModelMixture::initFromClassMinusOne(double init_weight) {
         // change the freq to even freq
         if (at(nmix - 1)->freq_type == FREQ_ESTIMATE) {
             int nstate = at(nmix - 1)->num_states;
+            assert(nstate != 0);
             double state_freq[nstate];
             double f = 1.0 / (double) nstate;
             for (int i = 0; i < nstate; i++)
@@ -1816,6 +1817,7 @@ void ModelMixture::estimateInitFreq2() {
     }
     int nseqs = phylo_tree->aln->getNSeq();
     int nsites = phylo_tree->aln->getNSite();
+    assert(size() != 0);
     int avgCSize = nsites / size();
     int i, j, k, posStart, posEnd, ptnidx;
     double state_freq[num_states];
@@ -2130,6 +2132,7 @@ double ModelMixture::optimizeWithEM(double gradient_epsilon) {
             // update the weights for rate model
             converged = true;
             double new_pinvar = 0.0;
+            assert(phylo_tree->getAlnNSite() != 0);
             for (c = 0; c < nmix; c++) {
                 new_prop[c] = new_prop[c] / phylo_tree->getAlnNSite();
                 if (new_prop[c] < 1e-10) new_prop[c] = 1e-10;
@@ -2148,6 +2151,7 @@ double ModelMixture::optimizeWithEM(double gradient_epsilon) {
 
         } else if (!fix_prop) {
 //            double new_pinvar = 0.0;
+            assert(phylo_tree->getAlnNSite() != 0);
             for (c = 0; c < nmix; c++) {
                 new_prop[c] = new_prop[c] / phylo_tree->getAlnNSite();
                 if (new_prop[c] < 1e-10) new_prop[c] = 1e-10;

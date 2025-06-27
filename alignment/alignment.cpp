@@ -257,6 +257,7 @@ void Alignment::checkSeqName() {
             num_gaps -= countProperChar(i);
         }
         total_gaps += num_gaps;
+        assert(getNSite() != 0);
         seqInfo[i].percent_gaps = ((double)num_gaps / getNSite()) * 100.0;
         if ( 50.0 < seqInfo[i].percent_gaps ) {
             num_problem_seq++;
@@ -724,6 +725,7 @@ Alignment *Alignment::removeAndFillUpGappySites() {
                 count_gaps++;
             }
         }
+        assert(getNSeq() != 0);
         if (count_gaps / getNSeq() <= 0.7) {
             keep_patterns.push_back(idx);
         }
@@ -1712,6 +1714,7 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
     if (verbose_mode >= VB_MED) {
         cout << "Sequence Type detection took " << (getRealTime()-detectStart) << " seconds." << endl;
     }
+    assert(num_ungap != 0);
     if (((double)num_nuc) / num_ungap > 0.9) {
         return SEQ_DNA;
     }
@@ -3415,6 +3418,7 @@ int Alignment::readCountsFormat(char* filename, char* sequence_type) {
     cout << "----------------------------------------------------------------------" << endl << endl;
 
     // Check if N is not too large.
+    assert(n_sites_sum != 0);
     n_samples_bar = n_samples_sum / (double) n_sites_sum;
     cout << "The average number of samples is " << n_samples_bar << endl;
     if ((pomo_sampling_method == SAMPLING_WEIGHTED_BINOM) &&
@@ -4764,6 +4768,7 @@ void Alignment::countConstSite() {
             num_variant_sites += it->frequency;
         }
     }
+    assert(getNSite() != 0);
     frac_const_sites = ((double)num_const_sites) / getNSite();
     frac_invariant_sites = ((double)num_invariant_sites) / getNSite();
 }
@@ -4938,11 +4943,13 @@ double Alignment::computeObsDist(int seq1, int seq2) {
         }
         return MAX_GENETIC_DIST; // return +INF if no overlap between two sequences
     }
+    assert(total_pos);
     return ((double)diff_pos) / total_pos;
 }
 
 double Alignment::computeJCDistanceFromObservedDistance(double obs_dist) const
 {
+    assert(num_states-1 != 0);
     double z = (double)num_states / (num_states-1);
     double x = 1.0 - (z * obs_dist);
     if (x <= 0) {

@@ -235,6 +235,7 @@ double PartitionModelPlen::optimizeGeneRate(double gradient_epsilon)
 #endif
     for (int j = 0; j < tree->size(); j++) {
         int i = tree->part_order[j];
+        assert(tree->at(i)->getAlnNSite() != 0);
         double min_scaling = 1.0/tree->at(i)->getAlnNSite();
         double max_scaling = nsites / tree->at(i)->getAlnNSite();
         if (max_scaling < tree->part_info[i].part_rate)

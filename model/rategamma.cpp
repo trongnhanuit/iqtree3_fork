@@ -109,6 +109,7 @@ void RateGamma::computeRates() {
 	if (!cut_median) {
 		computeRatesMean();
 	} else {
+        assert(ncategory != 0);
 		for (cat = 0; cat < ncategory; cat ++) {
 			double prob = ( 2.0 * cat + 1 ) / (2.0 * ncategory);
 			double perPoint_ = cmpPointChi2 (prob, 2.0 * gamma_shape) / (2.0 * gamma_shape);

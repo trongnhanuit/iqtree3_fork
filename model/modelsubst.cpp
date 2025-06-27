@@ -18,6 +18,7 @@ ModelSubst::ModelSubst(int nstates) : Optimization(), CheckpointFactory()
 	name = "JC";
 	full_name = "JC (Juke and Cantor, 1969)";
 	state_freq = new double[num_states];
+    assert(num_states != 0);
 	for (int i = 0; i < num_states; i++)
 		state_freq[i] = 1.0 / num_states;
 	freq_type = FREQ_EQUAL;
@@ -60,6 +61,7 @@ void ModelSubst::restoreCheckpoint() {
 
 // here the simplest Juke-Cantor model is implemented, valid for all kind of data (DNA, AA,...)
 void ModelSubst::computeTransMatrix(double time, double *trans_matrix, int mixture, int selected_row) {
+    assert(num_states != 0);
 	double non_diagonal = (1.0 - exp(-time*num_states/(num_states - 1))) / num_states;
 	double diagonal = 1.0 - non_diagonal * (num_states - 1);
 	int nstates_sqr = num_states * num_states;
@@ -73,10 +75,12 @@ void ModelSubst::computeTransMatrix(double time, double *trans_matrix, int mixtu
 
 
 double ModelSubst::computeTrans(double time, int state1, int state2) {
+    assert(num_states-1 != 0);
 	double expt = exp(-time * num_states / (num_states-1));
 	if (state1 != state2) {
 		return (1.0 - expt) / num_states;
 	}
+    assert(num_states != 0);
 	return (1.0 + (num_states-1)*expt) / num_states;
 
 /*	double non_diagonal = (1.0 - exp(-time*num_states/(num_states - 1))) / num_states;
@@ -90,8 +94,10 @@ double ModelSubst::computeTrans(double time, int model_id, int state1, int state
 }
 
 double ModelSubst::computeTrans(double time, int state1, int state2, double &derv1, double &derv2) {
+    assert(num_states-1 != 0);
 	double coef = -double(num_states) / (num_states-1);
 	double expt = exp(time * coef);
+    assert(num_states != 0);
 	if (state1 != state2) {
 		derv1 = expt / (num_states-1);
 		derv2 = derv1 * coef;
@@ -121,6 +127,7 @@ void ModelSubst::getQMatrix(double *q_mat, int mixture) {
 }
 
 void ModelSubst::getStateFrequency(double *state_freq, int mixture) {
+    assert(num_states != 0);
 	double freq = 1.0 / num_states;
 	for (int i = 0; i < num_states; i++)
 		state_freq[i] = freq;
@@ -133,7 +140,9 @@ void ModelSubst::setStateFrequency(double *state_freq) {
 void ModelSubst::computeTransDerv(double time, double *trans_matrix, 
 		double *trans_derv1, double *trans_derv2, int mixture)
 {
+    assert(num_states-1 != 0);
 	double expf = exp(-time*num_states/(num_states - 1));
+    assert(num_states != 0);
 	double non_diag = (1.0 - expf) / num_states;
 	double diag = 1.0 - non_diag * (num_states - 1);
 	double derv1_non_diag = expf / (num_states-1);

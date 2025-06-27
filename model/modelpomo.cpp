@@ -760,6 +760,7 @@ ModelPoMo::estimateEmpiricalWattersonTheta()
         phylo_tree->aln->computeAbsoluteStateFreq(abs_state_freq);
         for (int i = 0; i < n_alleles; i++) sum_fix += abs_state_freq[i];
         for (int i = n_alleles; i < num_states; i++) sum_pol += abs_state_freq[i];
+        assert(sum_fix + sum_pol != 0);
         theta_p = (double) sum_pol / (double) (sum_fix + sum_pol);
         // TODO DS: This is wrong because Watterson's estimator is
         // expected to decrease when sampling step is performed.  Some
@@ -789,6 +790,7 @@ ModelPoMo::estimateEmpiricalWattersonTheta()
         }
         // Calculate Watterson Theta per site.
         double theta_w_temp = sum_theta_w;
+        assert(sum_fix + sum_pol != 0);
         sum_theta_w = theta_w_temp / (double) (sum_fix + sum_pol);
         theta_p = sum_theta_w;
     }

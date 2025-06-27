@@ -189,6 +189,7 @@ void RateMeyerHaeseler::initializeRates() {
 		double obs_diff = double(diff) / total;
 		double tolog = 1.0 - obs_diff*nstate/(nstate-1);
 		if (tolog > 0.0) {
+            assert(nstate != 0);
 			at(rate_id) = -log(tolog) * (nstate-1) / nstate;
 		} else at(rate_id) = obs_diff;
 		

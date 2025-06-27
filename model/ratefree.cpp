@@ -182,6 +182,7 @@ void RateFree::initFromCatMinusOne(Checkpoint &ckp, double scale_factor) {
     ASSERT(fabs(sum-1.0) < 0.01);
 
     // BQM 2024-06-22: new strategy
+    assert(ncategory != 0);
     double scale = (ncategory-scale_factor) / ncategory;
     // down-scale previous categories
     for (i = 0; i < ncategory-1; i++)

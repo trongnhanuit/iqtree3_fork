@@ -152,6 +152,7 @@ vector<short int> AliSimulatorHeterogeneity::regenerateSequenceMixtureModel(int 
     ModelSubst* model = tree->getModel();
     int num_models = model->getNMixtures();
     int num_states = tree->aln->getMaxNumStates();
+    ASSERT(num_states >= 0);
     
     // initialize base frequencies maxtrix
     double * base_freqs_all_components = new double[num_models * num_states];

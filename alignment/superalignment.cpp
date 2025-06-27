@@ -1672,6 +1672,7 @@ double SuperAlignment::computeDist(int seq1, int seq2) {
     }
 	double obs_dist = computeObsDist(seq1, seq2);
     int num_states = partitions[0]->num_states;
+    ASSERT(num_states >= 0);
     double z = (double)num_states / (num_states-1);
     double x = 1.0 - (z * obs_dist);
 

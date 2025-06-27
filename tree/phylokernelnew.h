@@ -900,6 +900,7 @@ template<class VectorClass>
 void PhyloTree::computePartialInfo(TraversalInfo &info, VectorClass* buffer, double *echildren, double *partial_lh_leaves) {
 
 #ifndef KERNEL_FIX_STATES
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
 
@@ -1158,6 +1159,7 @@ void PhyloTree::computeTraversalInfo(PhyloNode *node, PhyloNode *dad, bool compu
 
     traversal_info.clear();
 #ifndef KERNEL_FIX_STATES
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
     // reserve beginning of buffer_partial_lh for other purpose
@@ -1312,6 +1314,7 @@ void PhyloTree::computePartialLikelihoodGenericSIMD(TraversalInfo &info
 
 
 #ifndef KERNEL_FIX_STATES
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
     const size_t states_square = nstates*nstates;
@@ -2063,6 +2066,7 @@ void PhyloTree::computeLikelihoodBufferGenericSIMD(PhyloNeighbor *dad_branch, Ph
     PhyloNeighbor *node_branch = (PhyloNeighbor*) node->findNeighbor(dad);
 
 #ifndef KERNEL_FIX_STATES
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
     size_t orig_nptn = aln->size();
@@ -2263,6 +2267,7 @@ void PhyloTree::computeLikelihoodDervGenericSIMD(PhyloNeighbor *dad_branch, Phyl
 #endif
 
 #ifndef KERNEL_FIX_STATES
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
     size_t ncat = site_rate->getNRate();
@@ -2684,6 +2689,7 @@ double PhyloTree::computeLikelihoodBranchGenericSIMD(PhyloNeighbor *dad_branch, 
 #endif
     double tree_lh = 0.0;
 #ifndef KERNEL_FIX_STATES
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
     size_t ncat = site_rate->getNRate();
@@ -3292,6 +3298,7 @@ double PhyloTree::computeLikelihoodFromBufferGenericSIMD()
 	ASSERT(theta_all && theta_computed);
 
 #ifndef KERNEL_FIX_STATES
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
     size_t ncat = site_rate->getNRate();
@@ -3521,6 +3528,7 @@ void PhyloTree::computeLikelihoodDervMixlenGenericSIMD(PhyloNeighbor *dad_branch
     computeTraversalInfo<VectorClass, nstates>(node, dad, false);
 #else
     computeTraversalInfo<VectorClass>(node, dad, false);
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 #endif
 

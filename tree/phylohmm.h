@@ -22,6 +22,7 @@ inline double logDotProd(double* ln_x, double* ln_y, int n) {
     size_t i;
     double* w;
     double ans;
+    ASSERT(n >= 0);
     
     w = new double[n];
     for (i = 0; i < n; i++) {

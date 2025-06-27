@@ -416,6 +416,7 @@ void printSiteProbCategory(const char*filename, PhyloTree *tree, SiteLoglType ws
 
 void printSiteStateFreq(const char*filename, PhyloTree *tree, double *state_freqs) {
     size_t nsites = tree->getAlnNSite();
+    ASSERT(tree->aln->num_states >= 0);
     size_t nstates = tree->aln->num_states;
     double *ptn_state_freq;
     if (state_freqs) {

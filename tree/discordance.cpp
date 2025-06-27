@@ -364,6 +364,7 @@ void PhyloTree::computeSubtreeAncestralState(PhyloNeighbor *dad_branch, PhyloNod
     double *ptn_ancestral_prob, int *ptn_ancestral_seq)
 {
     size_t nptn = getAlnNPattern();
+    ASSERT(model->num_states >= 0);
     size_t nstates = model->num_states;
     size_t nstates_vector = nstates * vector_size;
     size_t ncat_mix = (model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures();
@@ -450,6 +451,7 @@ double* PhyloTree::newAncestralProb() {
         return aligned_alloc<double>(total_size);
     } else {
         size_t nptn = getAlnNPattern();
+        ASSERT(model->num_states >= 0);
         size_t nstates = model->num_states;
         return aligned_alloc<double>(nptn*nstates);
     }

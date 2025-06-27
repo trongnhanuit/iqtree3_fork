@@ -1427,6 +1427,7 @@ void PhyloTree::computePatternStateFreq(double *ptn_state_freq) {
     size_t nptn = getAlnNPattern();
     size_t nmixture = getModel()->getNMixtures();
     double *ptn_freq = ptn_state_freq;
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
 //    ModelMixture *models = (ModelMixture*)model;
     
@@ -5988,6 +5989,7 @@ void PhyloTree::reorientPartialLh(PhyloNeighbor* dad_branch, Node *dad) {
 
 bool PhyloTree::computeTraversalInfo(PhyloNeighbor *dad_branch, PhyloNode *dad, double* &buffer) {
 
+    ASSERT(aln->num_states >= 0);
     size_t nstates = aln->num_states;
     PhyloNode *node = (PhyloNode*)dad_branch->node;
 

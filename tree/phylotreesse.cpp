@@ -1449,6 +1449,7 @@ void PhyloTree::initMarginalAncestralState(ostream &out, bool &orig_kernel_nonre
     _pattern_lh_cat_state = newPartialLh();
 
     size_t nptn = getAlnNPattern();
+    ASSERT(model->num_states >= 0);
     size_t nstates = model->num_states;
 
     ptn_ancestral_prob = aligned_alloc<double>(nptn*nstates);
@@ -1458,6 +1459,7 @@ void PhyloTree::initMarginalAncestralState(ostream &out, bool &orig_kernel_nonre
 void PhyloTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad,
     double *ptn_ancestral_prob, int *ptn_ancestral_seq) {
     size_t nptn = getAlnNPattern();
+    ASSERT(model->num_states >= 0);
     size_t nstates = model->num_states;
     size_t nstates_vector = nstates * vector_size;
     size_t ncat_mix = (model_factory->fused_mix_rate) ? site_rate->getNRate() : site_rate->getNRate()*model->getNMixtures();
@@ -1510,6 +1512,7 @@ void PhyloTree::computeMarginalAncestralState(PhyloNeighbor *dad_branch, PhyloNo
 
 void PhyloTree::writeMarginalAncestralState(ostream &out, PhyloNode *node, double *ptn_ancestral_prob, int *ptn_ancestral_seq) {
     size_t nsites = aln->getNSite();
+    ASSERT(model->num_states >= 0);
     size_t nstates = model->num_states;
     for (size_t site = 0; site < nsites; ++site) {
         int ptn = aln->getPatternID(site);
@@ -1734,6 +1737,7 @@ void PhyloTree::computeAncestralLikelihood(PhyloNeighbor *dad_branch, PhyloNode 
     }
     
     size_t nptn = aln->getNPattern();
+    ASSERT(model->num_states >= 0);
     size_t nstates = model->num_states;
     size_t nstatesqr = nstates*nstates;
     size_t parent, child;
@@ -1883,6 +1887,7 @@ void PhyloTree::computeAncestralState(PhyloNeighbor *dad_branch, PhyloNode *dad,
         return;
 
     size_t nptn = aln->getNPattern();
+    ASSERT(model->num_states >= 0);
     size_t nstates = model->num_states;
 
     const int *C_node = C + ((node->id-leafNum)*nptn*nstates);

@@ -121,6 +121,7 @@ string ModelFactoryMixlen::sortClassesByTreeLength() {
             // assigning memory for individual models
             int m = 0;
             int num_states = model->num_states;
+            ASSERT(num_states >= 0);
             for (m = 0; m < nmix; m++) {
                 ((ModelMarkov*)model->getMixtureClass(m))->setEigenvalues(&model->getEigenvalues()[m*num_states]);
                 ((ModelMarkov*)model->getMixtureClass(m))->setEigenvectors(&model->getEigenvectors()[m*num_states*num_states]);

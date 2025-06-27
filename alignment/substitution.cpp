@@ -1,6 +1,6 @@
 #include "substitution.h"
 
-using namespace std;
+// using namespace std;
 
 Substitution::Substitution(const std::string& sub_str, Alignment* const aln, const int& seq_length)
 {

@@ -18,7 +18,7 @@
 #include "utils/checkpoint.h"
 #include "phylo-yaml/statespace.h"
 
-using namespace std;
+// using namespace std;
 
 const char OPEN_BRACKET = '{';
 const char CLOSE_BRACKET = '}';

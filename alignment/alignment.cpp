@@ -27,7 +27,7 @@
 #endif
 
 
-using namespace std;
+// using namespace std;
 using namespace Eigen;
 
 char symbols_protein[] = "ARNDCQEGHILKMFPSTWYVX"; // X for unknown AA

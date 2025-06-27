@@ -18,7 +18,7 @@
 //#include "phylokernelmixture.h"
 #include "modelpomomixture.h"
 
-using namespace std;
+// using namespace std;
 
 const char* builtin_mixmodels_definition = R"(
 #nexus

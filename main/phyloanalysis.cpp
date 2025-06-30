@@ -5159,10 +5159,10 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
         cout << "Alignment sites statistics printed to " << site_info_file << endl;
     }
 
-    runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment);
+    runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment, model_info);
 }
 
-void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&alignment)
+void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&alignment, ModelCheckpoint *model_info)
 {
     /*************** initialize tree ********************/
     tree = newIQTree(params, alignment);

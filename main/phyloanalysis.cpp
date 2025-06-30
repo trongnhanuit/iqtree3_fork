@@ -5362,10 +5362,10 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
             all_non_gapped_aln = true;
         // otherwise, if there is at least one non-gapped partition => others are gapped
         // return an error
-        else if (count_non_gapped_parts > 0)
+        /*else if (count_non_gapped_parts > 0)
         {
             outError("Sorry! Currently we don't support `-gap-esr` and `-gap-asr` if some partitions are gapped while some others are non-gapped. They could be all either gapped or non-gapped.");
-        }
+        }*/
             
     }
     // if the alignment contains only non-gap characters

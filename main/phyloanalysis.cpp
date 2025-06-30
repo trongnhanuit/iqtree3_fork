@@ -5408,9 +5408,9 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     // Run ModelFinder to select the rate heterogeneity model
     params.model_name = "";
     // fix the substitution model to GTR2
-    params.model_set = "GTR2";
+    params.model_set = "GTR2,JC2";
     // consider all rate models
-    params.ratehet_set = "E,I,G,I+G,R,I+R";
+    params.ratehet_set = "AUTO";
     
     // disable sequence reconstruction flags to avoid recursively evoking this function
     params.print_ancestral_sequence = AST_NONE;

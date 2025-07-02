@@ -6034,6 +6034,12 @@ void parseArg(int argc, char *argv[], Params &params) {
 
     if (params.num_bootstrap_samples && params.partition_type == TOPO_UNLINKED)
         outError("-b bootstrap option does not work with -S yet.");
+    
+    // ASR/ESR are not supported with TOPO_UNLINKED
+    if (params.partition_type == TOPO_UNLINKED
+        && (params.print_ancestral_sequence != AST_NONE
+            || params.print_extant_seqs))
+        outError("ASR and ESR do not work with unlinked topology (-S) yet.");
 
     //added to remove situations where we're optimizing a linked rate matrix when we really shouldn't be -JD
     if (params.optimize_linked_gtr && params.model_name.find("GTR") == string::npos && params.model_joint.find("GTR") == string::npos)

@@ -5407,8 +5407,13 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     // reset several program variables
     // Run ModelFinder to select the rate heterogeneity model
     params.model_name = "";
-    // fix the substitution model to GTR2
-    params.model_set = "GTR2,JC2";
+    // specify a set of substitution models for ModelFinder
+    // reversible models: JC2 or GTR2
+    if (original_tree->getModel()->isReversible())
+        params.model_set = "GTR2,JC2";
+    // non-reversible model: must be UNREST
+    else
+        params.model_set = "UNREST";
     // consider all rate models
     params.ratehet_set = "AUTO";
     

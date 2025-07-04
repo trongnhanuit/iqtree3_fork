@@ -294,7 +294,16 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
         if (is_ancestral)
             tree->getInternalNodes(nodes);
         else
+        {
             tree->getTaxa(nodes);
+            
+            // don't output the fake root
+            const string FAKE_ROOT_NAME = ROOT_NAME;
+            nodes.erase(std::remove_if(nodes.begin(), nodes.end(),
+                        [&FAKE_ROOT_NAME](Node* node) {
+                            return node->name == FAKE_ROOT_NAME;
+                        }), nodes.end());
+        }
         
         double *marginal_ancestral_prob;
         int *marginal_ancestral_seq;

@@ -1654,3 +1654,23 @@ void PhyloSuperTree::printBestPartitionParams(const char *filename) {
         outError(ERR_WRITE_OUTPUT, filename);
     }
 }
+
+void PhyloSuperTree::validatePartitionModel()
+{
+    // don't check if there is no partition
+    if (empty()) return;
+    
+    // don't check if the model is null
+    if (!front()->model) return;
+    
+    // init type of model using the first partition
+    const bool is_reversible = front()->model->isReversible();
+    
+    // loop over all other partitions
+    for (iterator it = begin(); it != end(); it++) {
+        if ((*it)->model != nullptr && (*it)->model->isReversible() != is_reversible)
+        {
+            outError("All partitions must use EITHER reversible OR non-reversible models. Please check!");
+        }
+    }
+}

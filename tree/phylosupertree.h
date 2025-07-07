@@ -507,6 +507,11 @@ public:
         @param filename output file name
      */
     void printBestPartitionParams(const char *filename);
+    
+    /**
+        validate partition models: all partitions must use either reversible or non-reversible models
+     */
+    void validatePartitionModel();
 
     
     /** True when mixed codon with other data type */

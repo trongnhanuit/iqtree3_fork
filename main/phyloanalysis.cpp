@@ -5361,6 +5361,9 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     {
         delete alignment;
         
+        if (verbose_mode >= VB_MIN)
+            cout << "----- Finish reconstructing gapped sequences -----" << endl;
+        
         return nullptr;
     }
     

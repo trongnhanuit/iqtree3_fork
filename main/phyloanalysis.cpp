@@ -5411,12 +5411,30 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     // Run ModelFinder to select the rate heterogeneity model
     params.model_name = "";
     // specify a set of substitution models for ModelFinder
+    // detect the model type from the original tree
+    bool is_reversible_model = original_tree->getModel()->isReversible();
+    if (original_tree->isSuperTree())
+    {
+        PhyloSuperTree* supertree = (PhyloSuperTree*) original_tree;
+        ASSERT(supertree->front() && supertree->front()->getModel());
+        
+        // we already check and make sure all partitions must use either non-reversible or reversible models
+        // see commit "don't allow mixing reversible and non-reversible models in partitions - dbb0f69e"
+        // so here we only need to check the model type of the first partition
+        is_reversible_model = supertree->front()->getModel()->isReversible();
+    }
+    
     // reversible models: JC2 or GTR2
-    if (original_tree->getModel()->isReversible())
+    const bool bk_allow_nonrev_bin = Params::getInstance().allow_nonrev_bin;
+    if (is_reversible_model)
         params.model_set = "GTR2,JC2";
     // non-reversible model: must be UNREST
     else
+    {
         params.model_set = "UNREST";
+        // temporarily set allow_nonrev_bin of the common/global Params to true
+        Params::getInstance().allow_nonrev_bin = true;
+    }
     // consider all rate models
     params.ratehet_set = "AUTO";
     
@@ -5461,6 +5479,9 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     }
      
     runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment);
+    
+    // restore allow_nonrev_bin of the common/global Params
+    Params::getInstance().allow_nonrev_bin = bk_allow_nonrev_bin;
     
     // Don't set finished = true for the checkpoint of the binary-data run
     // To avoid the case when the interuption occurs between the end of the binary-data run and the original-data run

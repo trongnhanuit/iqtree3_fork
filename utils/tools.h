@@ -2038,6 +2038,9 @@ public:
     
     /** TRUE to reconstruct (ancestral/extant) sequences with gap prediction */
     bool gapped_seq_reconstruction;
+    
+    /** TRUE to allow nonrev (UNREST) models for binary data */
+    bool allow_nonrev_bin;
 
     /**
         0: print nothing

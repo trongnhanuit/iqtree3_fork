@@ -1355,6 +1355,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.min_ancestral_prob = 0.0;
     params.print_extant_seqs = false;
     params.gapped_seq_reconstruction = false;
+    params.allow_nonrev_bin = false;
     params.print_tree_lh = false;
     params.lambda = 1;
     params.speed_conf = 1.0;

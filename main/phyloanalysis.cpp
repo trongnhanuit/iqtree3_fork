@@ -1275,12 +1275,30 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
         cout << "  Marginal probability:          " << params.out_prefix << ".mprob" << endl;
 
     if (params.print_ancestral_sequence) {
-        cout << "  Ancestral state:               " << params.out_prefix << ".state" << endl;
+        // if using topology unlinked, output written in separate files
+        if (params.partition_type == TOPO_UNLINKED)
+        {
+            cout << "  Ancestral state:               " << params.out_prefix << "_part*" << ".state" << endl;
+        }
+        // otherwise, output in a single file
+        else
+        {
+            cout << "  Ancestral state:               " << params.out_prefix << ".state" << endl;
+        }
 //        cout << "  Ancestral sequences:           " << params.out_prefix << ".aseq" << endl;
     }
     
     if (params.print_extant_seqs) {
-        cout << "  Extant state:                  " << params.out_prefix << ".extant.state" << endl;
+        // if using topology unlinked, output written in separate files
+        if (params.partition_type == TOPO_UNLINKED)
+        {
+            cout << "  Extant state:                  " << params.out_prefix << "_part*" << ".extant.state" << endl;
+        }
+        // otherwise, output in a single file
+        else
+        {
+            cout << "  Extant state:                  " << params.out_prefix << ".extant.state" << endl;
+        }
     }
 
     if (params.write_intermediate_trees)
@@ -2665,12 +2683,52 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     if (iqtree.params->gapped_seq_reconstruction)
         gsr_tree = reconstructGappedSeqs(*iqtree.params, &iqtree);
     
-    if (params.print_ancestral_sequence) {
-        printAncestralSequences(params.out_prefix, &iqtree, gsr_tree, params.print_ancestral_sequence);
-    }
-    
-    if (params.print_extant_seqs) {
-        printExtantSequences(((string)params.out_prefix + ".extant").c_str(), &iqtree, gsr_tree);
+    // print ancestral/extant sequences if reconstructed
+    if (params.print_ancestral_sequence || params.print_extant_seqs)
+    {
+        // if using Topology unlinked -> print each partition independently
+        if (iqtree.isSuperTree() && params.partition_type == TOPO_UNLINKED)
+        {
+            PhyloSuperTree* stree = (PhyloSuperTree*) &iqtree;
+            const string output_prefix = params.out_prefix;
+            ASSERT(!gsr_tree || gsr_tree->isSuperTree());
+            for (size_t part_id = 0; part_id < stree->size(); ++part_id)
+            {
+                // init the output prefix
+                string partition_prefix = output_prefix + "_part" + convertIntToString(part_id + 1);
+                
+                // extract the gsr_tree
+                PhyloTree* partition_gsr_tree = gsr_tree;
+                if (gsr_tree->isSuperTree())
+                {
+                    partition_gsr_tree = ((PhyloSuperTree*)gsr_tree)->at(part_id);
+                }
+                
+                // print ancestral sequences reconstructed for this partition
+                if (params.print_ancestral_sequence)
+                {
+                    printAncestralSequences(partition_prefix.c_str(), stree->at(part_id), partition_gsr_tree, params.print_ancestral_sequence);
+                }
+                
+                // print extant sequences reconstructed for this partition
+                if (params.print_extant_seqs) {
+                    printExtantSequences((partition_prefix + ".extant").c_str(), stree->at(part_id), partition_gsr_tree);
+                }
+            }
+        }
+        // otherwise, print output normally
+        else
+        {
+            // print ancestral sequences reconstructed for this partition
+            if (params.print_ancestral_sequence) {
+                printAncestralSequences(params.out_prefix, &iqtree, gsr_tree, params.print_ancestral_sequence);
+            }
+            
+            // print extant sequences reconstructed for this partition
+            if (params.print_extant_seqs) {
+                printExtantSequences(((string)params.out_prefix + ".extant").c_str(), &iqtree, gsr_tree);
+            }
+        }
     }
     
     // clean up the dummy tree and alignment for reconstructing gapped sequences

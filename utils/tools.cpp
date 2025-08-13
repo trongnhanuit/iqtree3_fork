@@ -5800,6 +5800,12 @@ void parseArg(int argc, char *argv[], Params &params) {
                 continue;
             }
             
+            if (strcmp(argv[cnt], "--keep-gaps") == 0) {
+                params.alisim_keep_gaps_root = true;
+                
+                continue;
+            }
+            
             if (strcmp(argv[cnt], "--single-output") == 0) {
                 params.alisim_single_output = true;
                 
@@ -6116,6 +6122,14 @@ void parseArg(int argc, char *argv[], Params &params) {
             strcpy(params.user_file, output_filepath.c_str());
         }
         params.out_prefix = params.user_file;
+    }
+    
+    // ignore --keep-gap option if users don't specify a root sequence
+    if (params.alisim_keep_gaps_root
+        && (params.root_ref_seq_aln == "" || params.root_ref_seq_name == ""))
+    {
+        params.alisim_keep_gaps_root = false;
+        outWarning("Ignore the `--keep-gaps` option since no root sequence was specified via `--root-seq` option.");
     }
     
     // set the number of sites per state at 3 (for CODON)
@@ -7965,6 +7979,7 @@ void Params::setDefault() {
     alisim_inference_mode = false;
     alisim_no_copy_gaps = false;
     alisim_sequence_length = 1000;
+    alisim_keep_gaps_root = false;
     alisim_dataset_num = 1;
     root_ref_seq_aln = "";
     root_ref_seq_name = "";

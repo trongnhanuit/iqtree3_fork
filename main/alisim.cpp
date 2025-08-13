@@ -614,6 +614,10 @@ void retrieveAncestralSequenceFromInputFile(AliSimulator *super_alisimulator, ve
     if (super_alisimulator->tree->isSuperTree() && sequence_length != super_alisimulator->tree->getAlnNSite())
         outError("The length of the ancestral sequence must be equal to the total length of all partitions");
     
+    // variables for keeping gaps
+    const bool keep_gaps = super_alisimulator->params->alisim_keep_gaps_root;
+    const short int STATE_UNKNOWN = src_tree->aln->STATE_UNKNOWN;
+    
     sequence.resize(sequence_length);
     ostringstream err_str;
     int num_error = 0;
@@ -625,6 +629,14 @@ void retrieveAncestralSequenceFromInputFile(AliSimulator *super_alisimulator, ve
             // NHANLT: potential improvement
             // change to use pointer of sequence_str to avoid accessing sequence_str[]
             sequence[i] = src_tree->aln->getCodonStateTypeFromSites(src_tree->aln->convertState(sequence_str[site_index], SEQ_DNA), src_tree->aln->convertState(sequence_str[site_index+1], SEQ_DNA), src_tree->aln->convertState(sequence_str[site_index+2], SEQ_DNA), sequence_name, site_index, err_str, num_error);
+            
+            // Handle invalid/unknown state
+            if (sequence[i] >= max_num_states)
+            {
+                // if users don't want to keep gaps, randomly sample one state
+                if (!(keep_gaps && sequence[i] == STATE_UNKNOWN))
+                    sequence[i] = random_int(max_num_states);
+            }
         }
     }
     else
@@ -635,7 +647,11 @@ void retrieveAncestralSequenceFromInputFile(AliSimulator *super_alisimulator, ve
         
             // Handle invalid/unknown state
             if (sequence[i] >= max_num_states)
-                sequence[i] = random_int(max_num_states);
+            {
+                // if users don't want to keep gaps, randomly sample one state
+                if (!(keep_gaps && sequence[i] == STATE_UNKNOWN))
+                    sequence[i] = random_int(max_num_states);
+            }
         }
     }
     

@@ -2575,6 +2575,11 @@ public:
     bool alisim_no_copy_gaps;
     
     /**
+    *  TRUE to keep the gaps from the user-specified root sequence
+    */
+    bool alisim_keep_gaps_root;
+    
+    /**
     *  original parameters
     */
     string original_params;

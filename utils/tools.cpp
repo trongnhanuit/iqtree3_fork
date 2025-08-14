@@ -1324,6 +1324,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.write_intermediate_trees = 0;
 //    params.avoid_duplicated_trees = false;
     params.writeDistImdTrees = false;
+    params.compute_bsd = false;
     params.rf_dist_mode = 0;
     params.rf_same_pair = false;
     params.normalize_tree_dist = false;
@@ -4094,6 +4095,14 @@ void parseArg(int argc, char *argv[], Params &params) {
 //				params.avoid_duplicated_trees = true;
 //				continue;
 //			}
+            if (strcmp(argv[cnt], "-bsd") == 0 || strcmp(argv[cnt], "--bsd") == 0) {
+                params.compute_bsd = true;
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use -bsd <second_tree>";
+                params.second_tree = argv[cnt];
+                continue;
+            }
 			if (strcmp(argv[cnt], "-rf_all") == 0 || strcmp(argv[cnt], "--tree-dist-all") == 0) {
 				params.rf_dist_mode = RF_ALL_PAIR;
 				continue;
@@ -6167,6 +6176,12 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.sequence_type)
     {
         std::string sequence_type(params.sequence_type);
+    }
+    
+    // don't support computing RF and BSD in the same run
+    if (params.rf_dist_mode != 0 && params.compute_bsd)
+    {
+        outError("Sorry! We don't support computing RF and BSD on the same run. Please compute them one by one!");
     }
 
     // parse the profile mixture model

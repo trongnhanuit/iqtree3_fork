@@ -1919,6 +1919,11 @@ public:
      *  Write trees obtained at the end of each NNI search
      */
     bool write_candidate_trees;
+    
+    /**
+     *  TRUE to compute the Branch Score Distance (BSD)
+     */
+    bool compute_bsd;
 
 
     /**

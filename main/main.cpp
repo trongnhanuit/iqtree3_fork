@@ -1266,7 +1266,18 @@ void calcDistribution(Params &params) {
     }
 }
 
-void printRFDist(string filename, double *rfdist, int n, int m, int rf_dist_mode, bool print_msg = true) {
+void printRFDist(string filename, double *rfdist, int n, int m, int rf_dist_mode, bool print_msg = true)
+{
+    printRForBSDist(filename, "Robinson-Foulds", rfdist, n, m, rf_dist_mode, print_msg);
+}
+
+void printBSDist(string filename, double *bsdist, int n, int m, int bs_dist_mode, bool print_msg = true)
+{
+    printRForBSDist(filename, "Branch Score", bsdist, n, m, bs_dist_mode, print_msg);
+}
+
+void printRForBSDist(const string& filename, const string& dist_name, double *rfdist, int n, int m, int rf_dist_mode, bool print_msg)
+{
     int i, j;
 
     try {
@@ -1274,13 +1285,13 @@ void printRFDist(string filename, double *rfdist, int n, int m, int rf_dist_mode
         out.exceptions(ios::failbit | ios::badbit);
         out.open(filename);
         if (Params::getInstance().output_format == FORMAT_CSV) {
-            out << "# Robinson-Foulds distances" << endl
+            out << "# " << dist_name << " distances" << endl
             << "# This file can be read in MS Excel or in R with command:" << endl
             << "#    dat=read.csv('" <<  filename << "',comment.char='#')" << endl
             << "# Columns are comma-separated with following meanings:" << endl
             << "#    ID1:     Tree 1 ID" << endl
             << "#    ID2:     Tree 2 ID" << endl
-            << "#    Dist:    Robinson-Foulds distance" << endl
+            << "#    Dist:    " << dist_name << " distance" << endl
             << "ID1,ID2,Dist" << endl;
             if (rf_dist_mode == RF_ADJACENT_PAIR) {
                 for (i = 0; i < n; i++)
@@ -1312,7 +1323,7 @@ void printRFDist(string filename, double *rfdist, int n, int m, int rf_dist_mode
         }
         out.close();
         if (print_msg)
-            cout << "Robinson-Foulds distances printed to " << filename << endl;
+            cout << dist_name << " distances printed to " << filename << endl;
     } catch (ios::failure) {
         outError(ERR_WRITE_OUTPUT, filename);
     }
@@ -1476,6 +1487,38 @@ void computeRFDist(Params &params) {
 
     if (incomp_splits) delete [] incomp_splits;
     delete [] rfdist;
+}
+
+void computeBSD(Params &params) {
+
+    if (!params.user_file) outError("User tree file not provided");
+
+    // init output file name
+    string filename = params.out_prefix;
+    filename += ".bsd";
+
+    // Read the first set of trees
+    MTreeSet trees(params.user_file, params.is_rooted, params.tree_burnin, params.tree_max_count);
+    int n = trees.size(), m = trees.size();
+    
+    // Read the second set of trees
+    MTreeSet treeset2(params.second_tree, params.is_rooted, params.tree_burnin, params.tree_max_count);
+    m = treeset2.size();
+    
+    cout << "Computing Branch Score distances between two sets of trees" << endl;
+    size_t size = n*m;
+    double *bsd = new double [size];
+    memset(bsd, 0, size*sizeof(double));
+    
+    // compute BSDs
+    trees.computeRFDist(bsd, &treeset2, params.rf_same_pair);
+    
+    // print the output
+    printBSDist(filename, bsd, n, m, RF_TWO_TREE_SETS);
+
+    // deallocate memory
+    if (incomp_splits) delete [] incomp_splits;
+    delete [] bsd;
 }
 
 

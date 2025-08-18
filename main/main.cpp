@@ -1266,16 +1266,6 @@ void calcDistribution(Params &params) {
     }
 }
 
-void printRFDist(string filename, double *rfdist, int n, int m, int rf_dist_mode, bool print_msg = true)
-{
-    printRForBSDist(filename, "Robinson-Foulds", rfdist, n, m, rf_dist_mode, print_msg);
-}
-
-void printBSDist(string filename, double *bsdist, int n, int m, int bs_dist_mode, bool print_msg = true)
-{
-    printRForBSDist(filename, "Branch Score", bsdist, n, m, bs_dist_mode, print_msg);
-}
-
 void printRForBSDist(const string& filename, const string& dist_name, double *rfdist, int n, int m, int rf_dist_mode, bool print_msg)
 {
     int i, j;
@@ -1327,6 +1317,16 @@ void printRForBSDist(const string& filename, const string& dist_name, double *rf
     } catch (ios::failure) {
         outError(ERR_WRITE_OUTPUT, filename);
     }
+}
+
+void printRFDist(string filename, double *rfdist, int n, int m, int rf_dist_mode, bool print_msg = true)
+{
+    printRForBSDist(filename, "Robinson-Foulds", rfdist, n, m, rf_dist_mode, print_msg);
+}
+
+void printBSDist(string filename, double *bsdist, int n, int m, int bs_dist_mode, bool print_msg = true)
+{
+    printRForBSDist(filename, "Branch Score", bsdist, n, m, bs_dist_mode, print_msg);
 }
 
 void computeRFDistExtended(const char *trees1, const char *trees2, const char *filename) {
@@ -1495,7 +1495,7 @@ void computeBSD(Params &params) {
 
     // init output file name
     string filename = params.out_prefix;
-    filename += ".bsd";
+    filename += ".bsdist";
 
     // Read the first set of trees
     MTreeSet trees(params.user_file, params.is_rooted, params.tree_burnin, params.tree_max_count);
@@ -1511,13 +1511,12 @@ void computeBSD(Params &params) {
     memset(bsd, 0, size*sizeof(double));
     
     // compute BSDs
-    trees.computeRFDist(bsd, &treeset2, params.rf_same_pair);
+    trees.computeBSDist(bsd, &treeset2);
     
     // print the output
     printBSDist(filename, bsd, n, m, RF_TWO_TREE_SETS);
 
     // deallocate memory
-    if (incomp_splits) delete [] incomp_splits;
     delete [] bsd;
 }
 
@@ -2601,6 +2600,8 @@ int main(int argc, char *argv[]) {
         doParsMultiState(Params::getInstance());
     } else if (Params::getInstance().rf_dist_mode != 0) {
         computeRFDist(Params::getInstance());
+    } else if (Params::getInstance().compute_bsd) {
+        computeBSD(Params::getInstance());
     } else if (Params::getInstance().test_input != TEST_NONE) {
         Params::getInstance().intype = detectInputFile(Params::getInstance().user_file);
         testInputFile(Params::getInstance());

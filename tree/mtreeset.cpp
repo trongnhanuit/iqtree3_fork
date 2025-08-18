@@ -610,6 +610,17 @@ void MTreeSet::computeRFDist(double *rfdist, int mode, double weight_threshold) 
 void MTreeSet::computeRFDist(double *rfdist, MTreeSet *treeset2, bool k_by_k,
 	const char *info_file, const char *tree_file, double *incomp_splits)
 {
+    computeRForBSDist(false, rfdist, treeset2, k_by_k, info_file, tree_file, incomp_splits);
+}
+
+void MTreeSet::computeBSDist(double *bsdist, MTreeSet *treeset2)
+{
+    computeRForBSDist(true, bsdist, treeset2, false);
+}
+
+void MTreeSet::computeRForBSDist(const bool compute_bsd, double *rfdist, MTreeSet *treeset2, bool k_by_k,
+    const char *info_file, const char *tree_file, double *incomp_splits)
+{
     if (verbose_mode >= VB_MED) {
 	// exit if less than 2 trees
 #ifdef USE_HASH_MAP
@@ -685,31 +696,78 @@ void MTreeSet::computeRFDist(double *rfdist, MTreeSet *treeset2, bool k_by_k,
 		for (vector<SplitIntMap*>::iterator hsit2 = start_it; hsit2 != end_it; hsit2++, id2++) {
 			int common_splits = 0;
 			int i = 0;
+            // branch score distance
+            double bsd = 0;
+            // record all splits found in tree 2
+            std::unordered_set<Split*>found_splits2;
 			for (SplitGraph::iterator spit = (*hsit)->begin(); spit != (*hsit)->end(); spit++, i++) {
-				if ((*hsit2)->findSplit(*spit)) {
+                Split* found_split2 = (*hsit2)->findSplit(*spit);
+				if (found_split2) {
 					common_splits++;
 					if (info_file && (*spit)->trivial()<0) oinfo << " " << nodes_vec[id][i]->name;
+                    
+                    // Compute the Branch Score Distance if requested
+                    // Case 1: the corresponding split is found in tree 2
+                    // (bl1 - bl2) ^ 2
+                    if (compute_bsd)
+                    {
+                        double blength_diff = (found_split2->weight - (*spit)->weight);
+                        bsd += blength_diff * blength_diff;
+                        
+                        // record the splits found in tree2
+                        found_splits2.insert(found_split2);
+                    }
 				} else {
 					if (info_file && (*spit)->trivial()<0) oinfo << " -" << nodes_vec[id][i]->name;
 					nodes_vec[id][i]->name = "-" + nodes_vec[id][i]->name;
 					/*if (incomp_splits && !sg_vec[id2+size()]->compatible(*spit))
 						nodes_vec[id][i]->name = "-" + nodes_vec[id][i]->name;*/
-				} 
+                    
+                    // Compute the Branch Score Distance if requested
+                    // Case 2: no corresponding split is found in tree 2
+                    // (bl1) ^ 2
+                    if (compute_bsd)
+                    {
+                        double blength_diff = (*spit)->weight;
+                        bsd += blength_diff * blength_diff;
+                    }
+				}
 			}
-			double rf_val = (*hsit)->size() + (*hsit2)->size() - 2*common_splits;
-            if (Params::getInstance().normalize_tree_dist) {
-                int non_trivial = (*hsit)->size() - (*hsit)->getNTrivialSplits();
-                non_trivial += (*hsit2)->size() - ((*hsit2)->begin())->first->getNTaxa();
-                rf_val /= non_trivial;
+            
+            // Compute the Branch Score Distance if requested
+            // Handle all other splits in tree 2 but not exist in tree 1
+            // (bl2) ^ 2
+            if (compute_bsd)
+            {
+                // NHANLT: could be further optimized
+                for (auto spit = (*hsit2)->begin(); spit != (*hsit2)->end(); ++spit) {
+                    Split* split_ptr = spit->first;
+                    if (found_splits2.find(split_ptr) == found_splits2.end()) {
+                        double blength_diff = split_ptr->weight;
+                        bsd += blength_diff * blength_diff;
+                    }
+                }
+                
+                // record the bsd
+                rfdist[id * col_size + id2] = std::sqrt(bsd);
             }
-            if (k_by_k)
-                rfdist[id] = rf_val;
-            else
-                rfdist[id*col_size + id2] = rf_val;
-			if (info_file) oinfo << endl;
-			if (tree_file) { at(id)->printTree(otree); otree << endl; }
-			for (i = 0; i < nodes_vec[id].size(); i++)
-				if (nodes_vec[id][i]->name[0] == '-') nodes_vec[id][i]->name.erase(0,1);
+            // otherwise, compute RF dist
+            else {
+                double rf_val = (*hsit)->size() + (*hsit2)->size() - 2*common_splits;
+                if (Params::getInstance().normalize_tree_dist) {
+                    int non_trivial = (*hsit)->size() - (*hsit)->getNTrivialSplits();
+                    non_trivial += (*hsit2)->size() - ((*hsit2)->begin())->first->getNTaxa();
+                    rf_val /= non_trivial;
+                }
+                if (k_by_k)
+                    rfdist[id] = rf_val;
+                else
+                    rfdist[id*col_size + id2] = rf_val;
+                if (info_file) oinfo << endl;
+                if (tree_file) { at(id)->printTree(otree); otree << endl; }
+                for (i = 0; i < nodes_vec[id].size(); i++)
+                    if (nodes_vec[id][i]->name[0] == '-') nodes_vec[id][i]->name.erase(0,1);
+            }
 		}
 		if (!incomp_splits || k_by_k) continue;
 		id2 = 0;

@@ -1286,7 +1286,8 @@ void printRForBSDist(const string& filename, const string& dist_name, double *rf
             if (rf_dist_mode == RF_ADJACENT_PAIR) {
                 for (i = 0; i < n; i++)
                     out << i+1 << ',' << i+2 << ',' << rfdist[i] << endl;
-            } else if (Params::getInstance().rf_same_pair) {
+            } else if (Params::getInstance().rf_same_pair
+                       || (Params::getInstance().compute_bsd && Params::getInstance().bsd_same_pair)) {
                 for (i = 0; i < n; i++)
                     out << i+1 << ',' << i+1 << ',' << rfdist[i] << endl;
             } else {
@@ -1295,7 +1296,8 @@ void printRForBSDist(const string& filename, const string& dist_name, double *rf
                         out << i+1 << ',' << j+1 << ',' << rfdist[i*m+j] << endl;
                 }
             }
-        } else if (rf_dist_mode == RF_ADJACENT_PAIR || Params::getInstance().rf_same_pair) {
+        } else if (rf_dist_mode == RF_ADJACENT_PAIR || Params::getInstance().rf_same_pair
+                   || (Params::getInstance().compute_bsd && Params::getInstance().bsd_same_pair)) {
             out << "XXX        ";
             out << 1 << " " << n << endl;
             for (i = 0; i < n; i++)
@@ -1505,13 +1507,49 @@ void computeBSD(Params &params) {
     MTreeSet treeset2(params.second_tree, params.is_rooted, params.tree_burnin, params.tree_max_count);
     m = treeset2.size();
     
+    // validate the input
+    // 1. don't allow mixing rooted and unrooted trees
+    // check the first tree set
+    int num_rooted_trees = trees.countRooted();
+    if (num_rooted_trees != 0 && num_rooted_trees != trees.size())
+        outError("Tree set 1 contains mixed " + convertIntToString(num_rooted_trees) + " rooted and " + convertIntToString(trees.size() - num_rooted_trees) + " unrooted trees!");
+    // check the second tree set
+    num_rooted_trees = treeset2.countRooted();
+    if (num_rooted_trees != 0 && num_rooted_trees != treeset2.size())
+        outError("Tree set 2 contains mixed " + convertIntToString(num_rooted_trees) + " rooted and " + convertIntToString(treeset2.size() - num_rooted_trees) + " unrooted trees!");
+    
+    // 2. all trees must have the same taxon set
+    // check the first tree set
+    if (!trees.equal_taxon_set)
+        outError("Tree set 1 contains trees with different taxon sets!");
+    // check the second tree set
+    if (!treeset2.equal_taxon_set)
+        outError("Tree set 2 contains trees with different taxon sets!");
+    // check the first trees of the two sets
+    if (trees.front()->leafNum != treeset2.front()->leafNum)
+        outError("The two tree sets contain trees with different numbers of taxa!");
+    NodeVector taxaset1, taxaset2;
+    trees.front()->getTaxa(taxaset1);
+    treeset2.front()->getTaxa(taxaset2);
+    sort(taxaset1.begin(), taxaset1.end(), nodenamecmp);
+    sort(taxaset2.begin(), taxaset2.end(), nodenamecmp);
+    size_t i;
+    NodeVector::iterator it;
+    for (it = taxaset1.begin(), i = 0; it != taxaset1.end(); it++, i++)
+    {
+        if ((*it)->name != taxaset2[i]->name)
+        {
+            outError("The two tree sets contain trees with different taxon sets!");
+        }
+    }
+    
     cout << "Computing Branch Score distances between two sets of trees" << endl;
     size_t size = n*m;
     double *bsd = new double [size];
     memset(bsd, 0, size*sizeof(double));
     
     // compute BSDs
-    trees.computeBSDist(bsd, &treeset2);
+    trees.computeBSDist(bsd, &treeset2, params.bsd_same_pair);
     
     // print the output
     printBSDist(filename, bsd, n, m, RF_TWO_TREE_SETS);

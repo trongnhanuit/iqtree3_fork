@@ -1325,6 +1325,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 //    params.avoid_duplicated_trees = false;
     params.writeDistImdTrees = false;
     params.compute_bsd = false;
+    params.bsd_same_pair = false;
     params.rf_dist_mode = 0;
     params.rf_same_pair = false;
     params.normalize_tree_dist = false;
@@ -4100,6 +4101,15 @@ void parseArg(int argc, char *argv[], Params &params) {
                 cnt++;
                 if (cnt >= argc)
                     throw "Use -bsd <second_tree>";
+                params.second_tree = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "-bsd1") == 0 || strcmp(argv[cnt], "--bsd1") == 0) {
+                params.compute_bsd = true;
+                params.bsd_same_pair = true;
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use -bsd1 <second_tree>";
                 params.second_tree = argv[cnt];
                 continue;
             }
@@ -7791,6 +7801,8 @@ void Params::setDefault() {
     aLRT_test = false;
     aBayes_test = false;
     localbp_replicates = 0;
+    compute_bsd = false;
+    bsd_same_pair = false;
 #ifdef __AVX512KNL
     SSE = LK_AVX512;
 #else

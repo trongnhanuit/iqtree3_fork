@@ -613,9 +613,9 @@ void MTreeSet::computeRFDist(double *rfdist, MTreeSet *treeset2, bool k_by_k,
     computeRForBSDist(false, rfdist, treeset2, k_by_k, info_file, tree_file, incomp_splits);
 }
 
-void MTreeSet::computeBSDist(double *bsdist, MTreeSet *treeset2)
+void MTreeSet::computeBSDist(double *bsdist, MTreeSet *treeset2, bool k_by_k)
 {
-    computeRForBSDist(true, bsdist, treeset2, false);
+    computeRForBSDist(true, bsdist, treeset2, k_by_k);
 }
 
 void MTreeSet::computeRForBSDist(const bool compute_bsd, double *rfdist, MTreeSet *treeset2, bool k_by_k,
@@ -749,7 +749,10 @@ void MTreeSet::computeRForBSDist(const bool compute_bsd, double *rfdist, MTreeSe
                 }
                 
                 // record the bsd
-                rfdist[id * col_size + id2] = std::sqrt(bsd);
+                if (k_by_k)
+                    rfdist[id] = std::sqrt(bsd);
+                else
+                    rfdist[id * col_size + id2] = std::sqrt(bsd);
             }
             // otherwise, compute RF dist
             else {

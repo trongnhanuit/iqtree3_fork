@@ -178,8 +178,10 @@ public:
         compute the Branch Score distance between trees
         @param[out] bsdist output BS distance
         @param treeset2 second tree set
+        @param k_by_k true to compute distances between corresponding k-th tree of two tree sets,
+         false to do all-by-all
     */
-    void computeBSDist(double *bsdist, MTreeSet *treeset2);
+    void computeBSDist(double *bsdist, MTreeSet *treeset2, bool k_by_k);
     
     /**
         compute the Robinson-Foulds or the Branch Score distance between trees

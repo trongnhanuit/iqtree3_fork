@@ -1924,7 +1924,11 @@ public:
      *  TRUE to compute the Branch Score Distance (BSD)
      */
     bool compute_bsd;
-
+    
+    /**
+     *  TRUE to compute BS distance between the same k-th tree in two sets
+     */
+    bool bsd_same_pair;
 
     /**
         TRUE to avoid duplicated trees while writing intermediate trees

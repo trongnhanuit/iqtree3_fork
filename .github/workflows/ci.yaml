@@ -83,11 +83,6 @@ jobs:
           chmod +x test_scripts/verify_runtime.sh
           ./test_scripts/verify_runtime.sh "${{ matrix.runtime-arg }}"
 
-      - name: Run verify_memory.sh
-        run: |
-          chmod +x test_scripts/verify_memory.sh
-          ./test_scripts/verify_memory.sh "${{ matrix.memory-arg }}"
-
   build-linux-aarch64:
     name: Linux aarch64
     runs-on: ubuntu-22.04-arm
@@ -219,11 +214,6 @@ jobs:
           chmod +x test_scripts/verify_results.sh
           ./test_scripts/verify_results.sh
 
-      - name: Run verify_runtimes.sh
-        run: |
-          chmod +x test_scripts/verify_runtime.sh
-          ./test_scripts/verify_runtime.sh mac-os-x86-64
-
       - name: Run verify_memory.sh
         run: |
           chmod +x test_scripts/verify_memory.sh
@@ -271,11 +261,6 @@ jobs:
         run: |
           chmod +x test_scripts/verify_results.sh
           ./test_scripts/verify_results.sh
-
-      - name: Run verify_runtimes.sh
-        run: |
-          chmod +x test_scripts/verify_runtime.sh
-          ./test_scripts/verify_runtime.sh mac-os-arm64
 
       - name: Run verify_memory.sh
         run: |

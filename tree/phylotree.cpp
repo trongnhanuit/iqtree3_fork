@@ -2774,6 +2774,11 @@ double PhyloTree::optimizeAllBranches(int my_iterations, double tolerance, int m
             double max_delta_lh = 1.0;
             // Increase max delta with PoMo because log likelihood is very much lower.
             if (aln->seq_type == SEQ_POMO) max_delta_lh = 3.0;
+            // NHANLT: also increase max delta for BIN data (when reconstructing gapped ASR/ESR
+            // since there is data (e.g., from Sawsan) where new_tree_lh - tree_lh ~7.4
+            if (aln->seq_type == SEQ_BINARY && params->allow_nonrev_bin)
+                max_delta_lh = 10.0;
+            
             new_tree_lh = computeLikelihood();
             if (fabs(new_tree_lh-tree_lh) > max_delta_lh) {
                 hideProgress();

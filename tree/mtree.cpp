@@ -1835,9 +1835,6 @@ void MTree::scaleLength(double norm, bool make_int, Node *node, Node *dad) {
     if (!node) node = root;
     FOR_NEIGHBOR_DECLARE(node, NULL, it) {
         (*it)->length *= norm;
-        // avoid exceeding the maximum blength
-        if ((*it)->length > params->max_branch_length)
-            (*it)->length = params->max_branch_length;
         if (make_int)
             (*it)->length = round((*it)->length);
     }

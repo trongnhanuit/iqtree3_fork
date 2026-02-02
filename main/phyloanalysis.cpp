@@ -5498,7 +5498,7 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
         Params::getInstance().allow_nonrev_bin = true;
     }
     // consider all rate models
-    params.ratehet_set = "AUTO";
+    params.ratehet_set = "E,I,G,I+G,R";
     
     // disable sequence reconstruction flags to avoid recursively evoking this function
     params.print_ancestral_sequence = AST_NONE;

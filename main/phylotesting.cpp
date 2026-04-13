@@ -1235,6 +1235,12 @@ void getRateHet(SeqType seq_type, string model_name, double frac_invariant_sites
                 test_options = test_options_morph_fast;
             else
                 test_options = test_options_morph;
+            
+            // When reconstructing gapped ASR/ESR, we can't use +ASC on binary data
+            // Otherwise, we this assertion may fail (tree_lh-new_tree_lh < max_delta_lh)
+            // So here, we need to use test_options_noASC_I_fast when reconstructing gapped ASR/ESR
+            if (Params::getInstance().gapped_seq_reconstruction && seq_type == SEQ_BINARY)
+                test_options = test_options_noASC_I_fast;
         } else {
             if (rate_set == "1")
                 test_options = test_options_noASC_I_fast;

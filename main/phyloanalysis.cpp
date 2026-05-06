@@ -3843,6 +3843,31 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         iqtree->setAlignment(iqtree->aln);
     } else {
         iqtree->candidateTrees.saveCheckpoint();
+
+        // --print-pars-trees: generate --ninit parsimony trees and write all to .parstrees
+        if (!params.tree_spr && params.print_pars_trees && params.start_tree == STT_PARSIMONY) {
+            int numTrees = params.numInitTrees;
+            string parstrees_file = string(params.out_prefix) + ".parstrees";
+            ofstream parstrees_out(parstrees_file.c_str());
+            cout << "Generating " << numTrees << " parsimony tree(s)..." << endl;
+            double parsStartTime = getRealTime();
+            // tree #1: already loaded (built during initialization)
+            iqtree->printTree(parstrees_out, WT_BR_LEN | WT_NEWLINE);
+            // trees #2..K: generate fresh with different random orders
+            for (int i = 1; i < numTrees; i++) {
+                iqtree->computeParsimonyTree(nullptr, iqtree->aln, randstream);
+                iqtree->printTree(parstrees_out, WT_BR_LEN | WT_NEWLINE);
+            }
+            parstrees_out.close();
+            cout << numTrees << " parsimony tree(s) with parsimony branch lengths written to "
+                 << parstrees_file << " (" << getRealTime() - parsStartTime << " sec)" << endl;
+            // Re-initialize partial likelihoods since computeParsimonyTree() rebuilt the tree structure
+            if (numTrees > 1) {
+                iqtree->initializeAllPartialLh();
+                iqtree->clearAllPartialLH();
+            }
+        }
+
         /* do SPR with likelihood function */
         if (params.tree_spr) {
             //tree.optimizeSPRBranches();

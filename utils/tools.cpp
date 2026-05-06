@@ -4397,6 +4397,10 @@ void parseArg(int argc, char *argv[], Params &params) {
 				params.pars_branch_length = true;
 				continue;
 			}
+			if (strcmp(argv[cnt], "--print-pars-trees") == 0) {
+				params.print_pars_trees = true;
+				continue;
+			}
 			if (strcmp(argv[cnt], "-bayesbran") == 0) {
 				params.bayes_branch_length = true;
 				continue;
@@ -5815,6 +5819,8 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --ntop NUM           Number of top initial trees (default: 20)" << endl
     << "  --nbest NUM          Number of best trees retained during search (default: 5)" << endl
     << "  -n NUM               Fix number of iterations to stop (default: OFF)" << endl
+    << "  --print-pars-trees   Write --ninit parsimony trees with parsimony branch lengths" << endl
+    << "                       to .parstrees file; use with -n 0 to skip ML search" << endl
     << "  --nstop NUM          Number of unsuccessful iterations to stop (default: 100)" << endl
     << "  --perturb NUM        Perturbation strength for randomized NNI (default: 0.5)" << endl
     << "  --radius NUM         Radius for parsimony SPR search (default: 6)" << endl
@@ -7148,6 +7154,7 @@ void Params::setDefault() {
     brlen_num_traversal = 1;
     leastSquareBranch = false;
     pars_branch_length = false;
+    print_pars_trees = false;
     bayes_branch_length = false;
     manuel_analytic_approx = false;
     leastSquareNNI = false;

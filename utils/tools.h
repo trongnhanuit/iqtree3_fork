@@ -849,6 +849,9 @@ public:
     /** TRUE to compute parsimony branch length of final tree */
     bool pars_branch_length;
 
+    /** TRUE to output all --ninit parsimony trees (with parsimony branch lengths) to .parstrees */
+    bool print_pars_trees;
+
     /** TRUE to compute bayesian branch length for the final tree */
     bool bayes_branch_length;
 

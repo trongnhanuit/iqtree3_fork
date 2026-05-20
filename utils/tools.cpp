@@ -3746,6 +3746,11 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
+			if (strcmp(argv[cnt], "--count-subs") == 0) {
+				params.count_subs = true;
+				continue;
+			}
+
 			if (strcmp(argv[cnt], "-wsr") == 0 || strcmp(argv[cnt], "--rate") == 0) {
 				params.print_site_rate |= 1;
 				continue;
@@ -5549,6 +5554,9 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.use_nn_model && params.modelomatic)
         outError("--modelomatic option does not work with --use-nn-model.");
 
+    if (params.count_subs && !params.asr_pars)
+        outError("--count-subs requires --asr-pars");
+
     if (params.dating_method != "") {
     #ifndef USE_LSD2
         outError("IQ-TREE was not compiled with LSD2 library, rerun cmake with -DUSE_LSD2=ON option");
@@ -6003,6 +6011,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --ancestral          Ancestral state reconstruction by empirical Bayes" << endl
     << "  --asr-min NUM        Min probability of ancestral state (default: equil freq)" << endl
     << "  --asr-pars           Ancestral state reconstruction by parsimony (Fitch/Sankoff)" << endl
+    << "  --count-subs         Count pairwise substitutions along tree paths (requires --asr-pars)" << endl
 
     << endl << "TEST OF SYMMETRY:" << endl
     << "  --symtest               Perform three tests of symmetry" << endl
@@ -7279,6 +7288,7 @@ void Params::setDefault() {
     print_ancestral_sequence = AST_NONE;
     min_ancestral_prob = 0.0;
     asr_pars = false;
+    count_subs = false;
     print_tree_lh = false;
     lambda = 1;
     speed_conf = 1.0;

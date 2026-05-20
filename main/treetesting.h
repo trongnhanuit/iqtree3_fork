@@ -114,6 +114,23 @@ void printAncestralSequences(const char*filename, PhyloTree *tree, AncestralSeqT
 void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree);
 
 /**
+ * For every ordered pair of taxa (A, B) with A-index < B-index, traverse the
+ * unique tree path from A to B and count the number of substitutions of each
+ * type (e.g. A->C, G->T) along that path, weighted by alignment site
+ * frequency.  Direction follows the traversal: going from leaf up toward the
+ * LCA counts child->parent substitutions, going from LCA down to the other
+ * leaf counts parent->child substitutions.
+ *
+ * Requires --asr-pars to have been requested so that parsimony ancestral
+ * states are available.
+ *
+ * Output: TSV file <out_prefix>.subs_count.tsv with columns
+ *   TaxonA  TaxonB  s0->s1  s0->s2  ...  (one column per substitution type)
+ * Counts are summed over all alignment sites (invariant sites contribute 0).
+ */
+void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
+
+/**
  * Evaluate user-trees with possibility of tree topology tests
  * @param params program parameters
  * @param tree current tree

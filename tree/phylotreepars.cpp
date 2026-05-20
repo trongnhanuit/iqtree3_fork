@@ -654,6 +654,14 @@ void PhyloTree::computeParsimonyAncestralStream(
     stk.reserve(nodeNum);  // upper bound: stack never exceeds nodeNum entries
 
     static const vector<StateType> no_parent;  // sentinel for the root call
+
+    // IQ-TREE represents both rooted and unrooted trees with a degree-1 virtual
+    // root node (tree->root) attached to one edge:
+    //   Unrooted: tree->root is a real taxon leaf (taxon name, id < nseq).
+    //   Rooted:   tree->root is the ROOT_NAME sentinel (id == nseq).
+    // In both cases tree->root has exactly one neighbour, which is the
+    // topological root for our DFS traversal.
+    ASSERT(!root->neighbors.empty());
     PhyloNode *actual_root = (PhyloNode*)root->neighbors[0]->node;
 
     // Seed the stack: assign the actual root's state, emit it, then push

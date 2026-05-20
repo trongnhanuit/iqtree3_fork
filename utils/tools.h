@@ -2052,6 +2052,14 @@ public:
     bool asr_pars;
 
     /**
+     * true if pairwise substitution counting is requested (--count-subs).
+     * Requires --asr-pars.  For every pair of taxa (A, B) with A-index < B-index,
+     * counts the number of substitutions of each type along the tree path A→B,
+     * weighted by alignment site frequency.
+     */
+    bool count_subs;
+
+    /**
         0: print nothing
         1: print site state frequency vectors
     */

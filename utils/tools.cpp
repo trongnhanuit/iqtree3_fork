@@ -3740,6 +3740,12 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
+			if (strcmp(argv[cnt], "--asr-pars") == 0) {
+				params.asr_pars = true;
+                params.ignore_identical_seqs = false;
+				continue;
+			}
+
 			if (strcmp(argv[cnt], "-wsr") == 0 || strcmp(argv[cnt], "--rate") == 0) {
 				params.print_site_rate |= 1;
 				continue;
@@ -5996,6 +6002,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << endl << "ANCESTRAL STATE RECONSTRUCTION:" << endl
     << "  --ancestral          Ancestral state reconstruction by empirical Bayes" << endl
     << "  --asr-min NUM        Min probability of ancestral state (default: equil freq)" << endl
+    << "  --asr-pars           Ancestral state reconstruction by parsimony (Fitch/Sankoff)" << endl
 
     << endl << "TEST OF SYMMETRY:" << endl
     << "  --symtest               Perform three tests of symmetry" << endl
@@ -7271,6 +7278,7 @@ void Params::setDefault() {
     print_trees_site_posterior = 0;
     print_ancestral_sequence = AST_NONE;
     min_ancestral_prob = 0.0;
+    asr_pars = false;
     print_tree_lh = false;
     lambda = 1;
     speed_conf = 1.0;

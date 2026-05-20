@@ -33,6 +33,7 @@
 //#define EIGEN_TUNE_FOR_CPU_CACHE_SIZE (512*256)
 //#define EIGEN_TUNE_FOR_CPU_CACHE_SIZE (8*512*512)
 //#include <Eigen/Core>
+#include <functional>
 #include "mtree.h"
 #include "alignment/alignment.h"
 #include "alignment/alignmentsummary.h"
@@ -755,6 +756,24 @@ public:
      @return parsimony score of the tree
      */
     UINT computeParsimonyOutOfTreeSankoff(UINT* ptn_scores);
+
+    /**
+     * Reconstruct most-parsimonious ancestral states via a streaming DFS pre-order
+     * traversal, calling on_node(node, state_ord) for every internal node as soon
+     * as its state is computed.
+     *
+     * state_ord[i] is the reconstructed StateType for ordered_pattern[i];
+     * use aln->ordered_to_orig_ptn[i] to map to the original pattern index.
+     * The state is STATE_UNKNOWN if no admissible state exists (e.g. all-gap site).
+     *
+     * Memory: O(depth × nptn_pars × sizeof(StateType)) for the DFS stack —
+     * proportional to tree depth, not to the number of internal nodes.
+     *
+     * Handles both Fitch (cost_matrix == nullptr) and Sankoff kernels.
+     * Performs the necessary scalar down-pass internally.
+     */
+    void computeParsimonyAncestralStream(
+        std::function<void(PhyloNode*, const std::vector<StateType>&)> on_node);
 
     /****************************************************************************
             likelihood function

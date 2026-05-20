@@ -1618,6 +1618,7 @@ void Alignment::orderPatternByNumChars(int pat_type) {
     }
     quicksort(num_chars, 0, nptn-1, ptn_order);
     ordered_pattern.clear();
+    ordered_to_orig_ptn.clear();
     for (ptn = 0, site = 0, i = 0; ptn < nptn; ptn++) {
         if (pat_type == PAT_INFORMATIVE) {
             if (!at(ptn_order[ptn]).isInformative()) {
@@ -1629,6 +1630,7 @@ void Alignment::orderPatternByNumChars(int pat_type) {
             }
         }
         ordered_pattern.push_back(at(ptn_order[ptn]));
+        ordered_to_orig_ptn.push_back(ptn_order[ptn]);
         int freq = ordered_pattern.back().frequency;
         UINT num = ordered_pattern.back().num_chars - 1;
         for (int j = 0; j < freq; j++, site++) {

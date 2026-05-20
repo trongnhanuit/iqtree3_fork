@@ -456,14 +456,246 @@ int PhyloTree::setParsimonyBranchLengths() {
     }
     
     ASSERT(pars_score == sum_score);
-    
+
     return nodes1.size();
 }
 
 
-/****************************************************************************
- Sankoff parsimony function
- ****************************************************************************/
+
+/**
+ * Streaming DFS pre-order parsimony ancestral reconstruction.
+ *
+ * For every internal node visited in pre-order, calls
+ *   on_node(node, state_ord)
+ * where state_ord[i] is the reconstructed StateType for ordered_pattern[i].
+ * Use aln->ordered_to_orig_ptn[i] to map back to the original pattern index.
+ *
+ * Memory usage
+ * ------------
+ * The DFS stack holds one entry per open level of the tree (unprocessed
+ * siblings along the current root-to-leaf path).  Each entry stores a
+ * vector<StateType> of size nptn_pars (1 byte per parsimony pattern).
+ * Peak usage is therefore O(depth x nptn_pars x sizeof(StateType)), which
+ * is proportional to tree depth rather than total node count.  For typical
+ * phylogenetic trees (depth ~ log N to a few hundred) this is orders of
+ * magnitude smaller than storing all internal-node states simultaneously.
+ *
+ * Down-pass (partial_pars population)
+ * ------------------------------------
+ * After the down-pass, partial_pars on the directed edge (parent -> child)
+ * stores the DP table for the sub-tree rooted at child:
+ *   Fitch:   partial_pars[word * K + s]  bit b = 1 iff state s is
+ *            parsimoniously admissible at child for parsimony site
+ *            word*UINT_BITS + b.
+ *   Sankoff: partial_pars[ptn * K + s] = minimum total substitution cost
+ *            in the sub-tree rooted at child when child has state s,
+ *            for ordered pattern ptn.
+ *
+ * SIMD layout caveat (Fitch only):
+ *   SIMD Fitch kernels (SSE2/AVX) use an interleaved layout
+ *   partial_pars[group * K * VCSIZE + s * VCSIZE + w] that differs from the
+ *   scalar layout partial_pars[word * K + s] read by the up-pass below.
+ *   We therefore force a scalar down-pass recomputation via
+ *   clearAllPartialLH() + computeParsimonyBranchFast(), following the same
+ *   pattern as setParsimonyBranchLengths().
+ *   The SIMD Sankoff kernels write the same logical layout partial_pars[ptn*K+s]
+ *   as the scalar version (they just vectorise the inner loop over states),
+ *   so no special handling is needed for Sankoff.
+ *
+ * Up-pass (state assignment)
+ * --------------------------
+ * States are assigned in pre-order (root first, then children).  At each
+ * internal node v with assigned parent state p_state:
+ *   Fitch:   if p_state is admissible in dp_v (bit is set), inherit it
+ *            (Fitch rule: prefer no-change); otherwise pick the first
+ *            admissible state from dp_v.
+ *   Sankoff: assign argmin_s( cost[p_state * K + s] + dp_v[ptn * K + s] ),
+ *            i.e. the state that minimises the substitution cost from the
+ *            parent plus the minimum remaining sub-tree cost.
+ *   Root:    no parent constraint; pick first admissible (Fitch) or
+ *            global minimum cost (Sankoff) state from dp_root.
+ */
+void PhyloTree::computeParsimonyAncestralStream(
+    std::function<void(PhyloNode*, const std::vector<StateType>&)> on_node)
+{
+    ASSERT(aln);
+
+    const int nstates = aln->num_states;
+
+    // ordered_to_orig_ptn may be absent when resuming from an old checkpoint
+    // that predates the field; rebuild it by re-running orderPatternByNumChars.
+    if (aln->ordered_to_orig_ptn.empty())
+        aln->orderPatternByNumChars(PAT_VARIANT);
+
+    // Number of parsimony-informative (or variant) patterns — the only ones
+    // that appear in ordered_pattern and have non-trivial ancestral states.
+    const int nptn_pars = (int)aln->ordered_to_orig_ptn.size();
+
+    // -------------------------------------------------------------------------
+    // Down-pass: populate partial_pars on every directed edge (parent -> child).
+    // -------------------------------------------------------------------------
+    if (!central_partial_pars)
+        initializeAllPartialPars();
+
+    if (!cost_matrix) {
+        // Fitch path: clear parsimony cache flags so the scalar kernel
+        // recomputes from scratch, overwriting any SIMD-layout data.
+        clearAllPartialLH();
+        computeParsimonyBranchFast(
+            (PhyloNeighbor*)root->neighbors[0], (PhyloNode*)root);
+    } else {
+        // Sankoff path: the function pointer already points to the right
+        // kernel (scalar or SIMD); all variants use the same ptn*K+s layout.
+        computeParsimony();
+    }
+
+    // -------------------------------------------------------------------------
+    // Fitch only: build first_bit[pi] = the index of the first bit in the
+    // packed partial_pars array that corresponds to ordered_pattern[pi].
+    //
+    // The Fitch kernel expands each pattern by its frequency: a pattern that
+    // appears at F alignment sites occupies F consecutive bit positions.
+    // first_bit[0] = 0, first_bit[1] = freq[0], first_bit[2] = freq[0]+freq[1],
+    // etc.  We read only the first bit of each pattern for the ancestral state
+    // (all F occurrences of the same pattern yield identical states).
+    // -------------------------------------------------------------------------
+    vector<int> first_bit;
+    if (!cost_matrix) {
+        first_bit.resize(nptn_pars);
+        int pos = 0;
+        for (int i = 0; i < nptn_pars; i++) {
+            first_bit[i] = pos;
+            pos += aln->ordered_pattern[i].frequency;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // compute_state: return the ancestral state vector for a node.
+    //
+    // @param branch    the directed edge (parent -> this node); its partial_pars
+    //                  holds the down-pass DP table for this node's sub-tree.
+    // @param dad_state the already-assigned state vector of the parent node,
+    //                  indexed by ordered_pattern position.  Pass an empty
+    //                  vector for the root (no parent constraint).
+    // @return          state vector of length nptn_pars, one StateType per
+    //                  ordered pattern.  STATE_UNKNOWN if no admissible state
+    //                  exists (e.g. all-gap column).
+    // -------------------------------------------------------------------------
+    auto compute_state = [&](PhyloNeighbor *branch,
+                             const vector<StateType> &dad_state) -> vector<StateType>
+    {
+        vector<StateType> state(nptn_pars);
+        const bool is_root = dad_state.empty();
+
+        if (!cost_matrix) {
+            // ---- Fitch up-pass ----
+            for (int pi = 0; pi < nptn_pars; pi++) {
+                // Locate the single representative bit for this pattern.
+                int  bp   = first_bit[pi];
+                int  word = bp / UINT_BITS;          // which UINT word
+                UINT bit  = (UINT)1 << (bp % UINT_BITS); // which bit within that word
+
+                // dp[s] & bit == 1  iff state s is admissible at this node
+                // for the current pattern (down-pass result).
+                const UINT *dp = branch->partial_pars + (size_t)word * nstates;
+
+                if (!is_root) {
+                    // Fitch rule: inherit parent state if admissible (no extra cost).
+                    int ds = (int)dad_state[pi];
+                    if (ds < nstates && (dp[ds] & bit)) { state[pi] = (StateType)ds; continue; }
+                }
+                // Parent state not admissible (or root): pick the first admissible state.
+                state[pi] = aln->STATE_UNKNOWN;
+                for (int s = 0; s < nstates; s++)
+                    if (dp[s] & bit) { state[pi] = (StateType)s; break; }
+            }
+        } else {
+            // ---- Sankoff up-pass ----
+            for (int pi = 0; pi < nptn_pars; pi++) {
+                // dp[s] = minimum sub-tree cost when this node has state s.
+                const UINT *dp = branch->partial_pars + (size_t)pi * nstates;
+
+                if (!is_root) {
+                    // argmin_s( cost[parent_state -> s] + dp[s] )
+                    int ds = (int)dad_state[pi];
+                    const UINT *cost_row = cost_matrix + (size_t)ds * nstates;
+                    UINT best = cost_row[0] + dp[0]; StateType st = 0;
+                    for (int s = 1; s < nstates; s++) {
+                        UINT v = cost_row[s] + dp[s];
+                        if (v < best) { best = v; st = (StateType)s; }
+                    }
+                    state[pi] = st;
+                } else {
+                    // Root: no parent cost term; pick the globally cheapest state.
+                    UINT best = dp[0]; StateType st = 0;
+                    for (int s = 1; s < nstates; s++)
+                        if (dp[s] < best) { best = dp[s]; st = (StateType)s; }
+                    state[pi] = st;
+                }
+            }
+        }
+        return state;
+    };
+
+    // -------------------------------------------------------------------------
+    // DFS pre-order up-pass.
+    //
+    // Stack entries hold (node, dad, state_ord): the state is computed before
+    // the entry is pushed, so the parent's state is always available when
+    // needed for a child's computation.  Entries are moved (not copied) to
+    // avoid redundant heap allocations.
+    //
+    // IQ-TREE trees are unrooted with a virtual root node (name == ROOT_NAME,
+    // degree 1) attached to one edge.  actual_root is the real topological
+    // root of the traversal; virtual root entries are skipped throughout.
+    // -------------------------------------------------------------------------
+    struct Entry { PhyloNode *node, *dad; vector<StateType> state; };
+    vector<Entry> stk;
+    stk.reserve(nodeNum);  // upper bound: stack never exceeds nodeNum entries
+
+    static const vector<StateType> no_parent;  // sentinel for the root call
+    PhyloNode *actual_root = (PhyloNode*)root->neighbors[0]->node;
+
+    // Seed the stack: assign the actual root's state, emit it, then push
+    // all of its non-virtual, non-leaf children with their pre-computed states.
+    {
+        auto root_state = compute_state((PhyloNeighbor*)root->neighbors[0], no_parent);
+        if (!actual_root->isLeaf())
+            on_node(actual_root, root_state);
+
+        FOR_NEIGHBOR_IT(actual_root, (PhyloNode*)root, it) {
+            PhyloNode *child = (PhyloNode*)(*it)->node;
+            if (child->name == ROOT_NAME) continue;  // skip virtual root
+            auto *br = (PhyloNeighbor*)actual_root->findNeighbor(child);
+            // Compute child's state now while root_state is hot in cache,
+            // then store it in the stack entry for later emission.
+            stk.push_back({child, actual_root, compute_state(br, root_state)});
+        }
+    }
+
+    while (!stk.empty()) {
+        // Pop the next node.  Moving out of the vector avoids a copy of the
+        // potentially large state vector; the entry is destroyed at scope end.
+        Entry cur = move(stk.back());
+        stk.pop_back();
+
+        // Emit the node (leaves have known states from the alignment; only
+        // internal nodes need ancestral reconstruction).
+        if (!cur.node->isLeaf())
+            on_node(cur.node, cur.state);
+
+        // Push children: compute each child's state while cur.state is still
+        // in scope (and likely still in L1/L2 cache).
+        FOR_NEIGHBOR_IT(cur.node, cur.dad, it) {
+            PhyloNode *child = (PhyloNode*)(*it)->node;
+            if (child->name == ROOT_NAME) continue;
+            auto *br = (PhyloNeighbor*)cur.node->findNeighbor(child);
+            stk.push_back({child, cur.node, compute_state(br, cur.state)});
+        }
+        // cur goes out of scope here: cur.state memory is released,
+        // keeping the live stack footprint at O(depth x nptn_pars).
+    }
+}
 
 
 void PhyloTree::initCostMatrix(CostMatrixType cost_type) {

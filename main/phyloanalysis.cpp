@@ -1279,6 +1279,11 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
 //        cout << "  Ancestral sequences:           " << params.out_prefix << ".aseq" << endl;
     }
 
+    if (params.asr_pars) {
+        cout << "  Parsimony ancestral sequences:     " << params.out_prefix << ".asr_pars.fasta" << endl;
+        cout << "  Parsimony ancestral tree:          " << params.out_prefix << ".asr_pars.treefile" << endl;
+    }
+
     if (params.write_intermediate_trees)
         cout << "  All intermediate trees:        " << params.out_prefix << ".treels"
                 << endl;
@@ -2670,7 +2675,14 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     if (params.print_ancestral_sequence) {
         printAncestralSequences(params.out_prefix, &iqtree, params.print_ancestral_sequence);
     }
-    
+
+    if (params.asr_pars) {
+        if (iqtree.isSuperTree())
+            outWarning("--asr-pars is not yet supported for partition models; skipping.");
+        else
+            printParsimonyAncestralSequences(params.out_prefix, &iqtree);
+    }
+
     if (params.print_site_state_freq != WSF_NONE && !params.site_freq_file && !params.tree_freq_file) {
         string site_freq_file = params.out_prefix;
         site_freq_file += ".sitesf";

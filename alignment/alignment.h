@@ -326,7 +326,15 @@ public:
 
 
     vector<Pattern> ordered_pattern;
-    
+
+    /**
+     * ordered_to_orig_ptn[i] = original pattern index (into Alignment::at()) for
+     * ordered_pattern[i].  Populated by orderPatternByNumChars(); size equals
+     * the number of parsimony-informative (or variant) patterns, i.e. the same
+     * number of entries as in ordered_pattern before the dummy-padding.
+     */
+    vector<int> ordered_to_orig_ptn;
+
     /** lower bound of sum parsimony scores for remaining pattern in ordered_pattern */
     UINT *pars_lower_bound;
 

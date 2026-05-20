@@ -2048,6 +2048,9 @@ public:
     /** minimum probability to assign an ancestral state */
     double min_ancestral_prob;
 
+    /** true if parsimony ancestral state reconstruction is requested (--asr-pars) */
+    bool asr_pars;
+
     /**
         0: print nothing
         1: print site state frequency vectors

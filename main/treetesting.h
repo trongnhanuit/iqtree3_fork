@@ -102,6 +102,18 @@ void printSiteStateFreq(const char* filename, Alignment *aln);
 void printAncestralSequences(const char*filename, PhyloTree *tree, AncestralSeqType ast);
 
 /**
+ * Reconstruct and print parsimony ancestral sequences for all internal nodes.
+ * Writes a FASTA file <out_prefix>.asr_pars.fasta whose sequences are the
+ * joint most-parsimonious ancestral states (Fitch or Sankoff depending on
+ * whether a cost matrix was loaded).
+ * Also prints the annotated tree (with internal-node names) to
+ * <out_prefix>.asr_pars.treefile.
+ * @param out_prefix output prefix (same as params.out_prefix)
+ * @param tree       phylogenetic tree (alignment + partial_pars must be valid)
+ */
+void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree);
+
+/**
  * Evaluate user-trees with possibility of tree topology tests
  * @param params program parameters
  * @param tree current tree

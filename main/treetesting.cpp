@@ -340,8 +340,98 @@ void printAncestralSequences(const char *out_prefix, PhyloTree *tree, AncestralS
     
     //    if (joint_ancestral)
     //        delete[] joint_ancestral;
-    
+
 }
+
+
+void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree) {
+    ASSERT(tree && tree->aln);
+
+    Alignment  *aln     = tree->aln;
+    const int   nptn    = (int)aln->getNPattern();
+    const int   nsites  = (int)aln->getNSite();
+    const int   nstates = aln->num_states;
+    const int   nleaf   = tree->leafNum;
+
+    if (tree->nodeNum - nleaf <= 0) return;
+
+    // ----------------------------------------------------------------
+    // 1. Build lookup tables needed for output.
+    //    orig_to_ord[orig_ptn] = index into ordered_pattern (-1 = invariant).
+    //    const_state[orig_ptn] = constant state for invariant patterns.
+    //    Both are O(nptn) and shared across all nodes.
+    // ----------------------------------------------------------------
+
+    // ordered_to_orig_ptn may be empty on an old checkpoint; rebuild if so.
+    if (aln->ordered_to_orig_ptn.empty())
+        aln->orderPatternByNumChars(PAT_VARIANT);
+    const int nptn_pars = (int)aln->ordered_to_orig_ptn.size();
+
+    vector<int>       orig_to_ord(nptn, -1);
+    vector<StateType> const_state(nptn, aln->STATE_UNKNOWN);
+    for (int i = 0; i < nptn_pars; i++)
+        orig_to_ord[aln->ordered_to_orig_ptn[i]] = i;
+    for (int ptn = 0; ptn < nptn; ptn++) {
+        if (orig_to_ord[ptn] >= 0) continue;
+        for (StateType s : aln->at(ptn))
+            if (s < (StateType)nstates) { const_state[ptn] = s; break; }
+    }
+
+    // ----------------------------------------------------------------
+    // 2. Pre-assign internal-node names so they appear in the tree file.
+    // ----------------------------------------------------------------
+    NodeVector internal_nodes;
+    tree->getInternalNodes(internal_nodes);
+    for (auto *nd : internal_nodes)
+        if (nd->name.empty() || !isalpha((unsigned char)nd->name[0]))
+            nd->name = "Node" + convertIntToString(nd->id - nleaf + 1);
+
+    // ----------------------------------------------------------------
+    // 3. Open FASTA output file, then stream sequences node by node.
+    //    The DFS inside computeParsimonyAncestralStream keeps only
+    //    O(depth x nptn_pars x sizeof(StateType)) in memory at any time.
+    // ----------------------------------------------------------------
+    string fasta_file = string(out_prefix) + ".asr_pars.fasta";
+    try {
+        ofstream fasta_out;
+        fasta_out.exceptions(ios::failbit | ios::badbit);
+        fasta_out.open(fasta_file.c_str());
+
+        tree->computeParsimonyAncestralStream(
+            [&](PhyloNode *node, const vector<StateType> &state_ord) {
+                fasta_out << ">" << node->name << "\n";
+                for (int i = 0; i < nsites; i++) {
+                    int orig_ptn = aln->getPatternID(i);
+                    int ord_idx  = orig_to_ord[orig_ptn];
+                    StateType st = (ord_idx >= 0) ? state_ord[ord_idx]
+                                                  : const_state[orig_ptn];
+                    fasta_out << aln->convertStateBackStr(st);
+                }
+                fasta_out << "\n";
+            });
+
+        fasta_out.close();
+        cout << "Parsimony ancestral sequences written to " << fasta_file << endl;
+    } catch (ios::failure &) {
+        outError(ERR_WRITE_OUTPUT, fasta_file);
+    }
+
+    // ----------------------------------------------------------------
+    // 4. Write annotated tree with internal-node names.
+    // ----------------------------------------------------------------
+    string tree_file = string(out_prefix) + ".asr_pars.treefile";
+    try {
+        ofstream out;
+        out.exceptions(ios::failbit | ios::badbit);
+        out.open(tree_file.c_str());
+        tree->printTree(out, WT_BR_LEN | WT_NEWLINE);
+        out.close();
+        cout << "Parsimony ancestral tree written to     " << tree_file << endl;
+    } catch (ios::failure &) {
+        outError(ERR_WRITE_OUTPUT, tree_file);
+    }
+}
+
 
 void printSiteProbCategory(const char*filename, PhyloTree *tree, SiteLoglType wsl) {
     

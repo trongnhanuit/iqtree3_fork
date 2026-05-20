@@ -2052,6 +2052,13 @@ public:
     bool asr_pars;
 
     /**
+     * Algorithm for --asr-pars: "sankoff" (default, Sankoff with Fitch cost matrix)
+     * or "fitch" (bitpacked Fitch algorithm).  Set by the optional argument to
+     * --asr-pars (case-insensitive).
+     */
+    string asr_pars_algorithm;
+
+    /**
      * true if pairwise substitution counting is requested (--count-subs).
      * Requires --asr-pars.  For every pair of taxa (A, B) with A-index < B-index,
      * counts the number of substitutions of each type along the tree path A→B,

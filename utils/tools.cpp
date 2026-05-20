@@ -3743,6 +3743,16 @@ void parseArg(int argc, char *argv[], Params &params) {
 			if (strcmp(argv[cnt], "--asr-pars") == 0) {
 				params.asr_pars = true;
                 params.ignore_identical_seqs = false;
+                // optional algorithm argument: fitch or sankoff (case-insensitive)
+                if (cnt + 1 < argc) {
+                    string next_arg = argv[cnt + 1];
+                    transform(next_arg.begin(), next_arg.end(),
+                              next_arg.begin(), ::tolower);
+                    if (next_arg == "fitch" || next_arg == "sankoff") {
+                        params.asr_pars_algorithm = next_arg;
+                        cnt++;
+                    }
+                }
 				continue;
 			}
 
@@ -5557,6 +5567,12 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.count_subs && !params.asr_pars)
         outError("--count-subs requires --asr-pars");
 
+    // For --asr-pars sankoff (the default), if the user did not supply --mpcost,
+    // implicitly activate the Fitch cost matrix so the existing Sankoff machinery
+    // picks it up at tree initialisation.
+    if (params.asr_pars && params.asr_pars_algorithm == "sankoff" && !params.sankoff_cost_file)
+        params.sankoff_cost_file = (char*)"fitch";
+
     if (params.dating_method != "") {
     #ifndef USE_LSD2
         outError("IQ-TREE was not compiled with LSD2 library, rerun cmake with -DUSE_LSD2=ON option");
@@ -6010,7 +6026,10 @@ void usage_iqtree(char* argv[], bool full_command) {
     << endl << "ANCESTRAL STATE RECONSTRUCTION:" << endl
     << "  --ancestral          Ancestral state reconstruction by empirical Bayes" << endl
     << "  --asr-min NUM        Min probability of ancestral state (default: equil freq)" << endl
-    << "  --asr-pars           Ancestral state reconstruction by parsimony (Fitch/Sankoff)" << endl
+    << "  --asr-pars [ALG]     Ancestral state reconstruction by parsimony." << endl
+    << "                       ALG: sankoff (default) or fitch (case-insensitive)." << endl
+    << "                       sankoff uses Sankoff algorithm with Fitch cost matrix;" << endl
+    << "                       fitch uses the bitpacked Fitch algorithm." << endl
     << "  --count-subs         Count pairwise substitutions along tree paths (requires --asr-pars)" << endl
 
     << endl << "TEST OF SYMMETRY:" << endl
@@ -7288,6 +7307,7 @@ void Params::setDefault() {
     print_ancestral_sequence = AST_NONE;
     min_ancestral_prob = 0.0;
     asr_pars = false;
+    asr_pars_algorithm = "sankoff";
     count_subs = false;
     print_tree_lh = false;
     lambda = 1;

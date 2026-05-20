@@ -544,9 +544,16 @@ void PhyloTree::computeParsimonyAncestralStream(
         computeParsimonyBranchFast(
             (PhyloNeighbor*)root->neighbors[0], (PhyloNode*)root);
     } else {
-        // Sankoff path: the function pointer already points to the right
-        // kernel (scalar or SIMD); all variants use the same ptn*K+s layout.
-        computeParsimony();
+        // Sankoff path: force the scalar kernel so partial_pars uses the
+        // sequential ptn*K+s layout expected by the up-pass.
+        // The SIMD kernel uses an interleaved state*VCSIZE+ptn layout; if
+        // we let computeParsimony() run through the SIMD pointer, every
+        // dp[pi * nstates + s] read below would return the wrong cell.
+        if ((tip_partial_lh_computed & 2) == 0)
+            computeTipPartialParsimony();
+        clearAllPartialLH();
+        computePartialParsimonySankoff(
+            (PhyloNeighbor*)root->neighbors[0], (PhyloNode*)root);
     }
 
     // -------------------------------------------------------------------------
@@ -667,7 +674,64 @@ void PhyloTree::computeParsimonyAncestralStream(
     // Seed the stack: assign the actual root's state, emit it, then push
     // all of its non-virtual, non-leaf children with their pre-computed states.
     {
-        auto root_state = compute_state((PhyloNeighbor*)root->neighbors[0], no_parent);
+        // root->neighbors[0]->partial_pars holds the down-pass DP for the
+        // subtree on the actual_root side, computed with tree->root (virtual
+        // root leaf) as the dad — so the virtual root leaf's character was
+        // excluded from that DP.  We must add it back here before taking the
+        // argmin, otherwise a real-taxon virtual root (unrooted tree) is
+        // silently ignored and the wrong state is chosen at the root.
+        const int nseq = aln->getNSeq();
+        const bool is_real_vroot = !rooted && (int)root->id < nseq;
+        auto *root_branch = (PhyloNeighbor*)root->neighbors[0];
+
+        vector<StateType> root_state(nptn_pars);
+
+        if (!cost_matrix) {
+            // Fitch: computeParsimonyBranchFast fills BOTH directed edges on
+            // the root branch (lines 248-249 in that function).  The reverse
+            // edge actual_root->findNeighbor(root) therefore carries the
+            // virtual root leaf's bit-packed character set.
+            PhyloNeighbor *vroot_nbr = (PhyloNeighbor*)actual_root->findNeighbor(root);
+            for (int pi = 0; pi < nptn_pars; pi++) {
+                int  bp   = first_bit[pi];
+                int  word = bp / UINT_BITS;
+                UINT bit  = (UINT)1 << (bp % UINT_BITS);
+                const UINT *dp = root_branch->partial_pars + (size_t)word * nstates;
+                root_state[pi] = aln->STATE_UNKNOWN;
+                if (is_real_vroot) {
+                    const UINT *vdp = vroot_nbr->partial_pars + (size_t)word * nstates;
+                    // Intersection: no extra cost — inherit a state admissible
+                    // from both subtrees.
+                    for (int s = 0; s < nstates; s++)
+                        if ((dp[s] & vdp[s]) & bit) { root_state[pi] = (StateType)s; break; }
+                    // If intersection empty, fall back to union (one extra event).
+                    if (root_state[pi] == aln->STATE_UNKNOWN)
+                        for (int s = 0; s < nstates; s++)
+                            if ((dp[s] | vdp[s]) & bit) { root_state[pi] = (StateType)s; break; }
+                } else {
+                    for (int s = 0; s < nstates; s++)
+                        if (dp[s] & bit) { root_state[pi] = (StateType)s; break; }
+                }
+            }
+        } else {
+            // Sankoff: full_dp[s] = down-pass[s] + tip_cost(vroot_obs -> s).
+            // For ROOT_NAME (rooted tree) vroot_obs = STATE_UNKNOWN whose tip
+            // cost is 0 for every s, so the formula degenerates to plain argmin.
+            for (int pi = 0; pi < nptn_pars; pi++) {
+                const UINT *dp = root_branch->partial_pars + (size_t)pi * nstates;
+                StateType vroot_obs = is_real_vroot
+                    ? aln->ordered_pattern[pi][root->id]
+                    : (StateType)aln->STATE_UNKNOWN;
+                const UINT *vtip = &tip_partial_pars[(int)vroot_obs * nstates];
+                UINT best = dp[0] + vtip[0]; StateType st = 0;
+                for (int s = 1; s < nstates; s++) {
+                    UINT v = dp[s] + vtip[s];
+                    if (v < best) { best = v; st = (StateType)s; }
+                }
+                root_state[pi] = st;
+            }
+        }
+
         if (!actual_root->isLeaf())
             on_node(actual_root, root_state);
 

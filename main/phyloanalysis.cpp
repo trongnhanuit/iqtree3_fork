@@ -1280,12 +1280,12 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
     }
 
     if (params.asr_pars) {
-        cout << "  Parsimony ancestral sequences:     " << params.out_prefix << ".asr_pars.fasta" << endl;
-        cout << "  Parsimony ancestral tree:          " << params.out_prefix << ".asr_pars.treefile" << endl;
+        cout << "  Parsimony ancestral sequences: " << params.out_prefix << ".asr_pars.fasta" << endl;
+        cout << "  Parsimony ancestral tree:      " << params.out_prefix << ".asr_pars.treefile" << endl;
     }
 
     if (params.count_subs) {
-        cout << "  Pairwise substitution counts:      " << params.out_prefix << ".subs_count.tsv" << endl;
+        cout << "  Pairwise substitution counts:  " << params.out_prefix << ".subs_count.tsv" << endl;
     }
 
     if (params.write_intermediate_trees)

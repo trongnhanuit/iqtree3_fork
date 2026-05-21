@@ -1280,7 +1280,8 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
     }
 
     if (params.asr_pars) {
-        cout << "  Parsimony ancestral sequences (" << params.asr_pars_algorithm << "): "
+        cout << "  Parsimony ancestral sequences ("
+             << (params.asr_pars_algorithm == ASR_PARS_FITCH ? "fitch" : "sankoff") << "): "
              << params.out_prefix << ".asr_pars.fasta" << endl;
         cout << "  Parsimony ancestral tree:      " << params.out_prefix << ".asr_pars.treefile" << endl;
     }

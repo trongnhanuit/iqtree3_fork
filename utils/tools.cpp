@@ -3748,8 +3748,11 @@ void parseArg(int argc, char *argv[], Params &params) {
                     string next_arg = argv[cnt + 1];
                     transform(next_arg.begin(), next_arg.end(),
                               next_arg.begin(), ::tolower);
-                    if (next_arg == "fitch" || next_arg == "sankoff") {
-                        params.asr_pars_algorithm = next_arg;
+                    if (next_arg == "fitch") {
+                        params.asr_pars_algorithm = ASR_PARS_FITCH;
+                        cnt++;
+                    } else if (next_arg == "sankoff") {
+                        params.asr_pars_algorithm = ASR_PARS_SANKOFF;
                         cnt++;
                     }
                 }
@@ -5574,7 +5577,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     // For --asr-pars sankoff (the default), if the user did not supply --mpcost,
     // implicitly activate the Fitch cost matrix so the existing Sankoff machinery
     // picks it up at tree initialisation.
-    if (params.asr_pars && params.asr_pars_algorithm == "sankoff" && !params.sankoff_cost_file)
+    if (params.asr_pars && params.asr_pars_algorithm == ASR_PARS_SANKOFF && !params.sankoff_cost_file)
         params.sankoff_cost_file = "fitch";
 
     if (params.dating_method != "") {
@@ -7311,7 +7314,7 @@ void Params::setDefault() {
     print_ancestral_sequence = AST_NONE;
     min_ancestral_prob = 0.0;
     asr_pars = false;
-    asr_pars_algorithm = "sankoff";
+    asr_pars_algorithm = ASR_PARS_SANKOFF;
     count_subs = false;
     print_tree_lh = false;
     lambda = 1;

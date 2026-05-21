@@ -585,6 +585,11 @@ enum AncestralSeqType {
     AST_NONE, AST_MARGINAL, AST_JOINT
 };
 
+enum AsrParsAlgorithm {
+    ASR_PARS_SANKOFF, // Sankoff algorithm with Fitch cost matrix (default)
+    ASR_PARS_FITCH    // bitpacked Fitch algorithm
+};
+
 enum SymTest {
     SYMTEST_NONE, SYMTEST_BINOM, SYMTEST_MAXDIV
 };
@@ -2051,12 +2056,8 @@ public:
     /** true if parsimony ancestral state reconstruction is requested (--asr-pars) */
     bool asr_pars;
 
-    /**
-     * Algorithm for --asr-pars: "sankoff" (default, Sankoff with Fitch cost matrix)
-     * or "fitch" (bitpacked Fitch algorithm).  Set by the optional argument to
-     * --asr-pars (case-insensitive).
-     */
-    string asr_pars_algorithm;
+    /** Algorithm for --asr-pars. Set by the optional argument (case-insensitive). */
+    AsrParsAlgorithm asr_pars_algorithm;
 
     /**
      * true if pairwise substitution counting is requested (--count-subs).

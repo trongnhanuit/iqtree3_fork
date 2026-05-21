@@ -660,7 +660,7 @@ void PhyloTree::computeParsimonyAncestralStream(
     // -------------------------------------------------------------------------
     struct Entry { PhyloNode *node, *dad; vector<StateType> state; };
     vector<Entry> stk;
-    stk.reserve(nodeNum);  // upper bound: stack never exceeds nodeNum entries
+    stk.reserve(nodeNum - leafNum);  // only internal nodes are pushed
 
     static const vector<StateType> no_parent;  // sentinel for the root call
 
@@ -741,6 +741,7 @@ void PhyloTree::computeParsimonyAncestralStream(
         FOR_NEIGHBOR_IT(actual_root, (PhyloNode*)root, it) {
             PhyloNode *child = (PhyloNode*)(*it)->node;
             if (child->name == ROOT_NAME) continue;  // skip virtual root
+            if (child->isLeaf()) continue;            // leaves have no ancestral state to reconstruct
             auto *br = (PhyloNeighbor*)actual_root->findNeighbor(child);
             // Compute child's state now while root_state is hot in cache,
             // then store it in the stack entry for later emission.
@@ -759,11 +760,14 @@ void PhyloTree::computeParsimonyAncestralStream(
         if (!cur.node->isLeaf())
             on_node(cur.node, cur.state);
 
-        // Push children: compute each child's state while cur.state is still
-        // in scope (and likely still in L1/L2 cache).
+        // Push internal children: compute each child's state while cur.state is
+        // still in scope (and likely still in L1/L2 cache).  Leaves are skipped:
+        // their states come from the alignment, not from ancestral reconstruction,
+        // so calling compute_state() for them would waste O(nptn_pars) work.
         FOR_NEIGHBOR_IT(cur.node, cur.dad, it) {
             PhyloNode *child = (PhyloNode*)(*it)->node;
             if (child->name == ROOT_NAME) continue;
+            if (child->isLeaf()) continue;
             auto *br = (PhyloNeighbor*)cur.node->findNeighbor(child);
             stk.push_back({child, cur.node, compute_state(br, cur.state)});
         }

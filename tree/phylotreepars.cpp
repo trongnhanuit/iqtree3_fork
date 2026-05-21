@@ -626,17 +626,19 @@ void PhyloTree::computeParsimonyAncestralStream(
                     // argmin_s( cost[parent_state -> s] + dp[s] )
                     int ds = (int)dad_state[pi];
                     const UINT *cost_row = cost_matrix + (size_t)ds * nstates;
-                    UINT best = cost_row[0] + dp[0]; StateType st = 0;
+                    // Use uint64_t to prevent UINT overflow when summing a
+                    // single transition cost and an accumulated sub-tree cost.
+                    uint64_t best = (uint64_t)cost_row[0] + dp[0]; StateType st = 0;
                     for (int s = 1; s < nstates; s++) {
-                        UINT v = cost_row[s] + dp[s];
+                        uint64_t v = (uint64_t)cost_row[s] + dp[s];
                         if (v < best) { best = v; st = (StateType)s; }
                     }
                     state[pi] = st;
                 } else {
                     // Root: no parent cost term; pick the globally cheapest state.
-                    UINT best = dp[0]; StateType st = 0;
+                    uint64_t best = dp[0]; StateType st = 0;
                     for (int s = 1; s < nstates; s++)
-                        if (dp[s] < best) { best = dp[s]; st = (StateType)s; }
+                        if ((uint64_t)dp[s] < best) { best = dp[s]; st = (StateType)s; }
                     state[pi] = st;
                 }
             }
@@ -723,9 +725,10 @@ void PhyloTree::computeParsimonyAncestralStream(
                     ? aln->ordered_pattern[pi][root->id]
                     : (StateType)aln->STATE_UNKNOWN;
                 const UINT *vtip = &tip_partial_pars[(int)vroot_obs * nstates];
-                UINT best = dp[0] + vtip[0]; StateType st = 0;
+                // Use uint64_t to prevent UINT overflow (same rationale as up-pass).
+                uint64_t best = (uint64_t)dp[0] + vtip[0]; StateType st = 0;
                 for (int s = 1; s < nstates; s++) {
-                    UINT v = dp[s] + vtip[s];
+                    uint64_t v = (uint64_t)dp[s] + vtip[s];
                     if (v < best) { best = v; st = (StateType)s; }
                 }
                 root_state[pi] = st;
@@ -844,11 +847,17 @@ void PhyloTree::loadCostMatrixFile(const char * file_name){
     
     for (k = 0; k < cost_nstates; k++)
         for (i = 0; i < cost_nstates; i++)
-            for (j = 0; j < cost_nstates; j++)
-                if (cost_matrix[(i*cost_nstates)+j] > cost_matrix[(i*cost_nstates)+k] + cost_matrix[(k*cost_nstates)+j]) {
+            for (j = 0; j < cost_nstates; j++) {
+                // Use uint64_t to avoid UINT overflow in the sum before comparing.
+                // Clamp to UINT_MAX, which the Sankoff DP treats as ∞.
+                uint64_t shortcut = (uint64_t)cost_matrix[(i*cost_nstates)+k]
+                                  + cost_matrix[(k*cost_nstates)+j];
+                if (shortcut < (uint64_t)cost_matrix[(i*cost_nstates)+j]) {
                     changed = true;
-                    cost_matrix[(i*cost_nstates)+j] = cost_matrix[(i*cost_nstates)+k] + cost_matrix[(k*cost_nstates)+j];
+                    cost_matrix[(i*cost_nstates)+j] = (shortcut <= UINT_MAX)
+                                                      ? (UINT)shortcut : UINT_MAX;
                 }
+            }
     
     if (changed) {
         cout << "WARING: Cost matrix does not satisfy triangular inenquality and is automatically fixed to:" << endl;

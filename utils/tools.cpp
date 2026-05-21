@@ -5572,7 +5572,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 
     if (params.print_pars_trees &&
         params.start_tree != STT_PARSIMONY && params.start_tree != STT_PLL_PARSIMONY)
-        outError("--print-pars-trees requires parsimony starting trees; rerun with -t PARS");
+        outError("--print-pars-trees requires parsimony starting trees; rerun with --start PARS");
 
     // For --asr-pars sankoff (the default), if the user did not supply --mpcost,
     // implicitly activate the Fitch cost matrix so the existing Sankoff machinery

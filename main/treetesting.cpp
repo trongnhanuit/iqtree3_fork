@@ -378,13 +378,19 @@ void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree) {
     }
 
     // ----------------------------------------------------------------
-    // 2. Pre-assign internal-node names so they appear in the tree file.
+    // 2. Assign generated names to internal nodes for FASTA headers and
+    //    the annotated treefile, saving originals for restoration afterward.
+    //    Generated names ("Node1", "Node2", ...) are always unique and
+    //    alpha-starting, so they are safe FASTA identifiers regardless of
+    //    any existing bootstrap support values or other numeric labels.
     // ----------------------------------------------------------------
     NodeVector internal_nodes;
     tree->getInternalNodes(internal_nodes);
-    for (auto *nd : internal_nodes)
-        if (nd->name.empty() || !isalpha((unsigned char)nd->name[0]))
-            nd->name = "Node" + convertIntToString(nd->id - nleaf + 1);
+    vector<string> saved_node_names(tree->nodeNum);
+    for (auto *nd : internal_nodes) {
+        saved_node_names[nd->id] = nd->name;
+        nd->name = "Node" + convertIntToString(nd->id - nleaf + 1);
+    }
 
     // ----------------------------------------------------------------
     // 3. Open FASTA output file, then stream sequences node by node.
@@ -430,6 +436,13 @@ void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree) {
     } catch (ios::failure &) {
         outError(ERR_WRITE_OUTPUT, tree_file);
     }
+
+    // ----------------------------------------------------------------
+    // 5. Restore original internal-node names (e.g. bootstrap support
+    //    values) so the live tree object is not permanently modified.
+    // ----------------------------------------------------------------
+    for (auto *nd : internal_nodes)
+        nd->name = saved_node_names[nd->id];
 }
 
 

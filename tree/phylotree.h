@@ -726,7 +726,7 @@ public:
      * read the cost matrix file
      * initialize for 'nstates' and 'columns'
      */
-    void loadCostMatrixFile(char* file_name = nullptr);
+    void loadCostMatrixFile(const char* file_name = nullptr);
 
     /*
      * For a leaf character corresponding to an ambiguous state

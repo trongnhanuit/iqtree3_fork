@@ -5571,7 +5571,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     // implicitly activate the Fitch cost matrix so the existing Sankoff machinery
     // picks it up at tree initialisation.
     if (params.asr_pars && params.asr_pars_algorithm == "sankoff" && !params.sankoff_cost_file)
-        params.sankoff_cost_file = (char*)"fitch";
+        params.sankoff_cost_file = "fitch";
 
     if (params.dating_method != "") {
     #ifndef USE_LSD2

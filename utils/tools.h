@@ -739,7 +739,7 @@ public:
 	int sprDist;
 
     /** cost matrix file for Sankoff parsimony */
-    char *sankoff_cost_file;
+    const char *sankoff_cost_file;
     
 	/**
 	 *  Number of NNI locally optimal trees generated from the set of parsimony trees

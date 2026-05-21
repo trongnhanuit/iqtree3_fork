@@ -797,7 +797,7 @@ void PhyloTree::initCostMatrix(CostMatrixType cost_type) {
     clearAllPartialLH();
 }
 
-void PhyloTree::loadCostMatrixFile(char * file_name){
+void PhyloTree::loadCostMatrixFile(const char * file_name){
     if(cost_matrix){
         aligned_free(cost_matrix);
         cost_matrix = nullptr;

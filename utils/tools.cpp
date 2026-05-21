@@ -5567,6 +5567,10 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.count_subs && !params.asr_pars)
         outError("--count-subs requires --asr-pars");
 
+    if (params.print_pars_trees &&
+        params.start_tree != STT_PARSIMONY && params.start_tree != STT_PLL_PARSIMONY)
+        outError("--print-pars-trees requires parsimony starting trees; rerun with -t PARS");
+
     // For --asr-pars sankoff (the default), if the user did not supply --mpcost,
     // implicitly activate the Fitch cost matrix so the existing Sankoff machinery
     // picks it up at tree initialisation.

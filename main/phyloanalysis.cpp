@@ -3869,7 +3869,8 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         iqtree->candidateTrees.saveCheckpoint();
 
         // --print-pars-trees: generate --ninit parsimony trees and write all to .parstrees
-        if (!params.tree_spr && params.print_pars_trees && params.start_tree == STT_PARSIMONY) {
+        if (!params.tree_spr && params.print_pars_trees &&
+            (params.start_tree == STT_PARSIMONY || params.start_tree == STT_PLL_PARSIMONY)) {
             int numTrees = params.numInitTrees;
             string parstrees_file = string(params.out_prefix) + ".parstrees";
             ofstream parstrees_out(parstrees_file.c_str());

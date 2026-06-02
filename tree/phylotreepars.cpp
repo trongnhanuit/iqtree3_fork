@@ -611,10 +611,13 @@ void PhyloTree::computeParsimonyAncestralStream(
                     int ds = (int)dad_state[pi];
                     if (ds < nstates && (dp[ds] & bit)) { state[pi] = (StateType)ds; continue; }
                 }
-                // Parent state not admissible (or root): pick the first admissible state.
+                // Parent state not admissible (or root): pick uniformly at random
+                // among all admissible states (reservoir sampling).
                 state[pi] = aln->STATE_UNKNOWN;
+                int n_tied = 0;
                 for (int s = 0; s < nstates; s++)
-                    if (dp[s] & bit) { state[pi] = (StateType)s; break; }
+                    if (dp[s] & bit)
+                        if (random_int(++n_tied) == 0) state[pi] = (StateType)s;
             }
         } else {
             // ---- Sankoff up-pass ----
@@ -623,22 +626,28 @@ void PhyloTree::computeParsimonyAncestralStream(
                 const UINT *dp = branch->partial_pars + (size_t)pi * nstates;
 
                 if (!is_root) {
-                    // argmin_s( cost[parent_state -> s] + dp[s] )
+                    // argmin_s( cost[parent_state -> s] + dp[s] ), random tie-breaking.
                     int ds = (int)dad_state[pi];
                     const UINT *cost_row = cost_matrix + (size_t)ds * nstates;
                     // Use uint64_t to prevent UINT overflow when summing a
                     // single transition cost and an accumulated sub-tree cost.
                     uint64_t best = (uint64_t)cost_row[0] + dp[0]; StateType st = 0;
+                    int n_tied = 1;
                     for (int s = 1; s < nstates; s++) {
                         uint64_t v = (uint64_t)cost_row[s] + dp[s];
-                        if (v < best) { best = v; st = (StateType)s; }
+                        if (v < best) { best = v; st = (StateType)s; n_tied = 1; }
+                        else if (v == best && random_int(++n_tied) == 0) st = (StateType)s;
                     }
                     state[pi] = st;
                 } else {
-                    // Root: no parent cost term; pick the globally cheapest state.
-                    uint64_t best = dp[0]; StateType st = 0;
-                    for (int s = 1; s < nstates; s++)
-                        if ((uint64_t)dp[s] < best) { best = dp[s]; st = (StateType)s; }
+                    // Root: no parent cost; pick uniformly among globally cheapest states.
+                    uint64_t best = (uint64_t)dp[0]; StateType st = 0;
+                    int n_tied = 1;
+                    for (int s = 1; s < nstates; s++) {
+                        uint64_t v = (uint64_t)dp[s];
+                        if (v < best) { best = v; st = (StateType)s; n_tied = 1; }
+                        else if (v == best && random_int(++n_tied) == 0) st = (StateType)s;
+                    }
                     state[pi] = st;
                 }
             }
@@ -702,17 +711,22 @@ void PhyloTree::computeParsimonyAncestralStream(
                 root_state[pi] = aln->STATE_UNKNOWN;
                 if (is_real_vroot) {
                     const UINT *vdp = vroot_nbr->partial_pars + (size_t)word * nstates;
-                    // Intersection: no extra cost — inherit a state admissible
-                    // from both subtrees.
+                    // Intersection: no extra cost — randomly pick among all states
+                    // admissible from both subtrees.
+                    int n_tied = 0;
                     for (int s = 0; s < nstates; s++)
-                        if ((dp[s] & vdp[s]) & bit) { root_state[pi] = (StateType)s; break; }
+                        if ((dp[s] & vdp[s]) & bit)
+                            if (random_int(++n_tied) == 0) root_state[pi] = (StateType)s;
                     // If intersection empty, fall back to union (one extra event).
                     if (root_state[pi] == aln->STATE_UNKNOWN)
                         for (int s = 0; s < nstates; s++)
-                            if ((dp[s] | vdp[s]) & bit) { root_state[pi] = (StateType)s; break; }
+                            if ((dp[s] | vdp[s]) & bit)
+                                if (random_int(++n_tied) == 0) root_state[pi] = (StateType)s;
                 } else {
+                    int n_tied = 0;
                     for (int s = 0; s < nstates; s++)
-                        if (dp[s] & bit) { root_state[pi] = (StateType)s; break; }
+                        if (dp[s] & bit)
+                            if (random_int(++n_tied) == 0) root_state[pi] = (StateType)s;
                 }
             }
         } else {
@@ -726,10 +740,13 @@ void PhyloTree::computeParsimonyAncestralStream(
                     : (StateType)aln->STATE_UNKNOWN;
                 const UINT *vtip = &tip_partial_pars[(int)vroot_obs * nstates];
                 // Use uint64_t to prevent UINT overflow (same rationale as up-pass).
+                // Ties broken uniformly at random (reservoir sampling).
                 uint64_t best = (uint64_t)dp[0] + vtip[0]; StateType st = 0;
+                int n_tied = 1;
                 for (int s = 1; s < nstates; s++) {
                     uint64_t v = (uint64_t)dp[s] + vtip[s];
-                    if (v < best) { best = v; st = (StateType)s; }
+                    if (v < best) { best = v; st = (StateType)s; n_tied = 1; }
+                    else if (v == best && random_int(++n_tied) == 0) st = (StateType)s;
                 }
                 root_state[pi] = st;
             }

@@ -344,142 +344,46 @@ void printAncestralSequences(const char *out_prefix, PhyloTree *tree, AncestralS
 }
 
 
-void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree) {
+// ---------------------------------------------------------------------------
+// Master function that runs parsimony ancestral reconstruction ONCE and
+// produces whichever combination of outputs is requested.
+//
+// Running a single computeParsimonyAncestralStream call ensures that the
+// ASR FASTA, the branch-substitution TSV, and the taxon-pair TSV all use
+// IDENTICAL state assignments at tied sites (same RNG snapshot), so
+// substitutions reported in the TSVs are always consistent with the FASTA.
+//
+// Internal-node names are assigned as "Node1", "Node2", … before the ASR
+// call and are restored afterward, so they appear consistently in all
+// output files (FASTA, treefile, branch TSV, taxon-pair TSV).
+// ---------------------------------------------------------------------------
+void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
+                           bool do_asr_fasta, bool do_taxon_pair,
+                           bool do_branch) {
     ASSERT(tree && tree->aln);
+    if (!do_asr_fasta && !do_taxon_pair && !do_branch) return;
 
     Alignment  *aln     = tree->aln;
     const int   nptn    = (int)aln->getNPattern();
     const int   nsites  = (int)aln->getNSite();
     const int   nstates = aln->num_states;
     const int   nleaf   = tree->leafNum;
-
-    if (tree->nodeNum - nleaf <= 0) return;
-
-    // ----------------------------------------------------------------
-    // 1. Build lookup tables needed for output.
-    //    orig_to_ord[orig_ptn] = index into ordered_pattern (-1 = invariant).
-    //    const_state[orig_ptn] = constant state for invariant patterns.
-    //    Both are O(nptn) and shared across all nodes.
-    // ----------------------------------------------------------------
-
-    // ordered_to_orig_ptn may be empty on an old checkpoint; rebuild if so.
-    if (aln->ordered_to_orig_ptn.empty())
-        aln->orderPatternByNumChars(PAT_VARIANT);
-    const int nptn_pars = (int)aln->ordered_to_orig_ptn.size();
-
-    vector<int>       orig_to_ord(nptn, -1);
-    vector<StateType> const_state(nptn, aln->STATE_UNKNOWN);
-    for (int i = 0; i < nptn_pars; i++)
-        orig_to_ord[aln->ordered_to_orig_ptn[i]] = i;
-    for (int ptn = 0; ptn < nptn; ptn++) {
-        if (orig_to_ord[ptn] >= 0) continue;
-        for (StateType s : aln->at(ptn))
-            if (s < (StateType)nstates) { const_state[ptn] = s; break; }
-    }
-
-    // ----------------------------------------------------------------
-    // 2. Assign generated names to internal nodes for FASTA headers and
-    //    the annotated treefile, saving originals for restoration afterward.
-    //    Generated names ("Node1", "Node2", ...) are always unique and
-    //    alpha-starting, so they are safe FASTA identifiers regardless of
-    //    any existing bootstrap support values or other numeric labels.
-    // ----------------------------------------------------------------
-    NodeVector internal_nodes;
-    tree->getInternalNodes(internal_nodes);
-    vector<string> saved_node_names(tree->nodeNum);
-    for (auto *nd : internal_nodes) {
-        saved_node_names[nd->id] = nd->name;
-        nd->name = "Node" + convertIntToString(nd->id - nleaf + 1);
-    }
-
-    // ----------------------------------------------------------------
-    // 3. Open FASTA output file, then stream sequences node by node.
-    //    The DFS inside computeParsimonyAncestralStream keeps only
-    //    O(depth x nptn_pars x sizeof(StateType)) in memory at any time.
-    // ----------------------------------------------------------------
-    string fasta_file = string(out_prefix) + ".asr_pars.fasta";
-    try {
-        ofstream fasta_out;
-        fasta_out.exceptions(ios::failbit | ios::badbit);
-        fasta_out.open(fasta_file.c_str());
-
-        tree->computeParsimonyAncestralStream(
-            [&](PhyloNode *node, const vector<StateType> &state_ord) {
-                fasta_out << ">" << node->name << "\n";
-                for (int i = 0; i < nsites; i++) {
-                    int orig_ptn = aln->getPatternID(i);
-                    int ord_idx  = orig_to_ord[orig_ptn];
-                    StateType st = (ord_idx >= 0) ? state_ord[ord_idx]
-                                                  : const_state[orig_ptn];
-                    fasta_out << aln->convertStateBackStr(st);
-                }
-                fasta_out << "\n";
-            });
-
-        fasta_out.close();
-        cout << "Parsimony ancestral sequences written to " << fasta_file << endl;
-    } catch (ios::failure &) {
-        outError(ERR_WRITE_OUTPUT, fasta_file);
-    }
-
-    // ----------------------------------------------------------------
-    // 4. Write annotated tree with internal-node names.
-    // ----------------------------------------------------------------
-    string tree_file = string(out_prefix) + ".asr_pars.treefile";
-    try {
-        ofstream out;
-        out.exceptions(ios::failbit | ios::badbit);
-        out.open(tree_file.c_str());
-        tree->printTree(out, WT_BR_LEN | WT_NEWLINE);
-        out.close();
-        cout << "Parsimony ancestral tree written to     " << tree_file << endl;
-    } catch (ios::failure &) {
-        outError(ERR_WRITE_OUTPUT, tree_file);
-    }
-
-    // ----------------------------------------------------------------
-    // 5. Restore original internal-node names (e.g. bootstrap support
-    //    values) so the live tree object is not permanently modified.
-    // ----------------------------------------------------------------
-    for (auto *nd : internal_nodes)
-        nd->name = saved_node_names[nd->id];
-}
-
-
-// ---------------------------------------------------------------------------
-// Combined implementation for --count-taxon-pair-subs and --count-branch-subs.
-//
-// Both outputs share:
-//   - a single parsimony ASR run
-//   - the BFS parent-pointer table
-//   - per-branch substitution matrices (pre-computed once)
-//
-// For taxon-pair counting, the per-branch matrices are accumulated along the
-// LCA path with direction awareness: traversing a branch in the child→parent
-// direction (upward leg) transposes the matrix entry (s0→s1 becomes s1→s0)
-// because the observed substitution order is reversed relative to how the
-// matrix was built (parent→child).
-// ---------------------------------------------------------------------------
-void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
-                                      bool do_taxon_pair, bool do_branch) {
-    ASSERT(tree && tree->aln);
-
-    Alignment  *aln     = tree->aln;
-    const int   nstates = aln->num_states;
-    // nseq = number of real taxa (indices 0..nseq-1 in ordered_pattern).
-    // For rooted trees leafNum == nseq+1 (ROOT_NAME sentinel has id == nseq).
     const int   nseq    = aln->getNSeq();
     const int   ncols   = nstates * nstates;
+
+    if (do_asr_fasta && tree->nodeNum - nleaf <= 0) {
+        outWarning("--asr-pars: no internal nodes found; skipping FASTA output.");
+        do_asr_fasta = false;
+    }
 
     if (aln->ordered_to_orig_ptn.empty())
         aln->orderPatternByNumChars(PAT_VARIANT);
     const int nptn_pars = (int)aln->ordered_to_orig_ptn.size();
 
     if (nptn_pars == 0) {
-        if (do_taxon_pair)
-            outWarning("--count-taxon-pair-subs: no parsimony-variant patterns found; skipping.");
-        if (do_branch)
-            outWarning("--count-branch-subs: no parsimony-variant patterns found; skipping.");
+        if (do_asr_fasta)    outWarning("--asr-pars: no variant patterns; skipping.");
+        if (do_taxon_pair)   outWarning("--count-taxon-pair-subs: no variant patterns; skipping.");
+        if (do_branch)       outWarning("--count-branch-subs: no variant patterns; skipping.");
         return;
     }
 
@@ -489,318 +393,412 @@ void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
                    " pairs, this may be slow.");
 
     // -----------------------------------------------------------------------
-    // 1. Single ASR run shared by both outputs.
-    //    node_states[id] is empty for leaves (their states are read directly
-    //    from ordered_pattern) and filled for internal nodes.
+    // Assign "Node1", "Node2", … names to internal nodes.
+    // These are used in all output files; restored at the end.
+    // -----------------------------------------------------------------------
+    NodeVector internal_nodes;
+    tree->getInternalNodes(internal_nodes);
+    vector<string> saved_node_names(tree->nodeNum);
+    for (auto *nd : internal_nodes) {
+        saved_node_names[nd->id] = nd->name;
+        nd->name = "Node" + convertIntToString(nd->id - nleaf + 1);
+    }
+
+    // -----------------------------------------------------------------------
+    // Build lookup tables needed for FASTA output.
+    // -----------------------------------------------------------------------
+    vector<int>       orig_to_ord(do_asr_fasta ? nptn : 0, -1);
+    vector<StateType> const_state(do_asr_fasta ? nptn : 0, aln->STATE_UNKNOWN);
+    if (do_asr_fasta) {
+        for (int i = 0; i < nptn_pars; i++)
+            orig_to_ord[aln->ordered_to_orig_ptn[i]] = i;
+        for (int ptn = 0; ptn < nptn; ptn++) {
+            if (orig_to_ord[ptn] >= 0) continue;
+            for (StateType s : aln->at(ptn))
+                if (s < (StateType)nstates) { const_state[ptn] = s; break; }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Open FASTA output file (if needed) before the ASR call so the
+    // callback can write to it directly.
+    // -----------------------------------------------------------------------
+    string fasta_file = string(out_prefix) + ".asr_pars.fasta";
+    ofstream fasta_out;
+    if (do_asr_fasta) {
+        fasta_out.exceptions(ios::failbit | ios::badbit);
+        try { fasta_out.open(fasta_file.c_str()); }
+        catch (ios::failure &) { outError(ERR_WRITE_OUTPUT, fasta_file); }
+    }
+
+    // -----------------------------------------------------------------------
+    // Single ASR pass: store all node states AND optionally stream FASTA.
     // -----------------------------------------------------------------------
     vector<vector<StateType>> node_states(tree->nodeNum);
     tree->computeParsimonyAncestralStream(
-        [&](PhyloNode *node, const vector<StateType> &s) {
-            node_states[node->id] = s;
+        [&](PhyloNode *node, const vector<StateType> &state_ord) {
+            node_states[node->id] = state_ord;
+            if (do_asr_fasta) {
+                fasta_out << ">" << node->name << "\n";
+                for (int i = 0; i < nsites; i++) {
+                    int orig_ptn = aln->getPatternID(i);
+                    int ord_idx  = orig_to_ord[orig_ptn];
+                    StateType st = (ord_idx >= 0) ? state_ord[ord_idx]
+                                                  : const_state[orig_ptn];
+                    fasta_out << aln->convertStateBackStr(st);
+                }
+                fasta_out << "\n";
+            }
         });
 
-    // -----------------------------------------------------------------------
-    // 2. BFS to build node-by-id map and parent pointers.
-    //
-    //   Unrooted: tree->root is a real taxon leaf (id < nseq).
-    //             Registered manually so get_path() can reach it.
-    //   Rooted:   tree->root is the ROOT_NAME sentinel (id == nseq).
-    //             getTaxa() excludes it; no path between real taxa passes it.
-    // -----------------------------------------------------------------------
-    ASSERT(!tree->root->neighbors.empty());
-    PhyloNode *actual_root = (PhyloNode*)tree->root->neighbors[0]->node;
+    if (do_asr_fasta) {
+        fasta_out.close();
+        cout << "Parsimony ancestral sequences written to " << fasta_file << endl;
 
-    vector<PhyloNode*> node_by_id(tree->nodeNum, nullptr);
-    vector<int>        parent_id(tree->nodeNum, -1);
-
-    vector<pair<PhyloNode*, PhyloNode*>> bfs;
-    bfs.reserve(tree->nodeNum);
-    bfs.push_back({actual_root, (PhyloNode*)tree->root});
-    node_by_id[actual_root->id] = actual_root;
-
-    if (!tree->rooted) {
-        node_by_id[tree->root->id] = (PhyloNode*)tree->root;
-        parent_id[tree->root->id]  = actual_root->id;
-    }
-
-    for (int qi = 0; qi < (int)bfs.size(); qi++) {
-        auto [node, dad] = bfs[qi];
-        FOR_NEIGHBOR_IT(node, dad, it) {
-            PhyloNode *child = (PhyloNode*)(*it)->node;
-            if (child->name == ROOT_NAME) continue;
-            if (node_by_id[child->id])   continue;
-            node_by_id[child->id] = child;
-            parent_id[child->id]  = node->id;
-            bfs.push_back({child, node});
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // 3. State accessor: returns -1 for gaps / ambiguous (skipped in counts).
-    // -----------------------------------------------------------------------
-    auto get_state = [&](int node_id, int pi) -> int {
-        if (node_id < nseq) {
-            StateType s = aln->ordered_pattern[pi][node_id];
-            return (s < (StateType)nstates) ? (int)s : -1;
-        }
-        const auto &st = node_states[node_id];
-        if (st.empty()) return -1;
-        return (st[pi] < (StateType)nstates) ? (int)st[pi] : -1;
-    };
-
-    // -----------------------------------------------------------------------
-    // 4. Pre-compute branch substitution matrix for every directed edge.
-    //
-    //    branch_matrix[cid][s0 * nstates + s1] counts transitions s0→s1 on
-    //    the branch parent(cid) → cid, weighted by pattern frequency.
-    //    This single O(branches × nptn_pars) pass replaces the per-step
-    //    pattern loop that the old taxon-pair code had inside the pair loop.
-    // -----------------------------------------------------------------------
-    vector<vector<int64_t>> branch_matrix(tree->nodeNum);
-    for (int cid = 0; cid < tree->nodeNum; cid++) {
-        if (!node_by_id[cid] || parent_id[cid] == -1) continue;
-        const int pid = parent_id[cid];
-        branch_matrix[cid].assign(ncols, 0LL);
-        for (int pi = 0; pi < nptn_pars; pi++) {
-            const int s0 = get_state(pid, pi);
-            const int s1 = get_state(cid, pi);
-            if (s0 < 0 || s1 < 0 || s0 == s1) continue;
-            branch_matrix[cid][s0 * nstates + s1] +=
-                aln->ordered_pattern[pi].frequency;
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // 5. Column names: one per ordered (s0, s1) pair with s0 != s1.
-    // -----------------------------------------------------------------------
-    vector<string> col_names;
-    col_names.reserve(nstates * (nstates - 1));
-    for (int s0 = 0; s0 < nstates; s0++)
-        for (int s1 = 0; s1 < nstates; s1++)
-            if (s0 != s1)
-                col_names.push_back(
-                    aln->convertStateBackStr(s0) + "->" + aln->convertStateBackStr(s1));
-
-    // -----------------------------------------------------------------------
-    // 6. Branch output: write branch_matrix directly plus an average row.
-    // -----------------------------------------------------------------------
-    if (do_branch) {
-        auto node_label = [&](PhyloNode *nd) -> string {
-            if (!nd->name.empty() && nd->name != ROOT_NAME) return nd->name;
-            return "InternalNode" + convertIntToString(nd->id - nseq + 1);
-        };
-
-        string out_file = string(out_prefix) + ".branch_subs.tsv";
+        // Annotated treefile.
+        string tree_file = string(out_prefix) + ".asr_pars.treefile";
         try {
             ofstream out;
             out.exceptions(ios::failbit | ios::badbit);
-            out.open(out_file.c_str());
+            out.open(tree_file.c_str());
+            tree->printTree(out, WT_BR_LEN | WT_NEWLINE);
+            out.close();
+            cout << "Parsimony ancestral tree written to     " << tree_file << endl;
+        } catch (ios::failure &) { outError(ERR_WRITE_OUTPUT, tree_file); }
+    }
 
-            out << "FromNode\tToNode";
-            for (const auto &cn : col_names) out << "\t" << cn;
-            out << "\n";
+    // -----------------------------------------------------------------------
+    // Counting outputs — only run if at least one counting mode is active.
+    // -----------------------------------------------------------------------
+    if (do_taxon_pair || do_branch) {
+        // BFS to build parent-pointer table (same logic as before).
+        ASSERT(!tree->root->neighbors.empty());
+        PhyloNode *actual_root = (PhyloNode*)tree->root->neighbors[0]->node;
 
-            vector<double> sum_subs(ncols, 0.0);
-            int n_branches = 0;
+        vector<PhyloNode*> node_by_id(tree->nodeNum, nullptr);
+        vector<int>        parent_id(tree->nodeNum, -1);
 
-            for (int cid = 0; cid < tree->nodeNum; cid++) {
-                if (!node_by_id[cid] || parent_id[cid] == -1) continue;
-                PhyloNode *child  = node_by_id[cid];
-                PhyloNode *parent = node_by_id[parent_id[cid]];
-                const auto &bm   = branch_matrix[cid];
+        vector<pair<PhyloNode*, PhyloNode*>> bfs;
+        bfs.reserve(tree->nodeNum);
+        bfs.push_back({actual_root, (PhyloNode*)tree->root});
+        node_by_id[actual_root->id] = actual_root;
+        if (!tree->rooted) {
+            node_by_id[tree->root->id] = (PhyloNode*)tree->root;
+            parent_id[tree->root->id]  = actual_root->id;
+        }
+        for (int qi = 0; qi < (int)bfs.size(); qi++) {
+            auto [node, dad] = bfs[qi];
+            FOR_NEIGHBOR_IT(node, dad, it) {
+                PhyloNode *child = (PhyloNode*)(*it)->node;
+                if (child->name == ROOT_NAME) continue;
+                if (node_by_id[child->id])   continue;
+                node_by_id[child->id] = child;
+                parent_id[child->id]  = node->id;
+                bfs.push_back({child, node});
+            }
+        }
 
-                out << node_label(parent) << "\t" << node_label(child);
+        // State accessor using the shared node_states.
+        auto get_state = [&](int node_id, int pi) -> int {
+            if (node_id < nseq) {
+                StateType s = aln->ordered_pattern[pi][node_id];
+                return (s < (StateType)nstates) ? (int)s : -1;
+            }
+            const auto &st = node_states[node_id];
+            if (st.empty()) return -1;
+            return (st[pi] < (StateType)nstates) ? (int)st[pi] : -1;
+        };
+
+        // Node label: internal nodes now have NodeX names assigned above.
+        auto node_label = [](PhyloNode *nd) -> string { return nd->name; };
+
+        // Column names.
+        vector<string> col_names;
+        col_names.reserve(nstates * (nstates - 1));
+        for (int s0 = 0; s0 < nstates; s0++)
+            for (int s1 = 0; s1 < nstates; s1++)
+                if (s0 != s1)
+                    col_names.push_back(
+                        aln->convertStateBackStr(s0) + "->" + aln->convertStateBackStr(s1));
+
+        // Pre-compute per-branch substitution matrices.
+        vector<vector<int64_t>> branch_matrix(tree->nodeNum);
+        for (int cid = 0; cid < tree->nodeNum; cid++) {
+            if (!node_by_id[cid] || parent_id[cid] == -1) continue;
+            const int pid = parent_id[cid];
+            branch_matrix[cid].assign(ncols, 0LL);
+            for (int pi = 0; pi < nptn_pars; pi++) {
+                const int s0 = get_state(pid, pi);
+                const int s1 = get_state(cid, pi);
+                if (s0 < 0 || s1 < 0 || s0 == s1) continue;
+                branch_matrix[cid][s0 * nstates + s1] +=
+                    aln->ordered_pattern[pi].frequency;
+            }
+        }
+
+        // --- Branch output ---
+        if (do_branch) {
+            string out_file = string(out_prefix) + ".branch_subs.tsv";
+            try {
+                ofstream out;
+                out.exceptions(ios::failbit | ios::badbit);
+                out.open(out_file.c_str());
+                out << "FromNode\tToNode";
+                for (const auto &cn : col_names) out << "\t" << cn;
+                out << "\n";
+
+                vector<double> sum_subs(ncols, 0.0);
+                int n_branches = 0;
+                for (int cid = 0; cid < tree->nodeNum; cid++) {
+                    if (!node_by_id[cid] || parent_id[cid] == -1) continue;
+                    PhyloNode *child  = node_by_id[cid];
+                    PhyloNode *parent = node_by_id[parent_id[cid]];
+                    const auto &bm   = branch_matrix[cid];
+                    out << node_label(parent) << "\t" << node_label(child);
+                    for (int s0 = 0; s0 < nstates; s0++)
+                        for (int s1 = 0; s1 < nstates; s1++)
+                            if (s0 != s1) {
+                                out << "\t" << bm[s0 * nstates + s1];
+                                sum_subs[s0 * nstates + s1] += bm[s0 * nstates + s1];
+                            }
+                    out << "\n";
+                    n_branches++;
+                }
+                out << "Branch_AVG\tBranch_AVG" << fixed << setprecision(4);
                 for (int s0 = 0; s0 < nstates; s0++)
                     for (int s1 = 0; s1 < nstates; s1++)
-                        if (s0 != s1) {
-                            out << "\t" << bm[s0 * nstates + s1];
-                            sum_subs[s0 * nstates + s1] += bm[s0 * nstates + s1];
-                        }
+                        if (s0 != s1)
+                            out << "\t" << (n_branches > 0
+                                            ? sum_subs[s0 * nstates + s1] / n_branches
+                                            : 0.0);
                 out << "\n";
-                n_branches++;
-            }
-
-            out << "Branch_AVG\tBranch_AVG" << fixed << setprecision(4);
-            for (int s0 = 0; s0 < nstates; s0++)
-                for (int s1 = 0; s1 < nstates; s1++)
-                    if (s0 != s1)
-                        out << "\t" << (n_branches > 0
-                                        ? sum_subs[s0 * nstates + s1] / n_branches
-                                        : 0.0);
-            out << "\n";
-
-            out.close();
-            cout << "Branch substitution counts written to   " << out_file << endl;
-        } catch (ios::failure &) {
-            outError(ERR_WRITE_OUTPUT, out_file);
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // 7. Taxon-pair output: for each selected pair (i < j) find the LCA path
-    //    and accumulate branch matrices with direction awareness.
-    //
-    //    Path [a, ..., LCA, ..., b] has two legs:
-    //      Upward   (a → LCA): child → parent traversal.
-    //               branch_matrix[id0] stores parent→child, so we add it
-    //               TRANSPOSED: s0→s1 entry contributes to [s1*K+s0].
-    //      Downward (LCA → b): parent → child, accumulate branch_matrix[id1]
-    //               as-is.
-    //
-    //    If --count-taxon-pair-subs M is given and M < total pairs, a random
-    //    sample of M pairs is selected using rejection sampling on flat pair
-    //    indices (O(M) expected).  A Pair_AVG row is appended at the end.
-    // -----------------------------------------------------------------------
-    if (do_taxon_pair) {
-        // LCA path helper.
-        auto get_path = [&](int a, int b) -> vector<int> {
-            vector<int> pa, pb;
-            for (int cur = a; cur != -1; cur = parent_id[cur]) pa.push_back(cur);
-            for (int cur = b; cur != -1; cur = parent_id[cur]) pb.push_back(cur);
-            unordered_set<int> set_pa(pa.begin(), pa.end());
-            int lca_pos_b = 0;
-            while (lca_pos_b < (int)pb.size() && !set_pa.count(pb[lca_pos_b]))
-                ++lca_pos_b;
-            int lca_id = pb[lca_pos_b];
-            int lca_pos_a = 0;
-            while (pa[lca_pos_a] != lca_id) ++lca_pos_a;
-            vector<int> path(pa.begin(), pa.begin() + lca_pos_a + 1);
-            for (int i = lca_pos_b - 1; i >= 0; --i) path.push_back(pb[i]);
-            return path;
-        };
-
-        NodeVector leaves;
-        tree->getTaxa(leaves);
-        sort(leaves.begin(), leaves.end(),
-             [](Node *x, Node *y) { return x->id < y->id; });
-        const int n = (int)leaves.size();
-
-        // Determine how many pairs to process.
-        const long long total_pairs = (long long)n * (n - 1) / 2;
-        const long long m_param     = Params::getInstance().count_taxon_pair_subs_m;
-        const long long m_pairs     = (m_param <= 0 || m_param >= total_pairs)
-                                      ? total_pairs : m_param;
-        const bool sample_mode      = (m_pairs < total_pairs);
-
-        // Convert a flat pair index k ∈ [0, total_pairs) to (i, j) with i < j.
-        // Row i starts at offset i*(2n−i−1)/2; within the row j = i+1+delta.
-        auto index_to_ij = [&](long long k) -> pair<int,int> {
-            int lo = 0, hi = n - 2;
-            while (lo < hi) {
-                int mid = lo + (hi - lo + 1) / 2;
-                if ((long long)mid * (2*n - mid - 1) / 2 <= k) lo = mid;
-                else hi = mid - 1;
-            }
-            int i = lo;
-            int j = i + 1 + (int)(k - (long long)i * (2*n - i - 1) / 2);
-            return {i, j};
-        };
-
-        // Build the list of (i, j) leaf-vector index pairs to process.
-        // In sample mode: rejection-sample m_pairs distinct flat indices, then
-        // sort so output order is deterministic and cache-friendly.
-        vector<pair<int,int>> selected_pairs;
-        selected_pairs.reserve((size_t)m_pairs);
-
-        if (!sample_mode) {
-            for (int i = 0; i < n; i++)
-                for (int j = i + 1; j < n; j++)
-                    selected_pairs.push_back({i, j});
-        } else {
-            // Rejection sampling: pick m_pairs unique flat indices.
-            // Expected iterations = m_pairs * total_pairs/(total_pairs−m_pairs+1)
-            // which is O(m_pairs) when m_pairs << total_pairs.
-            unordered_set<long long> picked;
-            picked.reserve((size_t)m_pairs * 2);
-            while ((long long)picked.size() < m_pairs) {
-                // random_int(n) returns [0,n); cast guards against total_pairs
-                // exceeding INT_MAX (extremely rare in phylogenetics).
-                long long k = (total_pairs <= (long long)INT_MAX)
-                              ? (long long)random_int((int)total_pairs)
-                              : (((long long)random_int(INT_MAX) << 31) |
-                                 random_int(INT_MAX)) % total_pairs;
-                if (picked.insert(k).second)
-                    selected_pairs.push_back(index_to_ij(k));
-            }
-            // Sort for deterministic output order.
-            sort(selected_pairs.begin(), selected_pairs.end());
+                out.close();
+                cout << "Branch substitution counts written to   " << out_file << endl;
+            } catch (ios::failure &) { outError(ERR_WRITE_OUTPUT, out_file); }
         }
 
-        string out_file = string(out_prefix) + ".taxon_pair_subs.tsv";
-        try {
-            ofstream out;
-            out.exceptions(ios::failbit | ios::badbit);
-            out.open(out_file.c_str());
+        // --- Taxon-pair output ---
+        if (do_taxon_pair) {
+            auto get_path = [&](int a, int b) -> vector<int> {
+                vector<int> pa, pb;
+                for (int cur = a; cur != -1; cur = parent_id[cur]) pa.push_back(cur);
+                for (int cur = b; cur != -1; cur = parent_id[cur]) pb.push_back(cur);
+                unordered_set<int> set_pa(pa.begin(), pa.end());
+                int lca_pos_b = 0;
+                while (lca_pos_b < (int)pb.size() && !set_pa.count(pb[lca_pos_b]))
+                    ++lca_pos_b;
+                int lca_id = pb[lca_pos_b];
+                int lca_pos_a = 0;
+                while (pa[lca_pos_a] != lca_id) ++lca_pos_a;
+                vector<int> path(pa.begin(), pa.begin() + lca_pos_a + 1);
+                for (int i = lca_pos_b - 1; i >= 0; --i) path.push_back(pb[i]);
+                return path;
+            };
 
-            out << "FromNode\tToNode";
-            for (const auto &cn : col_names) out << "\t" << cn;
-            out << "\n";
+            NodeVector leaves;
+            tree->getTaxa(leaves);
+            sort(leaves.begin(), leaves.end(),
+                 [](Node *x, Node *y) { return x->id < y->id; });
+            const int n = (int)leaves.size();
 
-            vector<int64_t> path_subs(ncols);
-            vector<double>  sum_pair_subs(ncols, 0.0);
+            const long long total_pairs = (long long)n * (n - 1) / 2;
+            const long long m_param     = Params::getInstance().count_taxon_pair_subs_m;
+            const long long m_pairs     = (m_param <= 0 || m_param >= total_pairs)
+                                          ? total_pairs : m_param;
+            const bool sample_mode      = (m_pairs < total_pairs);
 
-            for (const auto &[li, lj] : selected_pairs) {
-                PhyloNode *leaf_a = (PhyloNode*)leaves[li];
-                PhyloNode *leaf_b = (PhyloNode*)leaves[lj];
+            auto index_to_ij = [&](long long k) -> pair<int,int> {
+                int lo = 0, hi = n - 2;
+                while (lo < hi) {
+                    int mid = lo + (hi - lo + 1) / 2;
+                    if ((long long)mid * (2*n - mid - 1) / 2 <= k) lo = mid;
+                    else hi = mid - 1;
+                }
+                int i = lo;
+                int j = i + 1 + (int)(k - (long long)i * (2*n - i - 1) / 2);
+                return {i, j};
+            };
 
-                vector<int> path = get_path(leaf_a->id, leaf_b->id);
-                fill(path_subs.begin(), path_subs.end(), 0LL);
+            vector<pair<int,int>> selected_pairs;
+            selected_pairs.reserve((size_t)m_pairs);
+            if (!sample_mode) {
+                for (int i = 0; i < n; i++)
+                    for (int j = i + 1; j < n; j++)
+                        selected_pairs.push_back({i, j});
+            } else {
+                unordered_set<long long> picked;
+                picked.reserve((size_t)m_pairs * 2);
+                while ((long long)picked.size() < m_pairs) {
+                    long long k = (total_pairs <= (long long)INT_MAX)
+                                  ? (long long)random_int((int)total_pairs)
+                                  : (((long long)random_int(INT_MAX) << 31) |
+                                     random_int(INT_MAX)) % total_pairs;
+                    if (picked.insert(k).second)
+                        selected_pairs.push_back(index_to_ij(k));
+                }
+                sort(selected_pairs.begin(), selected_pairs.end());
+            }
 
-                for (int step = 0; step + 1 < (int)path.size(); step++) {
-                    const int id0 = path[step];
-                    const int id1 = path[step + 1];
+            string out_file = string(out_prefix) + ".taxon_pair_subs.tsv";
+            try {
+                ofstream out;
+                out.exceptions(ios::failbit | ios::badbit);
+                out.open(out_file.c_str());
+                out << "FromNode\tToNode";
+                for (const auto &cn : col_names) out << "\t" << cn;
+                out << "\n";
 
-                    if (parent_id[id1] == id0) {
-                        // Downward (parent → child): accumulate as-is.
-                        const auto &bm = branch_matrix[id1];
-                        for (int k = 0; k < ncols; k++) path_subs[k] += bm[k];
-                    } else {
-                        // Upward (child → parent): accumulate transposed.
-                        const auto &bm = branch_matrix[id0];
-                        for (int s0 = 0; s0 < nstates; s0++)
-                            for (int s1 = 0; s1 < nstates; s1++)
-                                path_subs[s1 * nstates + s0] += bm[s0 * nstates + s1];
+                vector<int64_t> path_subs(ncols);
+                vector<double>  sum_pair_subs(ncols, 0.0);
+
+                for (const auto &[li, lj] : selected_pairs) {
+                    PhyloNode *leaf_a = (PhyloNode*)leaves[li];
+                    PhyloNode *leaf_b = (PhyloNode*)leaves[lj];
+
+                    vector<int> path = get_path(leaf_a->id, leaf_b->id);
+                    fill(path_subs.begin(), path_subs.end(), 0LL);
+
+                    for (int step = 0; step + 1 < (int)path.size(); step++) {
+                        const int id0 = path[step];
+                        const int id1 = path[step + 1];
+                        if (parent_id[id1] == id0) {
+                            const auto &bm = branch_matrix[id1];
+                            for (int k = 0; k < ncols; k++) path_subs[k] += bm[k];
+                        } else {
+                            const auto &bm = branch_matrix[id0];
+                            for (int s0 = 0; s0 < nstates; s0++)
+                                for (int s1 = 0; s1 < nstates; s1++)
+                                    path_subs[s1 * nstates + s0] += bm[s0 * nstates + s1];
+                        }
                     }
+
+                    out << leaf_a->name << "\t" << leaf_b->name;
+                    for (int s0 = 0; s0 < nstates; s0++)
+                        for (int s1 = 0; s1 < nstates; s1++)
+                            if (s0 != s1) {
+                                out << "\t" << path_subs[s0 * nstates + s1];
+                                sum_pair_subs[s0 * nstates + s1] +=
+                                    path_subs[s0 * nstates + s1];
+                            }
+                    out << "\n";
                 }
 
-                out << leaf_a->name << "\t" << leaf_b->name;
+                out << "Pair_AVG\tPair_AVG" << fixed << setprecision(4);
                 for (int s0 = 0; s0 < nstates; s0++)
                     for (int s1 = 0; s1 < nstates; s1++)
-                        if (s0 != s1) {
-                            out << "\t" << path_subs[s0 * nstates + s1];
-                            sum_pair_subs[s0 * nstates + s1] +=
-                                path_subs[s0 * nstates + s1];
-                        }
+                        if (s0 != s1)
+                            out << "\t" << (m_pairs > 0
+                                            ? sum_pair_subs[s0 * nstates + s1] / m_pairs
+                                            : 0.0);
                 out << "\n";
-            }
 
-            // Average row across all processed pairs.
-            out << "Pair_AVG\tPair_AVG" << fixed << setprecision(4);
-            for (int s0 = 0; s0 < nstates; s0++)
-                for (int s1 = 0; s1 < nstates; s1++)
-                    if (s0 != s1)
-                        out << "\t" << (m_pairs > 0
-                                        ? sum_pair_subs[s0 * nstates + s1] / m_pairs
-                                        : 0.0);
-            out << "\n";
-
-            out.close();
-            cout << "Taxon-pair substitution counts written to " << out_file
-                 << " (" << m_pairs << " of " << total_pairs << " pairs)" << endl;
-        } catch (ios::failure &) {
-            outError(ERR_WRITE_OUTPUT, out_file);
+                out.close();
+                cout << "Taxon-pair substitution counts written to " << out_file
+                     << " (" << m_pairs << " of " << total_pairs << " pairs)" << endl;
+            } catch (ios::failure &) { outError(ERR_WRITE_OUTPUT, out_file); }
         }
     }
+
+    // Restore original internal-node names.
+    for (auto *nd : internal_nodes)
+        nd->name = saved_node_names[nd->id];
 }
 
+void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree) {
+    printParsimonyOutputs(out_prefix, tree, /*do_asr_fasta=*/true,
+                          /*do_taxon_pair=*/false, /*do_branch=*/false);
+}
+
+
+
 void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
-    printParsimonySubstitutionCounts(out_prefix, tree, /*do_taxon_pair=*/true,
-                                                        /*do_branch=*/false);
+    printParsimonyOutputs(out_prefix, tree, false, true, false);
 }
 
 void printBranchSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
-    printParsimonySubstitutionCounts(out_prefix, tree, /*do_taxon_pair=*/false,
-                                                        /*do_branch=*/true);
+    printParsimonyOutputs(out_prefix, tree, false, false, true);
+}
+
+void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
+                                      bool do_taxon_pair, bool do_branch) {
+    printParsimonyOutputs(out_prefix, tree, false, do_taxon_pair, do_branch);
+}
+
+
+void printSubAlnSubstitutionCounts(const char *out_prefix, PhyloTree *tree,
+                                   int K, int H,
+                                   bool do_taxon_pair, bool do_branch) {
+    ASSERT(tree && tree->aln);
+    Alignment *aln = tree->aln;
+    const int N = (int)aln->getNSeq();
+    ASSERT(H >= 3 && H <= N);
+
+    const Params &params = Params::getInstance();
+
+    // Fisher-Yates pool for taxon sampling: reused across iterations.
+    vector<int> pool(N);
+    for (int i = 0; i < N; i++) pool[i] = i;
+
+    for (int k = 0; k < K; k++) {
+        // ---------------------------------------------------------------
+        // 1. Randomly sample H taxa (partial Fisher-Yates, no reset needed
+        //    as long as we re-shuffle from the selected H each time).
+        // ---------------------------------------------------------------
+        for (int i = 0; i < H; i++) {
+            int j = i + random_int(N - i);
+            swap(pool[i], pool[j]);
+        }
+        IntVector seq_ids(pool.begin(), pool.begin() + H);
+        sort(seq_ids.begin(), seq_ids.end()); // canonical order
+
+        // ---------------------------------------------------------------
+        // 2. Build the sub-alignment.
+        // ---------------------------------------------------------------
+        Alignment *sub_aln = new Alignment();
+        sub_aln->extractSubAlignment(aln, seq_ids, 0);
+
+        // ---------------------------------------------------------------
+        // 3. Build an independent parsimony tree from the sub-alignment.
+        //    orderPatternByNumChars must run first so that num_variant_sites
+        //    is set before computeParsimonyTree calls getBitsBlockSize() to
+        //    allocate partial_pars memory (mirrors computeInitialTree L588).
+        // ---------------------------------------------------------------
+        sub_aln->orderPatternByNumChars(PAT_VARIANT);
+
+        PhyloTree sub_tree;
+        sub_tree.params = const_cast<Params*>(&params);
+        sub_tree.setLikelihoodKernel(params.SSE);
+
+        sub_tree.computeParsimonyTree(nullptr, sub_aln, nullptr);
+
+        // ---------------------------------------------------------------
+        // 4. Load the Sankoff cost matrix onto the sub-tree if the main
+        //    run is using one (set by --asr-pars sankoff, which sets
+        //    params.sankoff_cost_file = "fitch" or a user file).
+        // ---------------------------------------------------------------
+        if (params.sankoff_cost_file && !sub_tree.hasCostMatrix())
+            sub_tree.loadCostMatrixFile(const_cast<char*>(params.sankoff_cost_file));
+
+        // ---------------------------------------------------------------
+        // 5. Produce per-sub-alignment output files.
+        // ---------------------------------------------------------------
+        char k_str[16];
+        snprintf(k_str, sizeof(k_str), "%03d", k + 1);
+        string sub_prefix = string(out_prefix) + ".subaln_" + k_str;
+
+        cout << "Sub-alignment " << (k+1) << "/" << K
+             << " (" << H << " taxa): " << sub_prefix << endl;
+
+        printParsimonySubstitutionCounts(sub_prefix.c_str(), &sub_tree,
+                                         do_taxon_pair, do_branch);
+
+        // ---------------------------------------------------------------
+        // 6. Clean up — null aln pointer before sub_tree destructor runs
+        //    so the tree doesn't attempt to delete the alignment we own.
+        // ---------------------------------------------------------------
+        sub_tree.aln = nullptr;
+        delete sub_aln;
+    }
 }
 
 

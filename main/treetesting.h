@@ -139,13 +139,33 @@ void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
 void printBranchSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
 
 /**
- * Combined entry point for --count-taxon-pair-subs and --count-branch-subs.
- * Runs parsimony ASR once and pre-computes per-branch substitution matrices
- * once, then produces whichever output(s) are requested.  Call this directly
- * when both options are active to avoid redundant computation.
+ * Master function that runs parsimony ASR exactly ONCE and produces all
+ * requested outputs from that single ASR pass, guaranteeing that the FASTA,
+ * branch-substitution TSV, and taxon-pair TSV all use identical state
+ * assignments at tied sites.  Internal nodes are temporarily renamed
+ * "Node1", "Node2", … across all outputs for consistency.
+ */
+void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
+                           bool do_asr_fasta, bool do_taxon_pair,
+                           bool do_branch);
+
+/**
+ * Thin wrapper — calls printParsimonyOutputs with do_taxon_pair / do_branch.
  */
 void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
                                       bool do_taxon_pair, bool do_branch);
+
+/**
+ * --sub-aln K,H implementation.
+ * Randomly samples K independent sub-alignments of H taxa from the full
+ * alignment, builds a parsimony tree for each, and runs
+ * printParsimonySubstitutionCounts on it.  Each sub-alignment produces its
+ * own output files with prefix <out_prefix>.subaln_NNN.
+ * H must be <= aln->getNSeq() (checked by the caller).
+ */
+void printSubAlnSubstitutionCounts(const char *out_prefix, PhyloTree *tree,
+                                   int K, int H,
+                                   bool do_taxon_pair, bool do_branch);
 
 /**
  * Evaluate user-trees with possibility of tree topology tests

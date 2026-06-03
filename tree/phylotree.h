@@ -721,7 +721,10 @@ public:
      * initialize for 'nstates' and 'columns'
      */
     void initCostMatrix(CostMatrixType cost_type);
-        
+
+    /** @return true if a Sankoff cost matrix is currently loaded */
+    bool hasCostMatrix() const { return cost_matrix != nullptr; }
+
     /**
      * read the cost matrix file
      * initialize for 'nstates' and 'columns'

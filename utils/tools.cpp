@@ -3776,6 +3776,23 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
+			if (strcmp(argv[cnt], "--sub-aln") == 0) {
+                cnt++;
+                if (cnt >= argc) throw "Use --sub-aln K,H";
+                string arg = argv[cnt];
+                auto comma = arg.find(',');
+                if (comma == string::npos || comma == 0 || comma == arg.size()-1)
+                    throw "Use --sub-aln K,H (two positive integers separated by comma)";
+                try {
+                    params.sub_aln_k = stoi(arg.substr(0, comma));
+                    params.sub_aln_h = stoi(arg.substr(comma + 1));
+                    if (params.sub_aln_k <= 0 || params.sub_aln_h <= 0)
+                        throw "K and H must be positive";
+                } catch (const char *e) { throw e; }
+                  catch (...) { throw "Use --sub-aln K,H (two positive integers separated by comma)"; }
+				continue;
+			}
+
 			if (strcmp(argv[cnt], "-wsr") == 0 || strcmp(argv[cnt], "--rate") == 0) {
 				params.print_site_rate |= 1;
 				continue;
@@ -5585,6 +5602,16 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.count_branch_subs && !params.asr_pars)
         outError("--count-branch-subs requires --asr-pars");
 
+    if (params.sub_aln_k > 0) {
+        if (!params.count_taxon_pair_subs && !params.count_branch_subs)
+            outError("--sub-aln requires --count-taxon-pair-subs and/or --count-branch-subs");
+        // Implicitly enable --asr-pars (sankoff) when sub-aln is used, since
+        // printParsimonySubstitutionCounts needs the ASR internally.
+        if (!params.asr_pars) {
+            params.asr_pars = true;
+        }
+    }
+
     if (params.print_pars_trees &&
         params.start_tree != STT_PARSIMONY && params.start_tree != STT_PLL_PARSIMONY)
         outError("--print-pars-trees requires parsimony starting trees; rerun with --start PARS");
@@ -7326,6 +7353,8 @@ void Params::setDefault() {
     count_taxon_pair_subs = false;
     count_taxon_pair_subs_m = -1;
     count_branch_subs = false;
+    sub_aln_k = 0;
+    sub_aln_h = 0;
     print_tree_lh = false;
     lambda = 1;
     speed_conf = 1.0;

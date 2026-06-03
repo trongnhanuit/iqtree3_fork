@@ -2075,6 +2075,15 @@ public:
     long long count_taxon_pair_subs_m;
 
     /**
+     * --sub-aln K,H: sample K independent sub-alignments each with H taxa,
+     * build a parsimony tree for each, and run --count-taxon-pair-subs
+     * and/or --count-branch-subs on each.  Requires at least one of those
+     * two counting options.  0 means disabled.
+     */
+    int sub_aln_k;  // number of sub-alignments (K)
+    int sub_aln_h;  // taxa per sub-alignment (H)
+
+    /**
      * true if per-branch substitution matrix counting is requested
      * (--count-branch-subs).  Requires --asr-pars.  For every branch
      * (parent → child) in the tree, outputs a 20×20 substitution count

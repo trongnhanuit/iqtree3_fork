@@ -3764,6 +3764,11 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
+			if (strcmp(argv[cnt], "--count-branch-subs") == 0) {
+				params.count_branch_subs = true;
+				continue;
+			}
+
 			if (strcmp(argv[cnt], "-wsr") == 0 || strcmp(argv[cnt], "--rate") == 0) {
 				params.print_site_rate |= 1;
 				continue;
@@ -5570,6 +5575,9 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.count_subs && !params.asr_pars)
         outError("--count-subs requires --asr-pars");
 
+    if (params.count_branch_subs && !params.asr_pars)
+        outError("--count-branch-subs requires --asr-pars");
+
     if (params.print_pars_trees &&
         params.start_tree != STT_PARSIMONY && params.start_tree != STT_PLL_PARSIMONY)
         outError("--print-pars-trees requires parsimony starting trees; rerun with --start PARS");
@@ -6038,6 +6046,8 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "                       sankoff uses Sankoff algorithm with Fitch cost matrix;" << endl
     << "                       fitch uses the bitpacked Fitch algorithm." << endl
     << "  --count-subs         Count pairwise substitutions along tree paths (requires --asr-pars)" << endl
+    << "  --count-branch-subs  Count substitutions per branch (20x20 matrix per branch)," << endl
+    << "                       with an average row at the end (requires --asr-pars)" << endl
 
     << endl << "TEST OF SYMMETRY:" << endl
     << "  --symtest               Perform three tests of symmetry" << endl
@@ -7316,6 +7326,7 @@ void Params::setDefault() {
     asr_pars = false;
     asr_pars_algorithm = ASR_PARS_SANKOFF;
     count_subs = false;
+    count_branch_subs = false;
     print_tree_lh = false;
     lambda = 1;
     speed_conf = 1.0;

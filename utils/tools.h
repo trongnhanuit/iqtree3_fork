@@ -2068,6 +2068,14 @@ public:
     bool count_subs;
 
     /**
+     * true if per-branch substitution matrix counting is requested
+     * (--count-branch-subs).  Requires --asr-pars.  For every branch
+     * (parent → child) in the tree, outputs a 20×20 substitution count
+     * matrix weighted by alignment site frequency, plus an average row.
+     */
+    bool count_branch_subs;
+
+    /**
         0: print nothing
         1: print site state frequency vectors
     */

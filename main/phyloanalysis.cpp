@@ -1290,6 +1290,10 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
         cout << "  Pairwise substitution counts:  " << params.out_prefix << ".subs_count.tsv" << endl;
     }
 
+    if (params.count_branch_subs) {
+        cout << "  Branch substitution counts:    " << params.out_prefix << ".branch_subs.tsv" << endl;
+    }
+
     if (params.write_intermediate_trees)
         cout << "  All intermediate trees:        " << params.out_prefix << ".treels"
                 << endl;
@@ -2694,6 +2698,13 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
             outWarning("--count-subs is not yet supported for partition models; skipping.");
         else
             printSubstitutionCounts(params.out_prefix, &iqtree);
+    }
+
+    if (params.count_branch_subs) {
+        if (iqtree.isSuperTree())
+            outWarning("--count-branch-subs is not yet supported for partition models; skipping.");
+        else
+            printBranchSubstitutionCounts(params.out_prefix, &iqtree);
     }
 
     if (params.print_site_state_freq != WSF_NONE && !params.site_freq_file && !params.tree_freq_file) {

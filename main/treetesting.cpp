@@ -677,6 +677,160 @@ void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
 }
 
 
+void printBranchSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
+    ASSERT(tree && tree->aln);
+
+    Alignment  *aln     = tree->aln;
+    const int   nstates = aln->num_states;
+    const int   nseq    = aln->getNSeq();
+
+    if (aln->ordered_to_orig_ptn.empty())
+        aln->orderPatternByNumChars(PAT_VARIANT);
+    const int nptn_pars = (int)aln->ordered_to_orig_ptn.size();
+
+    if (nptn_pars == 0) {
+        outWarning("--count-branch-subs: no parsimony-variant patterns found; skipping.");
+        return;
+    }
+
+    // -----------------------------------------------------------------------
+    // 1. Collect parsimony ancestral states for every internal node.
+    // -----------------------------------------------------------------------
+    vector<vector<StateType>> node_states(tree->nodeNum);
+    tree->computeParsimonyAncestralStream(
+        [&](PhyloNode *node, const vector<StateType> &s) {
+            node_states[node->id] = s;
+        });
+
+    // -----------------------------------------------------------------------
+    // 2. BFS to build node-by-id map and parent pointers.
+    //    (same logic as printSubstitutionCounts)
+    // -----------------------------------------------------------------------
+    ASSERT(!tree->root->neighbors.empty());
+    PhyloNode *actual_root = (PhyloNode*)tree->root->neighbors[0]->node;
+
+    vector<PhyloNode*> node_by_id(tree->nodeNum, nullptr);
+    vector<int>        parent_id(tree->nodeNum, -1);
+
+    vector<pair<PhyloNode*, PhyloNode*>> bfs;
+    bfs.reserve(tree->nodeNum);
+    bfs.push_back({actual_root, (PhyloNode*)tree->root});
+    node_by_id[actual_root->id] = actual_root;
+
+    if (!tree->rooted) {
+        node_by_id[tree->root->id] = (PhyloNode*)tree->root;
+        parent_id[tree->root->id]  = actual_root->id;
+    }
+
+    for (int qi = 0; qi < (int)bfs.size(); qi++) {
+        auto [node, dad] = bfs[qi];
+        FOR_NEIGHBOR_IT(node, dad, it) {
+            PhyloNode *child = (PhyloNode*)(*it)->node;
+            if (child->name == ROOT_NAME) continue;
+            if (node_by_id[child->id])   continue;
+            node_by_id[child->id] = child;
+            parent_id[child->id]  = node->id;
+            bfs.push_back({child, node});
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. Helper: state of a node at ordered-pattern index pi.
+    // -----------------------------------------------------------------------
+    auto get_state = [&](int node_id, int pi) -> int {
+        if (node_id < nseq) {
+            StateType s = aln->ordered_pattern[pi][node_id];
+            return (s < (StateType)nstates) ? (int)s : -1;
+        }
+        const auto &st = node_states[node_id];
+        if (st.empty()) return -1;
+        return (st[pi] < (StateType)nstates) ? (int)st[pi] : -1;
+    };
+
+    // -----------------------------------------------------------------------
+    // 4. Helper: display label for a node (taxon name or generated label).
+    // -----------------------------------------------------------------------
+    auto node_label = [&](PhyloNode *nd) -> string {
+        if (!nd->name.empty() && nd->name != ROOT_NAME) return nd->name;
+        // Unnamed internal node: generate a stable label from its id.
+        return "InternalNode" + convertIntToString(nd->id - nseq + 1);
+    };
+
+    // -----------------------------------------------------------------------
+    // 5. Build substitution-type column names.
+    // -----------------------------------------------------------------------
+    vector<string> col_names;
+    col_names.reserve(nstates * (nstates - 1));
+    for (int s0 = 0; s0 < nstates; s0++)
+        for (int s1 = 0; s1 < nstates; s1++)
+            if (s0 != s1)
+                col_names.push_back(
+                    aln->convertStateBackStr(s0) + "->" + aln->convertStateBackStr(s1));
+
+    // -----------------------------------------------------------------------
+    // 6. Iterate over all branches, count substitutions, and accumulate sum
+    //    for the average row.
+    // -----------------------------------------------------------------------
+    string out_file = string(out_prefix) + ".branch_subs.tsv";
+    try {
+        ofstream out;
+        out.exceptions(ios::failbit | ios::badbit);
+        out.open(out_file.c_str());
+
+        out << "FromNode\tToNode";
+        for (const auto &cn : col_names) out << "\t" << cn;
+        out << "\n";
+
+        const int ncols = nstates * nstates;
+        vector<int64_t> subs(ncols);
+        // Accumulator for the per-branch average (over all nstates*nstates entries).
+        vector<double> sum_subs(ncols, 0.0);
+        int n_branches = 0;
+
+        for (int cid = 0; cid < tree->nodeNum; cid++) {
+            if (!node_by_id[cid] || parent_id[cid] == -1) continue;
+            PhyloNode *child  = node_by_id[cid];
+            PhyloNode *parent = node_by_id[parent_id[cid]];
+
+            fill(subs.begin(), subs.end(), 0LL);
+
+            for (int pi = 0; pi < nptn_pars; pi++) {
+                const int s0 = get_state(parent->id, pi);
+                const int s1 = get_state(child->id,  pi);
+                if (s0 < 0 || s1 < 0 || s0 == s1) continue;
+                subs[s0 * nstates + s1] += aln->ordered_pattern[pi].frequency;
+            }
+
+            out << node_label(parent) << "\t" << node_label(child);
+            for (int s0 = 0; s0 < nstates; s0++)
+                for (int s1 = 0; s1 < nstates; s1++)
+                    if (s0 != s1) {
+                        out << "\t" << subs[s0 * nstates + s1];
+                        sum_subs[s0 * nstates + s1] += subs[s0 * nstates + s1];
+                    }
+            out << "\n";
+            n_branches++;
+        }
+
+        // Average row.
+        out << "Branch_AVG\tBranch_AVG";
+        out << fixed << setprecision(4);
+        for (int s0 = 0; s0 < nstates; s0++)
+            for (int s1 = 0; s1 < nstates; s1++)
+                if (s0 != s1)
+                    out << "\t" << (n_branches > 0
+                                    ? sum_subs[s0 * nstates + s1] / n_branches
+                                    : 0.0);
+        out << "\n";
+
+        out.close();
+        cout << "Branch substitution counts written to   " << out_file << endl;
+    } catch (ios::failure &) {
+        outError(ERR_WRITE_OUTPUT, out_file);
+    }
+}
+
+
 void printSiteProbCategory(const char*filename, PhyloTree *tree, SiteLoglType wsl) {
     
     if (wsl == WSL_NONE || wsl == WSL_SITE)

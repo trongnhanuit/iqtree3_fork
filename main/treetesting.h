@@ -131,6 +131,14 @@ void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree);
 void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
 
 /**
+ * For every branch (parent → child) in the tree, counts substitutions from
+ * parsimony ancestral states and writes a 20×20 matrix per branch to
+ * <out_prefix>.branch_subs.tsv.  A final "Branch_AVG" row shows the average
+ * matrix over all branches.  Requires --asr-pars to have run first.
+ */
+void printBranchSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
+
+/**
  * Evaluate user-trees with possibility of tree topology tests
  * @param params program parameters
  * @param tree current tree

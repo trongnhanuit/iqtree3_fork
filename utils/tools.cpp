@@ -5864,8 +5864,6 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --ntop NUM           Number of top initial trees (default: 20)" << endl
     << "  --nbest NUM          Number of best trees retained during search (default: 5)" << endl
     << "  -n NUM               Fix number of iterations to stop (default: OFF)" << endl
-    << "  --print-pars-trees   Write --ninit parsimony trees with parsimony branch lengths" << endl
-    << "                       to .parstrees file; use with -n 0 to skip ML search" << endl
     << "  --nstop NUM          Number of unsuccessful iterations to stop (default: 100)" << endl
     << "  --perturb NUM        Perturbation strength for randomized NNI (default: 0.5)" << endl
     << "  --radius NUM         Radius for parsimony SPR search (default: 6)" << endl
@@ -6041,13 +6039,6 @@ void usage_iqtree(char* argv[], bool full_command) {
     << endl << "ANCESTRAL STATE RECONSTRUCTION:" << endl
     << "  --ancestral          Ancestral state reconstruction by empirical Bayes" << endl
     << "  --asr-min NUM        Min probability of ancestral state (default: equil freq)" << endl
-    << "  --asr-pars [ALG]     Ancestral state reconstruction by parsimony." << endl
-    << "                       ALG: sankoff (default) or fitch (case-insensitive)." << endl
-    << "                       sankoff uses Sankoff algorithm with Fitch cost matrix;" << endl
-    << "                       fitch uses the bitpacked Fitch algorithm." << endl
-    << "  --count-subs         Count pairwise substitutions along tree paths (requires --asr-pars)" << endl
-    << "  --count-branch-subs  Count substitutions per branch (20x20 matrix per branch)," << endl
-    << "                       with an average row at the end (requires --asr-pars)" << endl
 
     << endl << "TEST OF SYMMETRY:" << endl
     << "  --symtest               Perform three tests of symmetry" << endl

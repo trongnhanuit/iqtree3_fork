@@ -2693,18 +2693,19 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
             printParsimonyAncestralSequences(params.out_prefix, &iqtree);
     }
 
-    if (params.count_taxon_pair_subs) {
-        if (iqtree.isSuperTree())
-            outWarning("--count-taxon-pair-subs is not yet supported for partition models; skipping.");
-        else
-            printSubstitutionCounts(params.out_prefix, &iqtree);
-    }
-
-    if (params.count_branch_subs) {
-        if (iqtree.isSuperTree())
-            outWarning("--count-branch-subs is not yet supported for partition models; skipping.");
-        else
-            printBranchSubstitutionCounts(params.out_prefix, &iqtree);
+    if (params.count_taxon_pair_subs || params.count_branch_subs) {
+        if (iqtree.isSuperTree()) {
+            if (params.count_taxon_pair_subs)
+                outWarning("--count-taxon-pair-subs is not yet supported for partition models; skipping.");
+            if (params.count_branch_subs)
+                outWarning("--count-branch-subs is not yet supported for partition models; skipping.");
+        } else {
+            // Single combined call: ASR and per-branch matrices are computed
+            // only once even when both outputs are requested.
+            printParsimonySubstitutionCounts(params.out_prefix, &iqtree,
+                                             params.count_taxon_pair_subs,
+                                             params.count_branch_subs);
+        }
     }
 
     if (params.print_site_state_freq != WSF_NONE && !params.site_freq_file && !params.tree_freq_file) {

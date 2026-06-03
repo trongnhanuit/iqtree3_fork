@@ -139,6 +139,15 @@ void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
 void printBranchSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
 
 /**
+ * Combined entry point for --count-taxon-pair-subs and --count-branch-subs.
+ * Runs parsimony ASR once and pre-computes per-branch substitution matrices
+ * once, then produces whichever output(s) are requested.  Call this directly
+ * when both options are active to avoid redundant computation.
+ */
+void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
+                                      bool do_taxon_pair, bool do_branch);
+
+/**
  * Evaluate user-trees with possibility of tree topology tests
  * @param params program parameters
  * @param tree current tree

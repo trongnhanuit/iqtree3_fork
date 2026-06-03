@@ -637,18 +637,22 @@ void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
     }
 
     // -----------------------------------------------------------------------
-    // 7. Taxon-pair output: for each pair (i < j) find the LCA path and
-    //    accumulate branch matrices with direction awareness.
+    // 7. Taxon-pair output: for each selected pair (i < j) find the LCA path
+    //    and accumulate branch matrices with direction awareness.
     //
     //    Path [a, ..., LCA, ..., b] has two legs:
-    //      Upward   (a → LCA): traversing child → parent.
-    //               branch_matrix[id0] holds the parent→child matrix, so
-    //               we add it TRANSPOSED: s0→s1 contributes to [s1*K+s0].
-    //      Downward (LCA → b): traversing parent → child.
-    //               branch_matrix[id1] is used directly.
+    //      Upward   (a → LCA): child → parent traversal.
+    //               branch_matrix[id0] stores parent→child, so we add it
+    //               TRANSPOSED: s0→s1 entry contributes to [s1*K+s0].
+    //      Downward (LCA → b): parent → child, accumulate branch_matrix[id1]
+    //               as-is.
+    //
+    //    If --count-taxon-pair-subs M is given and M < total pairs, a random
+    //    sample of M pairs is selected using rejection sampling on flat pair
+    //    indices (O(M) expected).  A Pair_AVG row is appended at the end.
     // -----------------------------------------------------------------------
     if (do_taxon_pair) {
-        // Build LCA path helper.
+        // LCA path helper.
         auto get_path = [&](int a, int b) -> vector<int> {
             vector<int> pa, pb;
             for (int cur = a; cur != -1; cur = parent_id[cur]) pa.push_back(cur);
@@ -669,6 +673,58 @@ void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
         tree->getTaxa(leaves);
         sort(leaves.begin(), leaves.end(),
              [](Node *x, Node *y) { return x->id < y->id; });
+        const int n = (int)leaves.size();
+
+        // Determine how many pairs to process.
+        const long long total_pairs = (long long)n * (n - 1) / 2;
+        const long long m_param     = Params::getInstance().count_taxon_pair_subs_m;
+        const long long m_pairs     = (m_param <= 0 || m_param >= total_pairs)
+                                      ? total_pairs : m_param;
+        const bool sample_mode      = (m_pairs < total_pairs);
+
+        // Convert a flat pair index k ∈ [0, total_pairs) to (i, j) with i < j.
+        // Row i starts at offset i*(2n−i−1)/2; within the row j = i+1+delta.
+        auto index_to_ij = [&](long long k) -> pair<int,int> {
+            int lo = 0, hi = n - 2;
+            while (lo < hi) {
+                int mid = lo + (hi - lo + 1) / 2;
+                if ((long long)mid * (2*n - mid - 1) / 2 <= k) lo = mid;
+                else hi = mid - 1;
+            }
+            int i = lo;
+            int j = i + 1 + (int)(k - (long long)i * (2*n - i - 1) / 2);
+            return {i, j};
+        };
+
+        // Build the list of (i, j) leaf-vector index pairs to process.
+        // In sample mode: rejection-sample m_pairs distinct flat indices, then
+        // sort so output order is deterministic and cache-friendly.
+        vector<pair<int,int>> selected_pairs;
+        selected_pairs.reserve((size_t)m_pairs);
+
+        if (!sample_mode) {
+            for (int i = 0; i < n; i++)
+                for (int j = i + 1; j < n; j++)
+                    selected_pairs.push_back({i, j});
+        } else {
+            // Rejection sampling: pick m_pairs unique flat indices.
+            // Expected iterations = m_pairs * total_pairs/(total_pairs−m_pairs+1)
+            // which is O(m_pairs) when m_pairs << total_pairs.
+            unordered_set<long long> picked;
+            picked.reserve((size_t)m_pairs * 2);
+            while ((long long)picked.size() < m_pairs) {
+                // random_int(n) returns [0,n); cast guards against total_pairs
+                // exceeding INT_MAX (extremely rare in phylogenetics).
+                long long k = (total_pairs <= (long long)INT_MAX)
+                              ? (long long)random_int((int)total_pairs)
+                              : (((long long)random_int(INT_MAX) << 31) |
+                                 random_int(INT_MAX)) % total_pairs;
+                if (picked.insert(k).second)
+                    selected_pairs.push_back(index_to_ij(k));
+            }
+            // Sort for deterministic output order.
+            sort(selected_pairs.begin(), selected_pairs.end());
+        }
 
         string out_file = string(out_prefix) + ".taxon_pair_subs.tsv";
         try {
@@ -680,48 +736,57 @@ void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,
             for (const auto &cn : col_names) out << "\t" << cn;
             out << "\n";
 
-            const int n = (int)leaves.size();
             vector<int64_t> path_subs(ncols);
+            vector<double>  sum_pair_subs(ncols, 0.0);
 
-            for (int i = 0; i < n; i++) {
-                PhyloNode *leaf_a = (PhyloNode*)leaves[i];
-                for (int j = i + 1; j < n; j++) {
-                    PhyloNode *leaf_b = (PhyloNode*)leaves[j];
+            for (const auto &[li, lj] : selected_pairs) {
+                PhyloNode *leaf_a = (PhyloNode*)leaves[li];
+                PhyloNode *leaf_b = (PhyloNode*)leaves[lj];
 
-                    vector<int> path = get_path(leaf_a->id, leaf_b->id);
-                    fill(path_subs.begin(), path_subs.end(), 0LL);
+                vector<int> path = get_path(leaf_a->id, leaf_b->id);
+                fill(path_subs.begin(), path_subs.end(), 0LL);
 
-                    for (int step = 0; step + 1 < (int)path.size(); step++) {
-                        const int id0 = path[step];
-                        const int id1 = path[step + 1];
+                for (int step = 0; step + 1 < (int)path.size(); step++) {
+                    const int id0 = path[step];
+                    const int id1 = path[step + 1];
 
-                        if (parent_id[id1] == id0) {
-                            // Downward (parent → child): accumulate as-is.
-                            const auto &bm = branch_matrix[id1];
-                            for (int k = 0; k < ncols; k++)
-                                path_subs[k] += bm[k];
-                        } else {
-                            // Upward (child → parent): accumulate transposed.
-                            // branch_matrix[id0] stores parent→child counts;
-                            // going in reverse means s0→s1 becomes s1→s0.
-                            const auto &bm = branch_matrix[id0];
-                            for (int s0 = 0; s0 < nstates; s0++)
-                                for (int s1 = 0; s1 < nstates; s1++)
-                                    path_subs[s1 * nstates + s0] +=
-                                        bm[s0 * nstates + s1];
-                        }
+                    if (parent_id[id1] == id0) {
+                        // Downward (parent → child): accumulate as-is.
+                        const auto &bm = branch_matrix[id1];
+                        for (int k = 0; k < ncols; k++) path_subs[k] += bm[k];
+                    } else {
+                        // Upward (child → parent): accumulate transposed.
+                        const auto &bm = branch_matrix[id0];
+                        for (int s0 = 0; s0 < nstates; s0++)
+                            for (int s1 = 0; s1 < nstates; s1++)
+                                path_subs[s1 * nstates + s0] += bm[s0 * nstates + s1];
                     }
-
-                    out << leaf_a->name << "\t" << leaf_b->name;
-                    for (int s0 = 0; s0 < nstates; s0++)
-                        for (int s1 = 0; s1 < nstates; s1++)
-                            if (s0 != s1) out << "\t" << path_subs[s0 * nstates + s1];
-                    out << "\n";
                 }
+
+                out << leaf_a->name << "\t" << leaf_b->name;
+                for (int s0 = 0; s0 < nstates; s0++)
+                    for (int s1 = 0; s1 < nstates; s1++)
+                        if (s0 != s1) {
+                            out << "\t" << path_subs[s0 * nstates + s1];
+                            sum_pair_subs[s0 * nstates + s1] +=
+                                path_subs[s0 * nstates + s1];
+                        }
+                out << "\n";
             }
 
+            // Average row across all processed pairs.
+            out << "Pair_AVG\tPair_AVG" << fixed << setprecision(4);
+            for (int s0 = 0; s0 < nstates; s0++)
+                for (int s1 = 0; s1 < nstates; s1++)
+                    if (s0 != s1)
+                        out << "\t" << (m_pairs > 0
+                                        ? sum_pair_subs[s0 * nstates + s1] / m_pairs
+                                        : 0.0);
+            out << "\n";
+
             out.close();
-            cout << "Taxon-pair substitution counts written to " << out_file << endl;
+            cout << "Taxon-pair substitution counts written to " << out_file
+                 << " (" << m_pairs << " of " << total_pairs << " pairs)" << endl;
         } catch (ios::failure &) {
             outError(ERR_WRITE_OUTPUT, out_file);
         }

@@ -3761,6 +3761,13 @@ void parseArg(int argc, char *argv[], Params &params) {
 
 			if (strcmp(argv[cnt], "--count-taxon-pair-subs") == 0) {
 				params.count_taxon_pair_subs = true;
+                // Optional M: next argument is M if it starts with a digit.
+                if (cnt + 1 < argc && isdigit((unsigned char)argv[cnt+1][0])) {
+                    try {
+                        long long m = stoll(argv[cnt + 1]);
+                        if (m > 0) { params.count_taxon_pair_subs_m = m; cnt++; }
+                    } catch (...) {}
+                }
 				continue;
 			}
 
@@ -7317,6 +7324,7 @@ void Params::setDefault() {
     asr_pars = false;
     asr_pars_algorithm = ASR_PARS_SANKOFF;
     count_taxon_pair_subs = false;
+    count_taxon_pair_subs_m = -1;
     count_branch_subs = false;
     print_tree_lh = false;
     lambda = 1;

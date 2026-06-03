@@ -2068,6 +2068,13 @@ public:
     bool count_taxon_pair_subs;
 
     /**
+     * Optional sample size for --count-taxon-pair-subs <M>.
+     * -1 (default) means use all N*(N-1)/2 pairs.
+     * A positive value M means randomly select min(M, N*(N-1)/2) pairs.
+     */
+    long long count_taxon_pair_subs_m;
+
+    /**
      * true if per-branch substitution matrix counting is requested
      * (--count-branch-subs).  Requires --asr-pars.  For every branch
      * (parent → child) in the tree, outputs a 20×20 substitution count

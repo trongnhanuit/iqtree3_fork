@@ -3759,8 +3759,8 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
-			if (strcmp(argv[cnt], "--count-subs") == 0) {
-				params.count_subs = true;
+			if (strcmp(argv[cnt], "--count-taxon-pair-subs") == 0) {
+				params.count_taxon_pair_subs = true;
 				continue;
 			}
 
@@ -5572,8 +5572,8 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.use_nn_model && params.modelomatic)
         outError("--modelomatic option does not work with --use-nn-model.");
 
-    if (params.count_subs && !params.asr_pars)
-        outError("--count-subs requires --asr-pars");
+    if (params.count_taxon_pair_subs && !params.asr_pars)
+        outError("--count-taxon-pair-subs requires --asr-pars");
 
     if (params.count_branch_subs && !params.asr_pars)
         outError("--count-branch-subs requires --asr-pars");
@@ -7316,7 +7316,7 @@ void Params::setDefault() {
     min_ancestral_prob = 0.0;
     asr_pars = false;
     asr_pars_algorithm = ASR_PARS_SANKOFF;
-    count_subs = false;
+    count_taxon_pair_subs = false;
     count_branch_subs = false;
     print_tree_lh = false;
     lambda = 1;

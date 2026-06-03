@@ -465,12 +465,12 @@ void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
     const int nptn_pars = (int)aln->ordered_to_orig_ptn.size();
 
     if (nptn_pars == 0) {
-        outWarning("--count-subs: no parsimony-variant patterns found; skipping.");
+        outWarning("--count-taxon-pair-subs: no parsimony-variant patterns found; skipping.");
         return;
     }
 
     if (nseq > 500)
-        outWarning("--count-subs: " + convertIntToString(nseq) + " taxa => " +
+        outWarning("--count-taxon-pair-subs: " + convertIntToString(nseq) + " taxa => " +
                    convertIntToString((long long)nseq*(nseq-1)/2) +
                    " pairs, this may be slow.");
 
@@ -613,14 +613,14 @@ void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
     // -----------------------------------------------------------------------
     // 7. Iterate over all ordered pairs (i < j), count substitutions, output.
     // -----------------------------------------------------------------------
-    string out_file = string(out_prefix) + ".subs_count.tsv";
+    string out_file = string(out_prefix) + ".taxon_pair_subs.tsv";
     try {
         ofstream out;
         out.exceptions(ios::failbit | ios::badbit);
         out.open(out_file.c_str());
 
         // Header row.
-        out << "TaxonA\tTaxonB";
+        out << "FromNode\tToNode";
         for (const auto &cn : col_names) out << "\t" << cn;
         out << "\n";
 
@@ -670,7 +670,7 @@ void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
         }
 
         out.close();
-        cout << "Substitution counts written to          " << out_file << endl;
+        cout << "Taxon-pair substitution counts written to " << out_file << endl;
     } catch (ios::failure &) {
         outError(ERR_WRITE_OUTPUT, out_file);
     }

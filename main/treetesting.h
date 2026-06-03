@@ -124,8 +124,8 @@ void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree);
  * Requires --asr-pars to have been requested so that parsimony ancestral
  * states are available.
  *
- * Output: TSV file <out_prefix>.subs_count.tsv with columns
- *   TaxonA  TaxonB  s0->s1  s0->s2  ...  (one column per substitution type)
+ * Output: TSV file <out_prefix>.taxon_pair_subs.tsv with columns
+ *   FromNode  ToNode  s0->s1  s0->s2  ...  (one column per substitution type)
  * Counts are summed over all alignment sites (invariant sites contribute 0).
  */
 void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree);

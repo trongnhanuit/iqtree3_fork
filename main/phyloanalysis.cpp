@@ -1286,8 +1286,8 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
         cout << "  Parsimony ancestral tree:      " << params.out_prefix << ".asr_pars.treefile" << endl;
     }
 
-    if (params.count_subs) {
-        cout << "  Pairwise substitution counts:  " << params.out_prefix << ".subs_count.tsv" << endl;
+    if (params.count_taxon_pair_subs) {
+        cout << "  Taxon-pair substitution counts: " << params.out_prefix << ".taxon_pair_subs.tsv" << endl;
     }
 
     if (params.count_branch_subs) {
@@ -2693,9 +2693,9 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
             printParsimonyAncestralSequences(params.out_prefix, &iqtree);
     }
 
-    if (params.count_subs) {
+    if (params.count_taxon_pair_subs) {
         if (iqtree.isSuperTree())
-            outWarning("--count-subs is not yet supported for partition models; skipping.");
+            outWarning("--count-taxon-pair-subs is not yet supported for partition models; skipping.");
         else
             printSubstitutionCounts(params.out_prefix, &iqtree);
     }

@@ -2060,12 +2060,12 @@ public:
     AsrParsAlgorithm asr_pars_algorithm;
 
     /**
-     * true if pairwise substitution counting is requested (--count-subs).
+     * true if pairwise substitution counting is requested (--count-taxon-pair-subs).
      * Requires --asr-pars.  For every pair of taxa (A, B) with A-index < B-index,
      * counts the number of substitutions of each type along the tree path A→B,
      * weighted by alignment site frequency.
      */
-    bool count_subs;
+    bool count_taxon_pair_subs;
 
     /**
      * true if per-branch substitution matrix counting is requested

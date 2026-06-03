@@ -564,7 +564,8 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
                     out << "\n";
                     n_branches++;
                 }
-                out << "Branch_AVG\tBranch_AVG" << fixed << setprecision(4);
+                // save current formatting state
+                out << "Branch_AVG\tBranch_AVG" << fixed << setprecision(10);
                 for (int s0 = 0; s0 < nstates; s0++)
                     for (int s1 = 0; s1 < nstates; s1++)
                         if (s0 != s1)
@@ -683,7 +684,7 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
                     out << "\n";
                 }
 
-                out << "Pair_AVG\tPair_AVG" << fixed << setprecision(4);
+                out << "Pair_AVG\tPair_AVG" << fixed << setprecision(10);
                 for (int s0 = 0; s0 < nstates; s0++)
                     for (int s1 = 0; s1 < nstates; s1++)
                         if (s0 != s1)

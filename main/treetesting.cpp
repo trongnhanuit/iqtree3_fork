@@ -602,21 +602,19 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
                  [](Node *x, Node *y) { return x->id < y->id; });
             const int n = (int)leaves.size();
 
-            const long long total_pairs = (long long)n * (n - 1) / 2;
+            // Ordered pairs: both (A,B) and (B,A) are distinct (i != j).
+            const long long total_pairs = (long long)n * (n - 1);
             const long long m_param     = Params::getInstance().count_taxon_pair_subs_m;
             const long long m_pairs     = (m_param <= 0 || m_param >= total_pairs)
                                           ? total_pairs : m_param;
             const bool sample_mode      = (m_pairs < total_pairs);
 
+            // Map flat index k in [0, n*(n-1)) to ordered pair (i, j) with i != j.
+            // For each i there are (n-1) valid j values; skip j==i.
             auto index_to_ij = [&](long long k) -> pair<int,int> {
-                int lo = 0, hi = n - 2;
-                while (lo < hi) {
-                    int mid = lo + (hi - lo + 1) / 2;
-                    if ((long long)mid * (2*n - mid - 1) / 2 <= k) lo = mid;
-                    else hi = mid - 1;
-                }
-                int i = lo;
-                int j = i + 1 + (int)(k - (long long)i * (2*n - i - 1) / 2);
+                int i     = (int)(k / (n - 1));
+                int j_raw = (int)(k % (n - 1));
+                int j     = (j_raw >= i) ? j_raw + 1 : j_raw;
                 return {i, j};
             };
 
@@ -624,8 +622,9 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
             selected_pairs.reserve((size_t)m_pairs);
             if (!sample_mode) {
                 for (int i = 0; i < n; i++)
-                    for (int j = i + 1; j < n; j++)
-                        selected_pairs.push_back({i, j});
+                    for (int j = 0; j < n; j++)
+                        if (i != j)
+                            selected_pairs.push_back({i, j});
             } else {
                 unordered_set<long long> picked;
                 picked.reserve((size_t)m_pairs * 2);

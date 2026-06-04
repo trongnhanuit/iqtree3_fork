@@ -3793,6 +3793,11 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
+			if (strcmp(argv[cnt], "--no-asr-output") == 0) {
+                params.no_asr_output = true;
+				continue;
+			}
+
 			if (strcmp(argv[cnt], "-wsr") == 0 || strcmp(argv[cnt], "--rate") == 0) {
 				params.print_site_rate |= 1;
 				continue;
@@ -5596,21 +5601,26 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.use_nn_model && params.modelomatic)
         outError("--modelomatic option does not work with --use-nn-model.");
 
+    if (params.sub_aln_k > 0) {
+        // With --no-asr-output, at least one counting option must be given.
+        if (params.no_asr_output && !params.count_taxon_pair_subs && !params.count_branch_subs)
+            outError("--sub-aln --no-asr-output: no output would be produced; "
+                     "add --count-taxon-pair-subs and/or --count-branch-subs");
+        // Implicitly enable --asr-pars since the ASR is needed internally.
+        if (!params.asr_pars) {
+            params.asr_pars = true;
+        }
+    }
+
+    // These require --asr-pars (or --sub-aln, which enables it implicitly above).
     if (params.count_taxon_pair_subs && !params.asr_pars)
         outError("--count-taxon-pair-subs requires --asr-pars");
 
     if (params.count_branch_subs && !params.asr_pars)
         outError("--count-branch-subs requires --asr-pars");
 
-    if (params.sub_aln_k > 0) {
-        if (!params.count_taxon_pair_subs && !params.count_branch_subs)
-            outError("--sub-aln requires --count-taxon-pair-subs and/or --count-branch-subs");
-        // Implicitly enable --asr-pars (sankoff) when sub-aln is used, since
-        // printParsimonySubstitutionCounts needs the ASR internally.
-        if (!params.asr_pars) {
-            params.asr_pars = true;
-        }
-    }
+    if (params.no_asr_output && params.sub_aln_k == 0)
+        outWarning("--no-asr-output has no effect without --sub-aln");
 
     if (params.print_pars_trees &&
         params.start_tree != STT_PARSIMONY && params.start_tree != STT_PLL_PARSIMONY)
@@ -7355,6 +7365,7 @@ void Params::setDefault() {
     count_branch_subs = false;
     sub_aln_k = 0;
     sub_aln_h = 0;
+    no_asr_output = false;
     print_tree_lh = false;
     lambda = 1;
     speed_conf = 1.0;

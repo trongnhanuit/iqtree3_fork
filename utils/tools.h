@@ -2076,12 +2076,20 @@ public:
 
     /**
      * --sub-aln K,H: sample K independent sub-alignments each with H taxa,
-     * build a parsimony tree for each, and run --count-taxon-pair-subs
-     * and/or --count-branch-subs on each.  Requires at least one of those
-     * two counting options.  0 means disabled.
+     * build a parsimony tree for each, and run --asr-pars,
+     * --count-taxon-pair-subs and/or --count-branch-subs on each.
+     * When active, these features run ONLY on sub-alignments, not on the
+     * full alignment.  0 means disabled.
      */
     int sub_aln_k;  // number of sub-alignments (K)
     int sub_aln_h;  // taxa per sub-alignment (H)
+
+    /**
+     * --no-asr-output: when --sub-aln is active, suppress the per-sub-alignment
+     * .asr_pars.fasta and .asr_pars.treefile outputs.  At least one of
+     * --count-taxon-pair-subs or --count-branch-subs must then be given.
+     */
+    bool no_asr_output;
 
     /**
      * true if per-branch substitution matrix counting is requested

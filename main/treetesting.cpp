@@ -790,8 +790,9 @@ void printSubAlnSubstitutionCounts(const char *out_prefix, PhyloTree *tree,
         cout << "Sub-alignment " << (k+1) << "/" << K
              << " (" << H << " taxa): " << sub_prefix << endl;
 
-        printParsimonySubstitutionCounts(sub_prefix.c_str(), &sub_tree,
-                                         do_taxon_pair, do_branch);
+        printParsimonyOutputs(sub_prefix.c_str(), &sub_tree,
+                              /*do_asr_fasta=*/!params.no_asr_output,
+                              do_taxon_pair, do_branch);
 
         // ---------------------------------------------------------------
         // 6. Clean up — null aln pointer before sub_tree destructor runs

@@ -1279,18 +1279,18 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
 //        cout << "  Ancestral sequences:           " << params.out_prefix << ".aseq" << endl;
     }
 
-    if (params.asr_pars) {
+    if (params.asr_pars && params.sub_aln_k == 0) {
         cout << "  Parsimony ancestral sequences ("
              << (params.asr_pars_algorithm == ASR_PARS_FITCH ? "fitch" : "sankoff") << "): "
              << params.out_prefix << ".asr_pars.fasta" << endl;
         cout << "  Parsimony ancestral tree:      " << params.out_prefix << ".asr_pars.treefile" << endl;
     }
 
-    if (params.count_taxon_pair_subs) {
+    if (params.count_taxon_pair_subs && params.sub_aln_k == 0) {
         cout << "  Taxon-pair substitution counts: " << params.out_prefix << ".taxon_pair_subs.tsv" << endl;
     }
 
-    if (params.count_branch_subs) {
+    if (params.count_branch_subs && params.sub_aln_k == 0) {
         cout << "  Branch substitution counts:    " << params.out_prefix << ".branch_subs.tsv" << endl;
     }
 
@@ -1300,6 +1300,12 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
              << setfill(' ')
              << "  (" << params.sub_aln_k << " sub-alignments, "
              << params.sub_aln_h << " taxa each)" << endl;
+        if (!params.no_asr_output)
+            cout << "    Per sub-alignment: .asr_pars.fasta, .asr_pars.treefile" << endl;
+        if (params.count_taxon_pair_subs)
+            cout << "    Per sub-alignment: .taxon_pair_subs.tsv" << endl;
+        if (params.count_branch_subs)
+            cout << "    Per sub-alignment: .branch_subs.tsv" << endl;
     }
 
     if (params.write_intermediate_trees)
@@ -2694,7 +2700,9 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
         printAncestralSequences(params.out_prefix, &iqtree, params.print_ancestral_sequence);
     }
 
-    if (params.asr_pars || params.count_taxon_pair_subs || params.count_branch_subs) {
+    // When --sub-aln is active, all parsimony features run only on sub-alignments.
+    if ((params.asr_pars || params.count_taxon_pair_subs || params.count_branch_subs)
+            && params.sub_aln_k == 0) {
         if (iqtree.isSuperTree()) {
             if (params.asr_pars)
                 outWarning("--asr-pars is not yet supported for partition models; skipping.");
@@ -2711,7 +2719,7 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
         }
     }
 
-    if (params.sub_aln_k > 0 && (params.count_taxon_pair_subs || params.count_branch_subs)) {
+    if (params.sub_aln_k > 0) {
         const int N = (int)iqtree.aln->getNSeq();
         if (params.sub_aln_h > N)
             outError("--sub-aln: H=" + convertIntToString(params.sub_aln_h) +

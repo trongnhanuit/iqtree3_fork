@@ -717,10 +717,17 @@ void PhyloTree::computeParsimonyAncestralStream(
                     for (int s = 0; s < nstates; s++)
                         if ((dp[s] & vdp[s]) & bit)
                             if (random_int(++n_tied) == 0) root_state[pi] = (StateType)s;
-                    // If intersection empty, fall back to union (one extra event).
+                    // If intersection empty, fall back to the SUBTREE's admissible
+                    // set only (dp), not the union with the vroot leaf's set.
+                    // Picking the vroot's state when it is outside dp can force
+                    // every child of actual_root to make an extra substitution
+                    // (since the child's admissible sets were built without the
+                    // vroot leaf), inflating the total above the parsimony score.
+                    // The one-extra-event cost is always placed on the
+                    // vroot–actual_root edge, which is correct.
                     if (root_state[pi] == aln->STATE_UNKNOWN)
                         for (int s = 0; s < nstates; s++)
-                            if ((dp[s] | vdp[s]) & bit)
+                            if (dp[s] & bit)
                                 if (random_int(++n_tied) == 0) root_state[pi] = (StateType)s;
                 } else {
                     int n_tied = 0;

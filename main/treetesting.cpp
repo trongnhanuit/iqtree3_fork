@@ -759,9 +759,14 @@ void printSubAlnSubstitutionCounts(const char *out_prefix, PhyloTree *tree,
 
         // ---------------------------------------------------------------
         // 3. Build an independent parsimony tree from the sub-alignment.
-        //    orderPatternByNumChars must run first so that num_variant_sites
-        //    is set before computeParsimonyTree calls getBitsBlockSize() to
-        //    allocate partial_pars memory (mirrors computeInitialTree L588).
+        //    The cost matrix MUST be loaded before computeParsimonyTree so
+        //    that getBitsBlockSize() returns the Sankoff block size during
+        //    central_partial_pars allocation.  If the matrix were loaded
+        //    afterwards, the Fitch-sized allocation would be too small for
+        //    the Sankoff down-pass, causing buffer overflows that corrupt
+        //    adjacent partial_pars buffers — all internal-node DP tables
+        //    end up zeroed, making every node inherit the parent's state
+        //    (all internal nodes collapse to identical sequences).
         // ---------------------------------------------------------------
         sub_aln->orderPatternByNumChars(PAT_VARIANT);
 
@@ -769,15 +774,16 @@ void printSubAlnSubstitutionCounts(const char *out_prefix, PhyloTree *tree,
         sub_tree.params = const_cast<Params*>(&params);
         sub_tree.setLikelihoodKernel(params.SSE);
 
-        sub_tree.computeParsimonyTree(nullptr, sub_aln, nullptr);
-
-        // ---------------------------------------------------------------
-        // 4. Load the Sankoff cost matrix onto the sub-tree if the main
-        //    run is using one (set by --asr-pars sankoff, which sets
-        //    params.sankoff_cost_file = "fitch" or a user file).
-        // ---------------------------------------------------------------
-        if (params.sankoff_cost_file && !sub_tree.hasCostMatrix())
+        // Set aln before loadCostMatrixFile (which needs aln->num_states),
+        // and before computeParsimonyTree so that getBitsBlockSize() already
+        // returns the Sankoff block size when initializeAllPartialPars() runs
+        // inside computeParsimonyTree.  computeParsimonyTree sets aln again
+        // to the same pointer, which is harmless.
+        sub_tree.aln = sub_aln;
+        if (params.sankoff_cost_file)
             sub_tree.loadCostMatrixFile(const_cast<char*>(params.sankoff_cost_file));
+
+        sub_tree.computeParsimonyTree(nullptr, sub_aln, nullptr);
 
         // ---------------------------------------------------------------
         // 5. Produce per-sub-alignment output files.

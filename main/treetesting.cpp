@@ -405,18 +405,18 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
     }
 
     // -----------------------------------------------------------------------
-    // Build lookup tables needed for FASTA output.
+    // Build lookup tables for FASTA output and counting.
+    // orig_to_ord[ptn] = index in ordered_to_orig_ptn, or -1 for invariant patterns.
+    // const_state[ptn] = constant state for invariant patterns (first known state).
     // -----------------------------------------------------------------------
-    vector<int>       orig_to_ord(do_asr_fasta ? nptn : 0, -1);
-    vector<StateType> const_state(do_asr_fasta ? nptn : 0, aln->STATE_UNKNOWN);
-    if (do_asr_fasta) {
-        for (int i = 0; i < nptn_pars; i++)
-            orig_to_ord[aln->ordered_to_orig_ptn[i]] = i;
-        for (int ptn = 0; ptn < nptn; ptn++) {
-            if (orig_to_ord[ptn] >= 0) continue;
-            for (StateType s : aln->at(ptn))
-                if (s < (StateType)nstates) { const_state[ptn] = s; break; }
-        }
+    vector<int>       orig_to_ord(nptn, -1);
+    vector<StateType> const_state(nptn, aln->STATE_UNKNOWN);
+    for (int i = 0; i < nptn_pars; i++)
+        orig_to_ord[aln->ordered_to_orig_ptn[i]] = i;
+    for (int ptn = 0; ptn < nptn; ptn++) {
+        if (orig_to_ord[ptn] >= 0) continue;
+        for (StateType s : aln->at(ptn))
+            if (s < (StateType)nstates) { const_state[ptn] = s; break; }
     }
 
     // -----------------------------------------------------------------------
@@ -500,41 +500,47 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
             }
         }
 
-        // State accessor using the shared node_states.
-        auto get_state = [&](int node_id, int pi) -> int {
+        // State accessor: works for all patterns (variant and invariant).
+        // For invariant patterns (pi == -1), internal nodes use const_state.
+        auto get_ptn_state = [&](int node_id, int orig_ptn) -> int {
             if (node_id < nseq) {
-                StateType s = aln->ordered_pattern[pi][node_id];
+                StateType s = aln->at(orig_ptn)[node_id];
                 return (s < (StateType)nstates) ? (int)s : -1;
             }
-            const auto &st = node_states[node_id];
-            if (st.empty()) return -1;
-            return (st[pi] < (StateType)nstates) ? (int)st[pi] : -1;
+            const int pi = orig_to_ord[orig_ptn];
+            if (pi >= 0) {
+                const auto &st = node_states[node_id];
+                if (st.empty()) return -1;
+                return (st[pi] < (StateType)nstates) ? (int)st[pi] : -1;
+            }
+            // Invariant pattern: all nodes share the constant state.
+            return (const_state[orig_ptn] < (StateType)nstates)
+                   ? (int)const_state[orig_ptn] : -1;
         };
 
         // Node label: internal nodes now have NodeX names assigned above.
         auto node_label = [](PhyloNode *nd) -> string { return nd->name; };
 
-        // Column names.
+        // Column names: all n² entries including diagonal (unchanged sites).
         vector<string> col_names;
-        col_names.reserve(nstates * (nstates - 1));
+        col_names.reserve(nstates * nstates);
         for (int s0 = 0; s0 < nstates; s0++)
             for (int s1 = 0; s1 < nstates; s1++)
-                if (s0 != s1)
-                    col_names.push_back(
-                        aln->convertStateBackStr(s0) + "->" + aln->convertStateBackStr(s1));
+                col_names.push_back(
+                    aln->convertStateBackStr(s0) + "->" + aln->convertStateBackStr(s1));
 
-        // Pre-compute per-branch substitution matrices.
+        // Pre-compute per-branch transition matrices over ALL patterns
+        // (variant + invariant), so diagonal entries include unchanged sites.
         vector<vector<int64_t>> branch_matrix(tree->nodeNum);
         for (int cid = 0; cid < tree->nodeNum; cid++) {
             if (!node_by_id[cid] || parent_id[cid] == -1) continue;
             const int pid = parent_id[cid];
             branch_matrix[cid].assign(ncols, 0LL);
-            for (int pi = 0; pi < nptn_pars; pi++) {
-                const int s0 = get_state(pid, pi);
-                const int s1 = get_state(cid, pi);
-                if (s0 < 0 || s1 < 0 || s0 == s1) continue;
-                branch_matrix[cid][s0 * nstates + s1] +=
-                    aln->ordered_pattern[pi].frequency;
+            for (int orig_ptn = 0; orig_ptn < nptn; orig_ptn++) {
+                const int s0 = get_ptn_state(pid, orig_ptn);
+                const int s1 = get_ptn_state(cid, orig_ptn);
+                if (s0 < 0 || s1 < 0) continue;
+                branch_matrix[cid][s0 * nstates + s1] += aln->at(orig_ptn).frequency;
             }
         }
 
@@ -558,22 +564,19 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
                     const auto &bm   = branch_matrix[cid];
                     out << node_label(parent) << "\t" << node_label(child);
                     for (int s0 = 0; s0 < nstates; s0++)
-                        for (int s1 = 0; s1 < nstates; s1++)
-                            if (s0 != s1) {
-                                out << "\t" << bm[s0 * nstates + s1];
-                                sum_subs[s0 * nstates + s1] += bm[s0 * nstates + s1];
-                            }
+                        for (int s1 = 0; s1 < nstates; s1++) {
+                            out << "\t" << bm[s0 * nstates + s1];
+                            sum_subs[s0 * nstates + s1] += bm[s0 * nstates + s1];
+                        }
                     out << "\n";
                     n_branches++;
                 }
-                // save current formatting state
                 out << "Branch_AVG\tBranch_AVG" << fixed << setprecision(10);
                 for (int s0 = 0; s0 < nstates; s0++)
                     for (int s1 = 0; s1 < nstates; s1++)
-                        if (s0 != s1)
-                            out << "\t" << (n_branches > 0
-                                            ? sum_subs[s0 * nstates + s1] / n_branches
-                                            : 0.0);
+                        out << "\t" << (n_branches > 0
+                                        ? sum_subs[s0 * nstates + s1] / n_branches
+                                        : 0.0);
                 out << "\n";
                 out.close();
                 cout << "Branch substitution counts written to   " << out_file << endl;
@@ -676,22 +679,20 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
 
                     out << leaf_a->name << "\t" << leaf_b->name;
                     for (int s0 = 0; s0 < nstates; s0++)
-                        for (int s1 = 0; s1 < nstates; s1++)
-                            if (s0 != s1) {
-                                out << "\t" << path_subs[s0 * nstates + s1];
-                                sum_pair_subs[s0 * nstates + s1] +=
-                                    path_subs[s0 * nstates + s1];
-                            }
+                        for (int s1 = 0; s1 < nstates; s1++) {
+                            out << "\t" << path_subs[s0 * nstates + s1];
+                            sum_pair_subs[s0 * nstates + s1] +=
+                                path_subs[s0 * nstates + s1];
+                        }
                     out << "\n";
                 }
 
                 out << "Pair_AVG\tPair_AVG" << fixed << setprecision(10);
                 for (int s0 = 0; s0 < nstates; s0++)
                     for (int s1 = 0; s1 < nstates; s1++)
-                        if (s0 != s1)
-                            out << "\t" << (m_pairs > 0
-                                            ? sum_pair_subs[s0 * nstates + s1] / m_pairs
-                                            : 0.0);
+                        out << "\t" << (m_pairs > 0
+                                        ? sum_pair_subs[s0 * nstates + s1] / m_pairs
+                                        : 0.0);
                 out << "\n";
 
                 out.close();

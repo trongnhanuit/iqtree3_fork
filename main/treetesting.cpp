@@ -358,8 +358,8 @@ void printAncestralSequences(const char *out_prefix, PhyloTree *tree, AncestralS
 // output files (FASTA, treefile, branch TSV, taxon-pair TSV).
 // ---------------------------------------------------------------------------
 void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
-                           bool do_asr_fasta, bool do_taxon_pair,
-                           bool do_branch) {
+                           bool do_asr_fasta, bool do_taxon_pair, bool do_branch,
+                           vector<vector<StateType>> *out_node_states) {
     ASSERT(tree && tree->aln);
     if (!do_asr_fasta && !do_taxon_pair && !do_branch) return;
 
@@ -435,9 +435,11 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
     // Single ASR pass: store all node states AND optionally stream FASTA.
     // -----------------------------------------------------------------------
     vector<vector<StateType>> node_states(tree->nodeNum);
+    if (out_node_states) out_node_states->assign(tree->nodeNum, {});
     tree->computeParsimonyAncestralStream(
         [&](PhyloNode *node, const vector<StateType> &state_ord) {
             node_states[node->id] = state_ord;
+            if (out_node_states) (*out_node_states)[node->id] = state_ord;
             if (do_asr_fasta) {
                 fasta_out << ">" << node->name << "\n";
                 for (int i = 0; i < nsites; i++) {
@@ -709,7 +711,8 @@ void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree) {
                           /*do_taxon_pair=*/false, /*do_branch=*/false);
 }
 
-void printParsimonyESR(const char *out_prefix, PhyloTree *tree) {
+void printParsimonyESR(const char *out_prefix, PhyloTree *tree,
+                       const vector<vector<StateType>> *pre_node_states) {
     ASSERT(tree && tree->aln);
     Alignment  *aln     = tree->aln;
     const int   nstates = aln->num_states;
@@ -732,13 +735,19 @@ void printParsimonyESR(const char *out_prefix, PhyloTree *tree) {
             if (s < (StateType)nstates) { const_state[ptn] = s; break; }
     }
 
-    // Run ASR; store state vectors for every node (indexed by node->id).
-    // state_ord[k] gives the reconstructed state for ordered pattern k.
-    vector<vector<StateType>> node_states(tree->nodeNum);
-    tree->computeParsimonyAncestralStream(
-        [&](PhyloNode *node, const vector<StateType> &state_ord) {
-            node_states[node->id] = state_ord;
-        });
+    // Use pre-computed states (from a prior printParsimonyOutputs call) if
+    // provided, otherwise run ASR now.  Sharing states ensures tie-breaking
+    // is identical when --asr-pars and --esr-pars are both active.
+    vector<vector<StateType>> own_states;
+    const vector<vector<StateType>> &node_states =
+        pre_node_states ? *pre_node_states : own_states;
+    if (!pre_node_states) {
+        own_states.resize(tree->nodeNum);
+        tree->computeParsimonyAncestralStream(
+            [&](PhyloNode *node, const vector<StateType> &state_ord) {
+                own_states[node->id] = state_ord;
+            });
+    }
 
     // Collect and sort leaves by id so output order is deterministic.
     NodeVector leaves;

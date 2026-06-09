@@ -2720,13 +2720,16 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
             if (params.count_branch_subs)
                 outWarning("--count-branch-subs is not yet supported for partition models; skipping.");
         } else {
+            vector<vector<StateType>> shared_states;
             if (params.asr_pars || params.count_taxon_pair_subs || params.count_branch_subs)
                 printParsimonyOutputs(params.out_prefix, &iqtree,
                                       params.asr_pars,
                                       params.count_taxon_pair_subs,
-                                      params.count_branch_subs);
+                                      params.count_branch_subs,
+                                      params.esr_pars ? &shared_states : nullptr);
             if (params.esr_pars)
-                printParsimonyESR(params.out_prefix, &iqtree);
+                printParsimonyESR(params.out_prefix, &iqtree,
+                                  !shared_states.empty() ? &shared_states : nullptr);
         }
     }
 

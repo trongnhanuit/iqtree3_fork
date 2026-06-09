@@ -145,17 +145,27 @@ void printBranchSubstitutionCounts(const char *out_prefix, PhyloTree *tree);
  * assignments at tied sites.  Internal nodes are temporarily renamed
  * "Node1", "Node2", … across all outputs for consistency.
  */
+/**
+ * @param out_node_states  if non-null, the per-node state vectors computed
+ *   during the single ASR pass are stored here so they can be forwarded to
+ *   printParsimonyESR, guaranteeing identical tie-breaking when both
+ *   --asr-pars and --esr-pars are active.
+ */
 void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
-                           bool do_asr_fasta, bool do_taxon_pair,
-                           bool do_branch);
+                           bool do_asr_fasta, bool do_taxon_pair, bool do_branch,
+                           std::vector<std::vector<StateType>> *out_node_states = nullptr);
 
 /**
  * --esr-pars: empirical sequence reconstruction at tips.
- * Runs parsimony ASR internally, then for each tip writes its observed
- * sequence with gap/ambiguous positions filled from the adjacent internal
- * node's reconstructed state.  Output: <out_prefix>.esr_pars.fasta.
+ * Runs parsimony ASR internally (or reuses pre_node_states if non-null),
+ * then for each tip writes its observed sequence with gap/ambiguous positions
+ * filled from the adjacent internal node's reconstructed state.
+ * Output: <out_prefix>.esr_pars.fasta.
+ * @param pre_node_states  if non-null, use these states instead of running
+ *   a second ASR pass (pass the pointer returned by printParsimonyOutputs).
  */
-void printParsimonyESR(const char *out_prefix, PhyloTree *tree);
+void printParsimonyESR(const char *out_prefix, PhyloTree *tree,
+                       const std::vector<std::vector<StateType>> *pre_node_states = nullptr);
 
 /**
  * Thin wrapper — calls printParsimonyOutputs with do_taxon_pair / do_branch.

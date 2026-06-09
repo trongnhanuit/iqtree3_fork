@@ -3759,6 +3759,12 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
+			if (strcmp(argv[cnt], "--esr-pars") == 0) {
+                params.esr_pars = true;
+                params.ignore_identical_seqs = false;
+				continue;
+			}
+
 			if (strcmp(argv[cnt], "--count-taxon-pair-subs") == 0) {
 				params.count_taxon_pair_subs = true;
                 // Optional M: next argument is M if it starts with a digit.
@@ -7359,6 +7365,7 @@ void Params::setDefault() {
     print_ancestral_sequence = AST_NONE;
     min_ancestral_prob = 0.0;
     asr_pars = false;
+    esr_pars = false;
     asr_pars_algorithm = ASR_PARS_SANKOFF;
     count_taxon_pair_subs = false;
     count_taxon_pair_subs_m = -1;

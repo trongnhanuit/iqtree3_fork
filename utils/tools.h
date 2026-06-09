@@ -2056,6 +2056,16 @@ public:
     /** true if parsimony ancestral state reconstruction is requested (--asr-pars) */
     bool asr_pars;
 
+    /**
+     * --esr-pars: empirical sequence reconstruction at tips.
+     * Internally runs --asr-pars, then for each tip outputs its observed
+     * sequence with gap/ambiguous positions filled from the parent's
+     * reconstructed state.  Writes <out_prefix>.esr_pars.fasta.
+     * Does NOT write asr_pars.fasta / asr_pars.treefile unless --asr-pars
+     * is also specified.
+     */
+    bool esr_pars;
+
     /** Algorithm for --asr-pars. Set by the optional argument (case-insensitive). */
     AsrParsAlgorithm asr_pars_algorithm;
 

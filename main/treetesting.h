@@ -150,6 +150,14 @@ void printParsimonyOutputs(const char *out_prefix, PhyloTree *tree,
                            bool do_branch);
 
 /**
+ * --esr-pars: empirical sequence reconstruction at tips.
+ * Runs parsimony ASR internally, then for each tip writes its observed
+ * sequence with gap/ambiguous positions filled from the adjacent internal
+ * node's reconstructed state.  Output: <out_prefix>.esr_pars.fasta.
+ */
+void printParsimonyESR(const char *out_prefix, PhyloTree *tree);
+
+/**
  * Thin wrapper — calls printParsimonyOutputs with do_taxon_pair / do_branch.
  */
 void printParsimonySubstitutionCounts(const char *out_prefix, PhyloTree *tree,

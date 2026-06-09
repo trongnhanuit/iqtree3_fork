@@ -709,7 +709,75 @@ void printParsimonyAncestralSequences(const char *out_prefix, PhyloTree *tree) {
                           /*do_taxon_pair=*/false, /*do_branch=*/false);
 }
 
+void printParsimonyESR(const char *out_prefix, PhyloTree *tree) {
+    ASSERT(tree && tree->aln);
+    Alignment  *aln     = tree->aln;
+    const int   nstates = aln->num_states;
+    const int   nsites  = (int)aln->getNSite();
+    const int   nptn    = (int)aln->getNPattern();
 
+    if (aln->ordered_to_orig_ptn.empty())
+        aln->orderPatternByNumChars(PAT_VARIANT);
+    const int nptn_pars = (int)aln->ordered_to_orig_ptn.size();
+
+    // Map each original pattern to its index in the parsimony-ordered array.
+    // Patterns absent from the ordered list are constant/invariant sites.
+    vector<int>       orig_to_ord(nptn, -1);
+    vector<StateType> const_state(nptn, aln->STATE_UNKNOWN);
+    for (int i = 0; i < nptn_pars; i++)
+        orig_to_ord[aln->ordered_to_orig_ptn[i]] = i;
+    for (int ptn = 0; ptn < nptn; ptn++) {
+        if (orig_to_ord[ptn] >= 0) continue;
+        for (StateType s : aln->at(ptn))
+            if (s < (StateType)nstates) { const_state[ptn] = s; break; }
+    }
+
+    // Run ASR; store state vectors for every node (indexed by node->id).
+    // state_ord[k] gives the reconstructed state for ordered pattern k.
+    vector<vector<StateType>> node_states(tree->nodeNum);
+    tree->computeParsimonyAncestralStream(
+        [&](PhyloNode *node, const vector<StateType> &state_ord) {
+            node_states[node->id] = state_ord;
+        });
+
+    // Collect and sort leaves by id so output order is deterministic.
+    NodeVector leaves;
+    tree->getTaxa(leaves);
+    sort(leaves.begin(), leaves.end(),
+         [](Node *x, Node *y) { return x->id < y->id; });
+
+    string esr_file = string(out_prefix) + ".esr_pars.fasta";
+    try {
+        ofstream out;
+        out.exceptions(ios::failbit | ios::badbit);
+        out.open(esr_file.c_str());
+
+        for (Node *nd : leaves) {
+            if (nd->name == ROOT_NAME) continue;
+            // For an unrooted tree every leaf has exactly one neighbour = its parent.
+            PhyloNode *parent = (PhyloNode*)nd->neighbors[0]->node;
+            const vector<StateType> &par_states = node_states[parent->id];
+
+            out << ">" << nd->name << "\n";
+            for (int i = 0; i < nsites; i++) {
+                int orig_ptn    = aln->getPatternID(i);
+                StateType leaf_st = aln->at(orig_ptn)[nd->id];
+                if (leaf_st < (StateType)nstates) {
+                    out << aln->convertStateBackStr(leaf_st);
+                } else {
+                    int ord_idx = orig_to_ord[orig_ptn];
+                    StateType inferred = (ord_idx >= 0 && !par_states.empty())
+                        ? par_states[ord_idx]
+                        : const_state[orig_ptn];
+                    out << aln->convertStateBackStr(inferred);
+                }
+            }
+            out << "\n";
+        }
+        out.close();
+        cout << "Empirical tip sequences written to        " << esr_file << endl;
+    } catch (ios::failure &) { outError(ERR_WRITE_OUTPUT, esr_file); }
+}
 
 void printSubstitutionCounts(const char *out_prefix, PhyloTree *tree) {
     printParsimonyOutputs(out_prefix, tree, false, true, false);

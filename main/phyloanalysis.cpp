@@ -1286,6 +1286,10 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
         cout << "  Parsimony ancestral tree:      " << params.out_prefix << ".asr_pars.treefile" << endl;
     }
 
+    if (params.esr_pars && params.sub_aln_k == 0) {
+        cout << "  Empirical tip sequences:       " << params.out_prefix << ".esr_pars.fasta" << endl;
+    }
+
     if (params.count_taxon_pair_subs && params.sub_aln_k == 0) {
         cout << "  Taxon-pair substitution counts: " << params.out_prefix << ".taxon_pair_subs.tsv" << endl;
     }
@@ -1302,6 +1306,8 @@ void printOutfilesInfo(Params &params, IQTree &tree) {
              << params.sub_aln_h << " taxa each)" << endl;
         if (!params.no_asr_output)
             cout << "    Per sub-alignment: .asr_pars.fasta, .asr_pars.treefile" << endl;
+        if (params.esr_pars)
+            cout << "    Per sub-alignment: .esr_pars.fasta" << endl;
         if (params.count_taxon_pair_subs)
             cout << "    Per sub-alignment: .taxon_pair_subs.tsv" << endl;
         if (params.count_branch_subs)
@@ -2701,21 +2707,26 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     }
 
     // When --sub-aln is active, all parsimony features run only on sub-alignments.
-    if ((params.asr_pars || params.count_taxon_pair_subs || params.count_branch_subs)
+    if ((params.asr_pars || params.esr_pars ||
+             params.count_taxon_pair_subs || params.count_branch_subs)
             && params.sub_aln_k == 0) {
         if (iqtree.isSuperTree()) {
             if (params.asr_pars)
                 outWarning("--asr-pars is not yet supported for partition models; skipping.");
+            if (params.esr_pars)
+                outWarning("--esr-pars is not yet supported for partition models; skipping.");
             if (params.count_taxon_pair_subs)
                 outWarning("--count-taxon-pair-subs is not yet supported for partition models; skipping.");
             if (params.count_branch_subs)
                 outWarning("--count-branch-subs is not yet supported for partition models; skipping.");
         } else {
-            // Single ASR pass produces all outputs consistently.
-            printParsimonyOutputs(params.out_prefix, &iqtree,
-                                  params.asr_pars,
-                                  params.count_taxon_pair_subs,
-                                  params.count_branch_subs);
+            if (params.asr_pars || params.count_taxon_pair_subs || params.count_branch_subs)
+                printParsimonyOutputs(params.out_prefix, &iqtree,
+                                      params.asr_pars,
+                                      params.count_taxon_pair_subs,
+                                      params.count_branch_subs);
+            if (params.esr_pars)
+                printParsimonyESR(params.out_prefix, &iqtree);
         }
     }
 

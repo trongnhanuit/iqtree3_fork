@@ -3771,7 +3771,9 @@ void parseArg(int argc, char *argv[], Params &params) {
                 if (cnt + 1 < argc && isdigit((unsigned char)argv[cnt+1][0])) {
                     try {
                         long long m = stoll(argv[cnt + 1]);
-                        if (m > 0) { params.count_taxon_pair_subs_m = m; cnt++; }
+                        cnt++;  // always consume the digit argument
+                        if (m > 0) params.count_taxon_pair_subs_m = m;
+                        // m == 0 means "all pairs" (default), so no assignment needed
                     } catch (...) {}
                 }
 				continue;

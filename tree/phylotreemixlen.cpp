@@ -34,7 +34,17 @@ void PhyloTreeMixlen::saveCheckpoint() {
         startCheckpoint();
         if (relative_treelen.size() > 0) {
             ASSERT(mixlen == relative_treelen.size());
-            CKP_ARRAY_SAVE(mixlen, &relative_treelen[0]);
+            // Here you actually changed the checkpoint file! the key is very different now.
+            // Have a look at the macro CKP_ARRAY_SAVE. If you view the ckp.gz file,
+            // it makes this line look like:
+            // &relative_treelen[0]: 527.8043991, 568.0718784
+            // whereas normally it looks like:
+            // relative_treelen: 527.8043991, 568.0718784
+            //CKP_ARRAY_SAVE(mixlen, &relative_treelen[0]); <-- this changes checkpoint key
+            double relative_treelen[mixlen];
+            for (int i = 0; i < mixlen; i++)
+                relative_treelen[i] = this->relative_treelen[i];
+            CKP_ARRAY_SAVE(mixlen, relative_treelen);
         }
         endCheckpoint();
     }
@@ -44,9 +54,16 @@ void PhyloTreeMixlen::saveCheckpoint() {
 void PhyloTreeMixlen::restoreCheckpoint() {
     if (mixlen > 1) {
         startCheckpoint();
-        DoubleVector restored_relative_treelen(mixlen, 0.0);
-        if (CKP_ARRAY_RESTORE(mixlen, &restored_relative_treelen[0])) {
-            relative_treelen = restored_relative_treelen;
+        // Minh: Again, the following is a bug, reverting now
+//        DoubleVector restored_relative_treelen(mixlen, 0.0);
+//        if (CKP_ARRAY_RESTORE(mixlen, &restored_relative_treelen[0])) {
+//            relative_treelen = restored_relative_treelen;
+//        }
+        double relative_treelen[mixlen];
+        if (CKP_ARRAY_RESTORE(mixlen, relative_treelen)) {
+            this->relative_treelen.resize(mixlen);
+            for (int i = 0; i < mixlen; i++)
+                this->relative_treelen[i] = relative_treelen[i];
         }
         endCheckpoint();
     }

@@ -1906,6 +1906,11 @@ SuperAlignment* SuperAlignment::convertToBin(const string& new_model_name)
     // clone SuperAlignment-specific variables
     new_aln->max_num_states = 2;
     new_aln->taxa_index = taxa_index;
+    // discard the binary gap/non-gap patterns written by Alignment::convertToBin() above:
+    // SuperAlignment::buildPattern() (called via init() below) builds its own
+    // partition-presence pattern instead, and asserts the pattern list starts empty
+    new_aln->clear();
+    new_aln->pattern_index.clear();
     new_aln->init();
     
     return new_aln;

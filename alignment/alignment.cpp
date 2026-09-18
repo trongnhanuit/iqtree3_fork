@@ -4009,23 +4009,24 @@ Alignment *Alignment::convertCodonToDNA() const {
 
 void Alignment::convertToBin(Alignment* res, const string& new_model_name)
 {
-    for (size_t i = 0; i < getNSeq(); ++i) {
-        res->seq_names.push_back(getSeqName(i));
-    }
+    // metadata copy, matching the convention used by initAlignmentCopy()
+    // (see convertToCodonOrAA/convertCodonToAA/convertCodonToDNA)
+    res->seq_names = seq_names;
     res->name = name;
-    res->model_name = new_model_name; //res->model_name = model_name;
-    res->sequence_type = "BIN"; //res->sequence_type = sequence_type;
     res->position_spec = position_spec;
+    res->model_name = new_model_name; //res->model_name = model_name;
     res->aln_file = aln_file;
+    res->sequence_type = "BIN"; //res->sequence_type = sequence_type;
+    res->char_partition = char_partition;
+    res->tree_len = tree_len;
     res->seq_type = SEQ_BINARY;
     res->num_states = 2;
-    
+
     res->computeUnknownState();
-    
-    res->site_pattern.resize(getNSite(), -1);
+
     res->clear();
     res->pattern_index.clear();
-    
+
     VerboseMode save_mode = verbose_mode;
     verbose_mode = min(verbose_mode, VB_MIN); // to avoid printing gappy sites in addPattern
     size_t nsite = getNSite();
@@ -4040,10 +4041,11 @@ void Alignment::convertToBin(Alignment* res, const string& new_model_name)
             StateType state = at(getPatternID(site))[seq];
             pat[seq] = state == STATE_UNKNOWN ? 0 : 1;
         }
-        res->addPattern(pat, site);
+        res->addPattern(pat);
     }
     verbose_mode = save_mode;
-    res->countConstSite();
+    res->updateConstPatterns();
+    res->countConstSites();
 }
 
 Alignment* Alignment::convertToBin(const string& new_model_name)

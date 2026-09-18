@@ -268,7 +268,7 @@ void printAncestralOrExtantSequences(const bool is_ancestral, const char *out_pr
     // init dummy variables
     const string reconstructed_seq_type = is_ancestral ? "Ancestral" : "Extant";
     
-    //    int *joint_ancestral = NULL;
+    //    int *joint_ancestral = nullptr;
     //
     //    if (tree->params->print_ancestral_sequence == AST_JOINT) {
     //        joint_ancestral = new int[nptn*tree->leafNum];
@@ -529,7 +529,7 @@ void printSiteStateFreq(const char*filename, PhyloTree *tree, double *state_freq
 }
 
 void printSiteStateFreq(const char* filename, Alignment *aln) {
-    if (aln->site_state_freq.empty())
+    if (!aln->isSSF())
         return;
     size_t nsites  = aln->getNSite();
     int    nstates = aln->num_states;
@@ -542,7 +542,7 @@ void printSiteStateFreq(const char* filename, Alignment *aln) {
         for (size_t i = 0; i < nsites; ++i) {
             out.width(6);
             out << left << i+1 << " ";
-            double *state_freq = aln->site_state_freq[pattern_index[i]];
+            double *state_freq = aln->ptn_state_freq[pattern_index[i]];
             for (size_t j = 0; j < nstates; ++j) {
                 out.width(15);
                 out << state_freq[j] << " ";
@@ -1201,14 +1201,14 @@ void evaluateTrees(istream &in, Params &params, IQTree *tree, vector<TreeInfo> &
     
     double time_start = getRealTime();
     
-    int *boot_samples = NULL;
-    //double *saved_tree_lhs = NULL;
-    double *tree_lhs = NULL; // RELL score matrix of size #trees x #replicates
-    double *pattern_lh = NULL;
-    double *pattern_lhs = NULL;
-    double *orig_tree_lh = NULL; // Original tree log-likelihoods
-    double *max_lh = NULL;
-    double *lhdiff_weights = NULL;
+    int *boot_samples = nullptr;
+    //double *saved_tree_lhs = nullptr;
+    double *tree_lhs = nullptr; // RELL score matrix of size #trees x #replicates
+    double *pattern_lh = nullptr;
+    double *pattern_lhs = nullptr;
+    double *orig_tree_lh = nullptr; // Original tree log-likelihoods
+    double *max_lh = nullptr;
+    double *lhdiff_weights = nullptr;
     size_t nptn = tree->getAlnNPattern();
     size_t maxnptn = get_safe_upper_limit(nptn);
     

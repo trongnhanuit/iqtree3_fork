@@ -52,7 +52,7 @@ int PhyloSuperTreeUnlinked::computeParsimonyTree(const char *out_prefix, Alignme
     int i;
     ASSERT(saln->partitions.size() == size());
     for (i = 0; i < size(); i++) {
-        score += at(i)->computeParsimonyTree(NULL, saln->partitions[i], rand_stream);
+        score += at(i)->computeParsimonyTree(nullptr, saln->partitions[i], rand_stream);
     }
     if (out_prefix) {
         string file_name = out_prefix;
@@ -120,32 +120,6 @@ void PhyloSuperTreeUnlinked::restoreCheckpoint() {
         checkpoint->startStruct((*it)->aln->name);
         (*it)->restoreCheckpoint();
         checkpoint->endStruct();
-    }
-}
-
-/**
- * save branch lengths into a vector
- */
-void PhyloSuperTreeUnlinked::saveBranchLengths(DoubleVector &lenvec, int startid, PhyloNode *node, PhyloNode *dad) {
-    int totalBranchNum = 0;
-    iterator it;
-    for (it = begin(); it != end(); it++) {
-        totalBranchNum += (*it)->branchNum * (*it)->getMixlen();
-    }
-    lenvec.resize(startid + totalBranchNum);
-    
-    for (iterator it = begin(); it != end(); it++) {
-        (*it)->saveBranchLengths(lenvec, startid);
-        startid += (*it)->branchNum * (*it)->getMixlen();
-    }
-}
-/**
- * restore branch lengths from a vector previously called with saveBranchLengths
- */
-void PhyloSuperTreeUnlinked::restoreBranchLengths(DoubleVector &lenvec, int startid, PhyloNode *node, PhyloNode *dad) {
-    for (iterator it = begin(); it != end(); it++) {
-        (*it)->restoreBranchLengths(lenvec, startid);
-        startid += (*it)->branchNum * (*it)->getMixlen();
     }
 }
 

@@ -31,6 +31,9 @@ const int MF_IGNORED            = 2;
 const int MF_RUNNING            = 4;
 const int MF_WAITING            = 8;
 const int MF_DONE               = 16;
+const int MF_CANNOT_BE_IGNORED  = 32; // those models added by -madd cannot be filtered out
+
+enum MixtureAction {MA_NONE, MA_FIND_RATE, MA_NUMBER_CLASS, MA_FIND_CLASS, MA_ADD_CLASS};
 
 /**
     Candidate model under testing
@@ -44,14 +47,14 @@ public:
         logl = 0.0;
         df = 0;
         tree_len = 0.0;
-        aln = NULL;
+        aln = nullptr;
         AIC_score = DBL_MAX;
         AICc_score = DBL_MAX;
         BIC_score = DBL_MAX;
         this->flag = flag;
         syncChkPoint = nullptr;
         //init_first_mix = false;
-        model_selection_action = 0;
+        mixture_action = MA_NONE;
     }
     
     CandidateModel(string subst_name, string rate_name, Alignment *aln, int flag = 0) : CandidateModel(flag) {
@@ -60,7 +63,7 @@ public:
         this->aln = aln;
         syncChkPoint = nullptr;
         //init_first_mix = false;
-        model_selection_action = 0;
+        mixture_action = MA_NONE;
     }
     
     CandidateModel(Alignment *aln, int flag = 0) : CandidateModel(flag) {
@@ -68,7 +71,7 @@ public:
         getUsualModel(aln);
         syncChkPoint = nullptr;
         //init_first_mix = false;
-        model_selection_action = 0;
+        mixture_action = MA_NONE;
     }
     
     string getName() {
@@ -191,8 +194,8 @@ public:
     /** the nest relationships of all candidate Q matrices */
     map<string, vector<string> > nest_network;
 
-    /** the value of the action in function runModelSelection*/
-    int model_selection_action;
+    /** the value of the action in function findMixtureComponent */
+    MixtureAction mixture_action;
 
     Alignment *aln; // associated alignment
 
@@ -401,6 +404,9 @@ struct ModelPair {
     string set_name;
     /* best model name */
     string model_name;
+    /* distance between two partition pairs */
+    //double distance;
+    //double score_bic;
 };
 
 class ModelPairSet : public multimap<double, ModelPair> {
@@ -474,10 +480,42 @@ private:
     bool test_merge;
     SuperAlignment *super_aln;
 
+    // variables for merging by mAIC
+    double lh_marginal;
+    double inf_score_maic;
+    ModelPairSet sorted_pairs;
+    SuperAlignment *cur_super_aln;
+
+    // marginal site-lh column cache, reused across merging
+    map<string, vector<double> > maic_subcol_cache;
+    set<string> maic_current_blocks; // names of the current scheme's blocks (the only cacheable ones)
+    //vector<set<int> > cur_gene_sets;
 
     // retreive the answers from checkpoint
     // and remove those jobs from the array jobIDs
     void retreiveAnsFrChkpt(vector<pair<int,double> >& jobs, int job_type);
+
+    /**
+     * compute marginal LnL and AIC for merge scheme
+     * gene_sets : vector all merged subsets, each containing the ID of original partitions
+     * model_names : model names of corresponding merged subsets
+     * df : degree of freedom for partition model
+     * merge : whether merge partitions with input gene sets
+     * @return : mAIC score
+     */
+    double getmAICforMergeScheme(vector<set<int> > gene_sets, StrVector model_names, int df, bool merge, bool warmup_cache = false);
+
+    /**
+     * evict from the cross-round mAIC column cache every entry whose data- or class-block
+     * overlaps the just-merged partition set (their blocks no longer recur)
+     */
+    void evictMergedFromCache(set<int> &merged_set);
+
+    /**
+     * get compatible partition pairs that improve mAIC
+     * @return : a set of compatible better pairs
+     */
+    ModelPairSet getBetterPairsmAIC();
 
     /**
      * compute and process the best model for partitions (without MPI)
@@ -490,6 +528,12 @@ private:
      * nthreads : the number of threads available for these jobs
      */
     void getBestModelforMergesNoMPI(int nthreads, vector<pair<int,double> >& jobs);
+
+    /** process a single merge job */
+    void processMergeJob(int j, vector<pair<int,double> >& jobs, int m_p);
+
+    /** process a single partition model-selection job */
+    void processPartitionJob(int j, vector<pair<int,double> >& jobs, int m_p);
 
     /**
      * compute the best model
@@ -562,7 +606,8 @@ public:
     int64_t total_num_model;
     int64_t num_model;
     vector<SubsetPair> closest_pairs;
-    vector<set<int> > gene_sets;
+    vector<set<int> > gene_sets; // vector all merged subsets, each containing the ID of original partitions
+    StrVector model_names;
     PhyloSuperTree* in_tree;
     size_t  ssize;
     Params *params;
@@ -776,12 +821,13 @@ string criterionName(ModelTestCriterion mtc);
 void runModelFinder(Params &params, IQTree &iqtree, ModelCheckpoint &model_info, string &best_subst_name, string &best_rate_name, map<string, vector<string> > nest_network, bool under_mix_finder = false);
 
 /**
- optimisation of Q-Mixture model, including estimation of best number of classes in the mixture
+ perform MixtureFinder algorithm to find best-fit Q-Mixture model,
+ including estimation of best number of classes in the mixture
  @param params program parameters
  @param iqtree phylogenetic tree
  @param model_info (IN/OUT) information for all models considered
  */
-void optimiseQMixModel(Params &params, IQTree* &iqtree, ModelCheckpoint &model_info);
+void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_info);
 
 /**
  perform ModelFinderNN to find the best-fit model (uses neural network for model inference)
@@ -806,6 +852,13 @@ int detectSeqType(const char *model_name, SeqType &seq_type);
 string convertSeqTypeToSeqTypeName(SeqType seq_type);
 
 string detectSeqTypeName(string model_name);
+
+/**
+ * get string name from a SeqType object
+ * @param seq_type input sequence type
+ * @return name
+ */
+string getSeqTypeName(SeqType seq_type);
 
 /****************************************************/
 /*    Q MATRICES NESTING CHECK                      */

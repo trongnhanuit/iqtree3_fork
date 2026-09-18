@@ -126,10 +126,30 @@ public:
     virtual double targetFunk(double x[]);
 
     /**
-     compute the mixture-based log-likelihood for mAIC, mAICc, mBIC calculation.
-     @param warning the warning message when mixture-based log-likelihood calculation is skipped.
+     compute the marginal log-likelihood for mAIC, mAICc, mBIC calculation.
+     Groups partitions by sequence type and computes marginal log-likelihood
+     per group (weights = partition length / total length within that group),
+     then sums across all data type groups.
+     @param remove_empty_seq whether remove empty sequences when partition model estimation
+     @return marginal log-likelihood summed across data type groups
      */
-    virtual double computeMixLh(string &warning);
+    virtual double computeMarginalLh(bool remove_empty_seq);
+
+    /**
+     compute the marginal log-likelihood for a subset of partitions.
+     All partitions in part_indices must have the same sequence type.
+     @param part_indices indices of partitions to include
+     @param remove_empty_seq whether remove empty sequences when partition model estimation
+     @return marginal log-likelihood for the given partitions
+     */
+    double computeMarginalLhForPartitions(vector<int> &part_indices, bool remove_empty_seq);
+
+    // mAIC merge-phase cache (all set by PartitionFinder; nullptr = caching off, original path).
+    // maic_cache : per-(data block, class block) site-lh columns, keyed "data\x01class".
+    // maic_blocks: only columns whose both blocks are in here (current-scheme blocks) are cached;
+    //              candidate merged blocks aren't, so their columns are computed but not stored.
+    map<string, vector<double> > *maic_cache = nullptr;
+    set<string> *maic_blocks = nullptr;
 
     /**
      rescale the state frequencies

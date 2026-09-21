@@ -61,6 +61,92 @@ jobs:
           name: identity_out
           path: identity_out
 
+  # Gradient correctness: --ag-gradient-check-only on a fixed set of models,
+  # the NumPy oracle on simulated data (with its self-test), and thread
+  # equality (test_scripts/ag/run_ag_tests.sh).
+  ag-tests:
+    name: Gradient tests (gradcheck, oracle, threads)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y gcc g++ libeigen3-dev libboost-dev python3-numpy
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DUSE_CMAPLE=OFF -DUSE_LSD2=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make -j iqtree3
+
+      - name: Run gradient test suite
+        run: |
+          chmod +x test_scripts/ag/run_ag_tests.sh
+          ./test_scripts/ag/run_ag_tests.sh build/iqtree3 ag_test_out --suite all
+
+      - name: Upload test outputs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ag_test_out
+          path: ag_test_out
+
+  # Memory-safety gate for the engine: AddressSanitizer + UBSan build running
+  # the gradcheck suite (the RAII attach/restore of outside-partial buffers is
+  # exactly the code these tools protect). Hard gate on every push.
+  ag-sanitizers:
+    name: Sanitizers (ASan+UBSan) on gradient tests
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y gcc g++ libeigen3-dev libboost-dev python3-numpy
+
+      - name: Build with sanitizers
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DUSE_CMAPLE=OFF -DUSE_LSD2=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          make -j iqtree3
+
+      # IQ-TREE's existing code has UBSan findings of its own (e.g. an uninitialised
+      # bool read in ModelMarkov's constructor) and leaks at exit, so: ASan errors fail
+      # the job anywhere, UBSan reports fail it only when located in the new files
+      # (AG_SANITIZER=1 in run_ag_tests.sh), leak checking is off for now.
+      - name: Run gradcheck suite under sanitizers
+        env:
+          AG_SANITIZER: "1"
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
+        run: |
+          chmod +x test_scripts/ag/run_ag_tests.sh
+          ./test_scripts/ag/run_ag_tests.sh build/iqtree3 ag_san_out --suite gradcheck
+
+      - name: Upload sanitizer outputs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ag_san_out
+          path: ag_san_out
+
   # Compile-only checks of build variants that the main CI does not build but
   # that link the same tree/model libraries the new code lands in: the C++14
   # variant (IQTREE_FLAGS=cpp14, so no C++17-only constructs may enter the new

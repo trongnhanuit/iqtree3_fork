@@ -70,6 +70,14 @@ ORACLE=(
   "o_dna_5tax_r3|GTR{1,2,1,1,3}+F{0.25,0.25,0.25,0.25}+R3{0.3,0.2,0.4,0.8,0.3,2.0}|((A:0.1,B:0.2):0.05,(C:0.15,D:0.05):0.1,E:0.3);|GTR+F+R3"
 )
 
+# Sanitizer mode (AG_SANITIZER=1, binary built with -fsanitize=address,undefined and
+# UBSAN_OPTIONS=halt_on_error=0): IQ-TREE's existing code has UBSan findings of its
+# own (e.g. an uninitialised bool read in ModelMarkov's constructor), so a case fails
+# only on (a) any AddressSanitizer report, (b) an undefined-behaviour report whose
+# location is in the new files, or (c) a failed gradient check. Other reports are
+# listed as pre-existing and ignored.
+SAN_NEW_FILES='phylogradient|gradientoptimizer'
+
 run_grad() {   # id args -> report/<id>.txt, marker FAIL
     local id="$1" args="$2" dir="$OUT_DIR/$1"
     mkdir -p "$dir"
@@ -77,6 +85,20 @@ run_grad() {   # id args -> report/<id>.txt, marker FAIL
     ( cd "$dir" && "$BIN" $args -nt 1 -seed $SEED --prefix "$id" -redo --analytical-gradients --ag-gradient-check-only > "$id.stdout" 2>&1 )
     local rc=$?
     { echo "== $id (exit $rc)"; grep -E "^AG:|GRADCHECK" "$dir/$id.stdout"; } > "$REP/$id.txt"
+    if [ "${AG_SANITIZER:-0}" = "1" ]; then
+        local asan ubsan_new ubsan_old
+        asan=$(grep -c "ERROR: AddressSanitizer" "$dir/$id.stdout")
+        ubsan_new=$(grep -E "runtime error" "$dir/$id.stdout" | grep -c -E "$SAN_NEW_FILES")
+        ubsan_old=$(grep -E "runtime error" "$dir/$id.stdout" | grep -v -c -E "$SAN_NEW_FILES")
+        echo "  sanitizer: asan_reports=$asan ubsan_in_new_files=$ubsan_new ubsan_pre_existing=$ubsan_old" >> "$REP/$id.txt"
+        if [ "$asan" != "0" ] || [ "$ubsan_new" != "0" ]; then
+            touch "$REP/$id.FAIL"
+            grep -E "ERROR: AddressSanitizer|runtime error" "$dir/$id.stdout" | grep -E "AddressSanitizer|$SAN_NEW_FILES" | head -3 >> "$REP/$id.txt"
+        fi
+        # the gradient check itself must still pass (GRADCHECK line with n_fail=0)
+        grep -q "GRADCHECK.* n_fail=0 .*edge_lnl_check=PASS" "$dir/$id.stdout" || touch "$REP/$id.FAIL"
+        return
+    fi
     [ "$rc" = "0" ] || { touch "$REP/$id.FAIL"; grep -E "ERROR|FAIL" "$dir/$id.stdout" | head -3 >> "$REP/$id.txt"; }
 }
 

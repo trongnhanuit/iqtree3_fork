@@ -130,6 +130,10 @@ private:
     std::vector<double> lower_, upper_;
     std::vector<bool> need_q_;
     std::string unsupported_;
+    // entries held at a floor by the last unpack() (design 6): their theta
+    // gradient is reported as zero, the direction being flat there
+    std::vector<char> clamped_;
+    double freq_floor_ = 1e-4, weight_floor_ = 1e-3;
 
     NaturalGradient nat_;
     std::vector<double> drate_dalpha_;   // d rate_c / d alpha, by central differences of the gamma quantiles

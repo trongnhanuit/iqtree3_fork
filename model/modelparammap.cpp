@@ -146,8 +146,13 @@ ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree)
     }
     if (pinv_free_) {
         pinv_offset_ = ndim();
-        addParam("pinv", LOGIT_PINV_LO, LOGIT_PINV_HI);
+        // p_inv cannot usefully exceed the fraction of constant sites (the default
+        // optimiser uses the same upper bound)
+        double pmax = min(max(tree_->aln->frac_const_sites, 1e-4), 0.999);
+        addParam("pinv", LOGIT_PINV_LO, min(LOGIT_PINV_HI, logit(pmax)));
     }
+    freq_floor_ = Params::getInstance().min_state_freq;
+    clamped_.assign(ndim(), 0);
 }
 
 void ModelParamMap::addParam(const string &name, double lo, double hi) {
@@ -248,6 +253,7 @@ void ModelParamMap::unpack(const vector<double> &theta) {
     }
     // F: raw entries relative to the pinned state, then normalised to sum 1;
     // excluded (ZERO_FREQ) states keep their current ratio to the pinned state
+    clamped_.assign(ndim(), 0);
     for (auto &blk : fblocks_) {
         ModelMarkov *c = component(blk.comp);
         vector<double> pi(c->state_freq, c->state_freq + nstates_);
@@ -257,14 +263,35 @@ void ModelParamMap::unpack(const vector<double> &theta) {
         double sum = 0.0;
         for (int k = 0; k < nstates_; k++) sum += pi[k];
         for (int k = 0; k < nstates_; k++) pi[k] /= sum;
+        // NOTE(design 6): the same floor as the default optimiser's bounds
+        // (min_state_freq); the log-ratio fences alone are relative to a pinned
+        // state that may itself shrink, so entries could otherwise reach 1e-8
+        bool any = false;
+        for (size_t j = 0; j < blk.states.size(); j++)
+            if (pi[blk.states[j]] < freq_floor_) { pi[blk.states[j]] = freq_floor_; clamped_[blk.offset + j] = 1; any = true; }
+        if (any) {
+            sum = 0.0;
+            for (int k = 0; k < nstates_; k++) sum += pi[k];
+            for (int k = 0; k < nstates_; k++) pi[k] /= sum;
+        }
         c->setStateFrequency(pi.data());
     }
-    // W
+    // W (floored like MIN_MIXTURE_PROP in the default optimiser)
     if (w_offset_ >= 0) {
+        vector<double> w(nmix_);
         double sum = 1.0;
         for (int m = 0; m < nmix_ - 1; m++) sum += exp(theta[w_offset_ + m]);
-        for (int m = 0; m < nmix_ - 1; m++) model_->setMixtureWeight(m, exp(theta[w_offset_ + m]) / sum);
-        model_->setMixtureWeight(nmix_ - 1, 1.0 / sum);
+        for (int m = 0; m < nmix_ - 1; m++) w[m] = exp(theta[w_offset_ + m]) / sum;
+        w[nmix_ - 1] = 1.0 / sum;
+        bool any = false;
+        for (int m = 0; m < nmix_; m++)
+            if (w[m] < weight_floor_) { w[m] = weight_floor_; any = true; if (m < nmix_ - 1) clamped_[w_offset_ + m] = 1; }
+        if (any) {
+            sum = 0.0;
+            for (int m = 0; m < nmix_; m++) sum += w[m];
+            for (int m = 0; m < nmix_; m++) w[m] /= sum;
+        }
+        for (int m = 0; m < nmix_; m++) model_->setMixtureWeight(m, w[m]);
     }
     // R: p_inv first (the free-rate proportions carry the factor 1-p_inv)
     double p = rate_->getPInvar();
@@ -558,6 +585,7 @@ void ModelParamMap::naturalToTheta(vector<double> &g) const {
     }
     if (alpha_free_) g[alpha_offset_] = nat_.dalpha * rate_->getGammaShape();
     if (pinv_free_) { double p = rate_->getPInvar(); g[pinv_offset_] = nat_.dpinv * p * (1.0 - p); }
+    for (int i = 0; i < ndim(); i++) if (clamped_[i] && g[i] < 0.0) g[i] = 0.0;   // flat below the floor
 }
 
 void ModelParamMap::gradient(const PhyloGradient::Result &res, vector<double> &g) {

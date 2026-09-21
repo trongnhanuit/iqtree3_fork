@@ -1,0 +1,62 @@
+# Gates for the --analytical-gradients work (design: docs/analytical-gradients-design.md).
+# Kept out of ci.yaml on purpose: ci.yaml calls this file as one reusable-workflow job,
+# so the main CI file stays small. Also runnable by hand from the Actions tab.
+name: Analytical gradients
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  # Prove the default code path is unchanged: build the merge-base with master
+  # and HEAD in the same job with identical flags, run a fixed command list at
+  # -nt 1 with both binaries, and require identical outputs apart from volatile
+  # lines (test_scripts/ag/identity.sh). Every command is also run with the flag
+  # on and compared to flag-off.
+  default-path-identity:
+    name: Default-path identity (merge-base vs HEAD)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y gcc g++ libeigen3-dev libboost-dev
+
+      - name: Build HEAD
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DUSE_CMAPLE=OFF -DUSE_LSD2=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make -j
+
+      - name: Build merge-base with identical flags
+        run: |
+          git fetch origin master || true
+          BASE=$(git merge-base origin/master HEAD)
+          echo "merge-base: $BASE"
+          git worktree add ../base "$BASE"
+          cd ../base
+          git submodule update --init --recursive
+          mkdir build
+          cd build
+          cmake .. -DUSE_CMAPLE=OFF -DUSE_LSD2=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make -j
+
+      - name: Identity gate
+        run: |
+          chmod +x test_scripts/ag/identity.sh
+          ./test_scripts/ag/identity.sh ../base/build/iqtree3 build/iqtree3 identity_out
+
+      - name: Upload identity outputs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: identity_out
+          path: identity_out

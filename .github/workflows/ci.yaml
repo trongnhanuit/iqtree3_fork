@@ -477,3 +477,8 @@ jobs:
         shell: pwsh
         run: |
           ./test_scripts/verify_memory.ps1 -IQTree2Log time_log_iqtree2.tsv -IQTree3Log time_log_iqtree3.tsv -Platform windows-x86
+
+  # Gates for the --analytical-gradients work live in their own workflow file.
+  analytical-gradients:
+    name: Analytical gradients
+    uses: ./.github/workflows/analytical-gradients.yaml

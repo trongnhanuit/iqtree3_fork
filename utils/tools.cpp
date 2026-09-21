@@ -1258,6 +1258,140 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.optimize_alg_qmix = "EM";
                 continue;
             }
+
+            // analytical-gradient model optimisation (docs/analytical-gradients-design.md)
+            if (strcmp(argv[cnt], "--analytical-gradients") == 0) {
+                params.analytical_gradients = true;
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-gradient-check") == 0) {
+                params.ag_gradient_check = true;
+                // optional numeric tolerance argument
+                if (cnt + 1 < argc && argv[cnt+1][0] != '-') {
+                    int end_pos;
+                    double tol = convert_double(argv[cnt+1], end_pos);
+                    if (end_pos == (int)strlen(argv[cnt+1])) {
+                        params.ag_gradient_check_tol = tol;
+                        cnt++;
+                    }
+                }
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-gradient-check-every") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-gradient-check-every <k>";
+                params.ag_gradient_check = true;
+                params.ag_gradient_check_every = convert_int(argv[cnt]);
+                if (params.ag_gradient_check_every < 1)
+                    throw "--ag-gradient-check-every requires k >= 1";
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-gradient-check-only") == 0) {
+                params.ag_gradient_check = true;
+                params.ag_gradient_check_only = true;
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-gradient-check-strict") == 0) {
+                params.ag_gradient_check = true;
+                params.ag_gradient_check_strict = true;
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-optalg") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-optalg <BFGS|LBFGSB>";
+                if (strcmp(argv[cnt], "BFGS") != 0 && strcmp(argv[cnt], "LBFGSB") != 0)
+                    throw "Invalid option for --ag-optalg: use 'BFGS' or 'LBFGSB'";
+                params.ag_optalg = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-multistart") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-multistart <N>";
+                params.ag_multistart = convert_int(argv[cnt]);
+                if (params.ag_multistart < 0)
+                    throw "--ag-multistart requires N >= 0";
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-multistart-budget") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-multistart-budget <N>";
+                params.ag_multistart_budget = convert_int(argv[cnt]);
+                if (params.ag_multistart_budget < 0)
+                    throw "--ag-multistart-budget requires N >= 0";
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-start") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-start <warm|cold>";
+                if (strcmp(argv[cnt], "warm") != 0 && strcmp(argv[cnt], "cold") != 0)
+                    throw "Invalid option for --ag-start: use 'warm' or 'cold'";
+                params.ag_start = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-em-ratios") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-em-ratios <r1,r2,...>";
+                params.ag_em_ratios = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-cascade") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-cascade <on|off>";
+                if (strcmp(argv[cnt], "on") == 0)
+                    params.ag_cascade = true;
+                else if (strcmp(argv[cnt], "off") == 0)
+                    params.ag_cascade = false;
+                else
+                    throw "Invalid option for --ag-cascade: use 'on' or 'off'";
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-polish") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-polish <final|per-level>";
+                if (strcmp(argv[cnt], "final") != 0 && strcmp(argv[cnt], "per-level") != 0)
+                    throw "Invalid option for --ag-polish: use 'final' or 'per-level'";
+                params.ag_polish = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-em-axes") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-em-axes <axes>, a comma-separated subset of W,R,F";
+                params.ag_em_axes = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-stats") == 0) {
+                params.ag_stats = true;
+                continue;
+            }
+            // hidden testing options
+            if (strcmp(argv[cnt], "--ag-abort-after") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-abort-after <level>";
+                params.ag_abort_after = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-dump-gradient") == 0) {
+                params.ag_dump_gradient = true;
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-selftest") == 0) {
+                params.ag_selftest = true;
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-force") == 0) {
+                params.ag_force = true;
+                continue;
+            }
             if (strcmp(argv[cnt], "--gtr20-model") == 0 || strcmp(argv[cnt], "--init-exchange") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -5588,6 +5722,15 @@ void parseArg(int argc, char *argv[], Params &params) {
     if (params.optimize_linked_gtr && params.model_name.find("GTR") == string::npos && params.model_joint.find("GTR") == string::npos)
         outError("Must have either GTR or GTR20 as part of the model when using --link-exchange-rates.");
 
+    // Edge-linked partition models (-p/-spp, -q/-spj) never reach the model-optimisation
+    // funnel that hosts the analytical-gradient pipeline (PartitionModelPlen calls
+    // optimizeParametersOnly per partition); warn once here and fall back, never exit.
+    if (params.analytical_gradients && params.partition_file &&
+        (params.partition_type == BRLEN_SCALE || params.partition_type == BRLEN_FIX)) {
+        outWarning("--analytical-gradients is not applicable to edge-linked partition models (-p/-q); using the standard optimizer.");
+        params.analytical_gradients = false;
+    }
+
     if (params.use_nn_model && params.modelomatic)
         outError("--modelomatic option does not work with --use-nn-model.");
 
@@ -6011,6 +6154,17 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  -m ...+FU            Amino-acid frequencies given protein matrix" << endl
     << "  -m ...+F1x4          Equal NT frequencies over three codon positions" << endl
     << "  -m ...+F3x4          Unequal NT frequencies over three codon positions" << endl
+
+    << endl << "MODEL PARAMETER OPTIMISATION (ANALYTICAL GRADIENTS):" << endl
+    << "  --analytical-gradients   Exact-gradient EM+BFGS optimisation of model parameters" << endl
+    << "                           (reversible models and mixtures; others use the default)" << endl
+    << "  --ag-start warm|cold     Warm start from C-series profiles (default) or random" << endl
+    << "  --ag-multistart NUM      Multi-start candidates (default: auto; 0 to disable)" << endl
+    << "  --ag-cascade on|off      Cascading precision levels (default: on)" << endl
+    << "  --ag-optalg BFGS|LBFGSB  Driver for the joint polish (default: BFGS)" << endl
+    << "  --ag-gradient-check [T]  Log analytic vs numerical gradients per parameter" << endl
+    << "                           (relative tolerance T, default 1e-4)" << endl
+    << "  --ag-stats               Report likelihood and gradient evaluation counts" << endl
 
     << endl << "RATE HETEROGENEITY AMONG SITES:" << endl
     << "  -m ...+I             A proportion of invariable sites" << endl
@@ -7284,6 +7438,27 @@ void Params::setDefault() {
     optimize_from_given_params = false;
     optimize_alg_qmix = "BFGS";
     estimate_init_freq = 0;
+
+    // analytical-gradient model optimisation: all off by default
+    analytical_gradients = false;
+    ag_gradient_check = false;
+    ag_gradient_check_tol = 1e-4;
+    ag_gradient_check_every = 1;
+    ag_gradient_check_only = false;
+    ag_gradient_check_strict = false;
+    ag_optalg = "BFGS";
+    ag_multistart = -1;
+    ag_multistart_budget = 500;
+    ag_start = "warm";
+    ag_em_ratios = "1,2,5,10";
+    ag_cascade = true;
+    ag_polish = "final";
+    ag_em_axes = "W,R,F";
+    ag_stats = false;
+    ag_abort_after = "";
+    ag_dump_gradient = false;
+    ag_selftest = false;
+    ag_force = false;
 
     // defaults for new options -JD
     optimize_linked_gtr = false;

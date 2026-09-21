@@ -1829,6 +1829,50 @@ public:
      */
     int estimate_init_freq;
 
+    /**
+     * --analytical-gradients: use exact reverse-mode gradients and the
+     * EM + analytic-gradient BFGS pipeline for model parameter optimisation.
+     * All ag_* options are ignored unless this is true. Defaults keep every
+     * existing code path unchanged (see docs/analytical-gradients-design.md).
+     */
+    bool analytical_gradients;
+    /** --ag-gradient-check [tol]: log analytic vs central-difference gradients per parameter */
+    bool ag_gradient_check;
+    /** relative-error tolerance flagged as FAIL in the gradient check (default 1e-4) */
+    double ag_gradient_check_tol;
+    /** --ag-gradient-check-every k: check every k-th gradient evaluation (default 1) */
+    int ag_gradient_check_every;
+    /** --ag-gradient-check-only: one check at the initial point, then exit (1 on failure) */
+    bool ag_gradient_check_only;
+    /** --ag-gradient-check-strict: abort on the first FAIL during optimisation */
+    bool ag_gradient_check_strict;
+    /** --ag-optalg <BFGS|LBFGSB>: driver for the joint polish (default BFGS) */
+    string ag_optalg;
+    /** --ag-multistart N: number of multi-start candidates (-1 = auto, 0 = off) */
+    int ag_multistart;
+    /** --ag-multistart-budget N: refinement budget in likelihood-evaluation equivalents */
+    int ag_multistart_budget;
+    /** --ag-start <warm|cold>: starting point for estimated profiles */
+    string ag_start;
+    /** --ag-em-ratios list: profile:weight EM ratios used in multi-start refinement */
+    string ag_em_ratios;
+    /** --ag-cascade <on|off>: cascading precision levels 100,10,1,0.1,target */
+    bool ag_cascade;
+    /** --ag-polish <final|per-level>: one joint polish at the end (default) or one per level */
+    string ag_polish;
+    /** --ag-em-axes list: order of EM axes per round (subset of W,R,F) */
+    string ag_em_axes;
+    /** --ag-stats: print the optimiser's own likelihood/gradient evaluation counts */
+    bool ag_stats;
+    /** (hidden) --ag-abort-after <level>: dump the checkpoint and exit after a cascade level */
+    string ag_abort_after;
+    /** (hidden) --ag-dump-gradient: write the raw gradient for the external NumPy oracle */
+    bool ag_dump_gradient;
+    /** (hidden) --ag-selftest: run engine self-tests (X kernel regimes, pack/unpack) and exit */
+    bool ag_selftest;
+    /** (hidden) --ag-force: engage the pipeline on any supported model, ignoring size gating */
+    bool ag_force;
+
     //new params added -JD
     /** TRUE if you want to exchange the rate matrix for an optimized GTR matrix */
     bool optimize_linked_gtr;

@@ -60,3 +60,40 @@ jobs:
         with:
           name: identity_out
           path: identity_out
+
+  # Compile-only checks of build variants that the main CI does not build but
+  # that link the same tree/model libraries the new code lands in: the C++14
+  # variant (IQTREE_FLAGS=cpp14, so no C++17-only constructs may enter the new
+  # files) and the library build (BUILD_LIB, where outError throws instead of
+  # exiting). Nothing is run; a failed compile is the finding.
+  compile-variants:
+    name: Compile variant (${{ matrix.variant }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: cpp14
+            cmake_flags: -DIQTREE_FLAGS=cpp14
+            target: iqtree3
+          - variant: lib
+            cmake_flags: -DBUILD_LIB=ON
+            target: all
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y gcc g++ libeigen3-dev libboost-dev
+
+      - name: Configure and compile
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DUSE_CMAPLE=OFF -DUSE_LSD2=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ${{ matrix.cmake_flags }}
+          make -j ${{ matrix.target }}

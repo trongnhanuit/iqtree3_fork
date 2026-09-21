@@ -33,6 +33,7 @@ modelhmm.cpp modelhmm.h
 modelhmmgm.cpp modelhmmgm.h
 modelhmmtm.cpp modelhmmtm.h
 modelcodonmixture.cpp modelcodonmixture.h
+gradientoptimizer.cpp gradientoptimizer.h
 )
 
 target_link_libraries(model utils)

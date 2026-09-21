@@ -233,6 +233,12 @@ public:
 	bool fused_mix_rate;
 
 	/**
+		set once the "--analytical-gradients not applicable" NOTE has been printed
+		for this factory, so re-entries (NNI refits, ModelFinder candidates) stay quiet
+	*/
+	bool ag_warned = false;
+
+	/**
 		TRUE to store transition matrix into this hash table for computation efficiency
 	*/
 	bool store_trans_matrix;

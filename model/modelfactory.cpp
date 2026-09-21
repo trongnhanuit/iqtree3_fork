@@ -38,6 +38,7 @@
 #include "ratefree.h"
 #include "ratefreeinvar.h"
 #include "rateheterotachy.h"
+#include "gradientoptimizer.h"
 #include "rateheterotachyinvar.h"
 //#include "ngs.h"
 #include <string>
@@ -1633,6 +1634,18 @@ double ModelFactory::optimizeParameters(int fixed_len, bool write_info,
     }
 #endif
     
+    // --analytical-gradients: this alternating loop is the single seam where the
+    // analytic pipeline will replace the default optimiser (design doc, section 3.2).
+    // The prologue above and the epilogue below are shared by both paths.
+    {
+        string ag_why;
+        if (Params::getInstance().analytical_gradients &&
+            !GradientOptimizer::supports(this, ag_why) && !ag_warned) {
+            outWarning("--analytical-gradients not applicable (" + ag_why + "); using standard optimizer");
+            ag_warned = true;
+        }
+    }
+
     for (i = 2; i < tree->params->num_param_iterations; i++) {
         double new_lh;
 

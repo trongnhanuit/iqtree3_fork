@@ -60,6 +60,12 @@ GRAD=(
   "g_aa_mix_unlinked|-s $EX/aa_example.phy -m MIX{LG+FO,WAG+FO}+G4 -te $HERE/data/aa_example_lg.nwk"
   "g_dna_safe_r4|-s $EX/example.phy -m GTR+F+R4 -safe -te $HERE/data/example_gtr_g.nwk"
   "g_aa_safe_c10|-s $WD/turtle_aa.fasta -m LG+C10+G4 -safe"
+  "g_dna_gtr_fo_r4_i|-s $EX/example.phy -m GTR+FO+R4+I -te $HERE/data/example_gtr_g.nwk"
+  "g_dna_link_mix|-s $EX/example.phy -m MIX{GTR+FO,GTR+FO}+G4 --link-exchange-rates -te $HERE/data/example_gtr_g.nwk"
+  "g_aa_gtr20_link|-s $EX/aa_example.phy -m GTR20+F2+R2 --gtr20-model LG -te $HERE/data/aa_example_lg.nwk"
+  "g_aa_lg_f10|-s $EX/aa_example.phy -m LG+F10 -te $HERE/data/aa_example_lg.nwk"
+  "g_dna_legacy_eigen|-s $EX/example.phy -m GTR+FO+G4 --eigen -te $HERE/data/example_gtr_g.nwk"
+  "g_selftest|-s $EX/example.phy -m GTR+FO+R3+I -te $HERE/data/example_gtr_g.nwk --ag-selftest"
 )
 
 # ---- oracle cases: "<id>|<alisim model>|<newick>|<iqtree model>" ----
@@ -84,7 +90,7 @@ run_grad() {   # id args -> report/<id>.txt, marker FAIL
     # shellcheck disable=SC2086
     ( cd "$dir" && "$BIN" $args -nt 1 -seed $SEED --prefix "$id" -redo --analytical-gradients --ag-gradient-check-only > "$id.stdout" 2>&1 )
     local rc=$?
-    { echo "== $id (exit $rc)"; grep -E "^AG:|GRADCHECK" "$dir/$id.stdout"; } > "$REP/$id.txt"
+    { echo "== $id (exit $rc)"; grep -E "^AG:|GRADCHECK|SELFTEST" "$dir/$id.stdout"; } > "$REP/$id.txt"
     if [ "${AG_SANITIZER:-0}" = "1" ]; then
         local asan ubsan_new ubsan_old
         asan=$(grep -c "ERROR: AddressSanitizer" "$dir/$id.stdout")
@@ -96,7 +102,8 @@ run_grad() {   # id args -> report/<id>.txt, marker FAIL
             grep -E "ERROR: AddressSanitizer|runtime error" "$dir/$id.stdout" | grep -E "AddressSanitizer|$SAN_NEW_FILES" | head -3 >> "$REP/$id.txt"
         fi
         # the gradient check itself must still pass (GRADCHECK line with n_fail=0)
-        grep -q "GRADCHECK.* n_fail=0 .*edge_lnl_check=PASS" "$dir/$id.stdout" || touch "$REP/$id.FAIL"
+        grep -q "GRADCHECK.* n_fail=0 .*edge_lnl_check=PASS.*identities=PASS" "$dir/$id.stdout" || touch "$REP/$id.FAIL"
+        grep -q "SELFTEST.*FAIL" "$dir/$id.stdout" && touch "$REP/$id.FAIL"
         return
     fi
     [ "$rc" = "0" ] || { touch "$REP/$id.FAIL"; grep -E "ERROR|FAIL" "$dir/$id.stdout" | head -3 >> "$REP/$id.txt"; }
@@ -105,7 +112,7 @@ run_grad() {   # id args -> report/<id>.txt, marker FAIL
 run_oracle() {   # id alisim_model newick iqtree_model
     local id="$1" amodel="$2" nwk="$3" imodel="$4" dir="$OUT_DIR/$1" rc=0
     mkdir -p "$dir"
-    {
+    (
         cd "$dir" || exit 1
         echo "$nwk" > tree.nwk
         "$BIN" --alisim sim -t tree.nwk -m "$amodel" --length 400 -seed 7 -redo -quiet > alisim.stdout 2>&1 || { echo "  alisim failed"; exit 1; }
@@ -117,7 +124,7 @@ run_oracle() {   # id alisim_model newick iqtree_model
         tail -1 oracle.txt
         python3 "$HERE/oracle.py" sim.phy "$id.aggrad.tsv" --selftest > selftest.txt 2>&1 || { echo "  oracle self-test did not detect a perturbed gradient"; exit 1; }
         echo "  oracle self-test: perturbed gradient detected"
-    } > "$REP/$id.txt" 2>&1
+    ) > "$REP/$id.txt" 2>&1
     rc=$?
     sed -i.bak "1i\\
 == $id (exit $rc)" "$REP/$id.txt" 2>/dev/null || { (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"; }
@@ -128,7 +135,7 @@ run_oracle() {   # id alisim_model newick iqtree_model
 run_threads() {   # compare analytic columns at -nt 1 vs -nt 4
     local id="t_threads" dir="$OUT_DIR/$id" rc=0
     mkdir -p "$dir"
-    {
+    (
         cd "$dir" || exit 1
         for nt in 1 4; do
             "$BIN" -s "$EX/aa_example.phy" -m LG+F2+G4 -te "$HERE/data/aa_example_lg.nwk" -nt $nt -seed $SEED --prefix "nt$nt" -redo --analytical-gradients --ag-gradient-check-only > "nt$nt.stdout" 2>&1 || { echo "  run at -nt $nt failed"; exit 1; }
@@ -144,10 +151,10 @@ worst = 0.0
 for k in a:
     ga, gb = a[k][1], b[k][1]
     worst = max(worst, abs(ga-gb)/max(abs(ga), abs(gb), 1e-6*gmax))
-print("  -nt 1 vs -nt 4: %d branches, max rel diff %.2e -> %s" % (len(a), worst, "PASS" if worst <= 1e-9 else "FAIL"))
+print("  -nt 1 vs -nt 4: %d gradient entries, max rel diff %.2e -> %s" % (len(a), worst, "PASS" if worst <= 1e-9 else "FAIL"))
 raise SystemExit(0 if worst <= 1e-9 else 1)
 PY
-    } > "$REP/$id.txt" 2>&1
+    ) > "$REP/$id.txt" 2>&1
     rc=$?
     (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"

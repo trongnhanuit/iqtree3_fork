@@ -17,9 +17,18 @@
 
 class ModelFactory;
 class PhyloTree;
+class ModelParamMap;
 
 class GradientOptimizer {
 public:
+    /**
+     * --ag-selftest: the X kernel's three regimes against a long-double
+     * reference (and the naive formula shown to fail for tiny gaps), and the
+     * pack/unpack round trip of the parameter map. Prints SELFTEST lines.
+     * @return 0 if all pass, 1 otherwise
+     */
+    static int selfTest(ModelParamMap *map, PhyloTree *tree);
+
     /**
      * Decide whether the analytic pipeline handles this model/tree configuration.
      * Has no side effects. When it returns false, `why` holds a one-line reason
@@ -33,8 +42,11 @@ public:
      * the analytic gradient at the current parameter values, compare it with
      * independent references, write <prefix>.gradcheck.tsv (and
      * <prefix>.aggrad.tsv for the external oracle) and print a summary.
-     * Stage 1 covers branch lengths, compared against the tree's Newton
-     * derivative (computeLikelihoodDerv) and central differences.
+     * Branch lengths are compared against the tree's Newton derivative
+     * (computeLikelihoodDerv) and central differences; every model parameter
+     * of the ModelParamMap vector against central differences in theta space,
+     * with the closed-form Q chain rule cross-checked against a
+     * finite-difference-of-Q-builder chain rule and two zero-cost identities.
      * @return 0 if every row passed the tolerance, 1 otherwise
      */
     static int gradientCheckOnly(ModelFactory *factory, PhyloTree *tree);

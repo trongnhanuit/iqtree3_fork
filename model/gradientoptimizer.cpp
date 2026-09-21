@@ -8,6 +8,7 @@
 #include "modelfactory.h"
 #include "modelmarkov.h"
 #include "modelmixture.h"
+#include "ratefree.h"
 #include "tree/phylotree.h"
 #include "phylogradient.h"
 #include "modelparammap.h"
@@ -19,6 +20,7 @@
 #include <sstream>
 #include <algorithm>
 #include <random>
+#include <cstring>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -376,44 +378,74 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
         if (moved) { n_lh_++; cur_lh = tree_->computeLikelihood(); }
     }
 
+    // NOTE(design 10): EM axes and the cascade engage for large parameter
+    // vectors (or --ag-force); small models get the plain polish of Stage 3.
+    em_axes_ = params.ag_em_axes;
+    em_enabled_ = (map_->ndim() >= 50 || params.ag_force) && !em_axes_.empty();
+    vector<double> levels;
+    if (em_enabled_ && params.ag_cascade) {
+        const double coarse[] = { 100.0, 10.0, 1.0, 0.1 };
+        for (double e : coarse) if (e > logl_epsilon) levels.push_back(e);
+    }
+    levels.push_back(logl_epsilon);
+    const bool polish_per_level = params.ag_polish == "per-level";
+
     // observable contract of the default loop (design 3.2): branch step per
     // fixed_len, a parameter step, VB_MED progress lines, the iteration cap,
     // and the terminal branch optimisation
-    int max_rounds = max(1, params.num_param_iterations - 2);
-    for (int k = 1; k <= max_rounds; k++) {
-        double new_lh;
-        if (fixed_len == BRLEN_OPTIMIZE)
-            new_lh = tree_->optimizeAllBranches(min(k + 1, 3), logl_epsilon);
-        else if (fixed_len == BRLEN_SCALE) {
-            double scaling = 1.0;
-            new_lh = tree_->optimizeTreeLengthScaling(MIN_BRLEN_SCALE, scaling, MAX_BRLEN_SCALE, gradient_epsilon);
-        } else
-            new_lh = cur_lh;
-        (void)new_lh;
+    const int max_rounds = max(1, params.num_param_iterations - 2);
+    int total_rounds = 0;
+    for (size_t li = 0; li < levels.size() && total_rounds < max_rounds; li++) {
+        const double eps = levels[li];
+        const bool target = (li + 1 == levels.size());
+        logl_epsilon_ = eps;
+        double prev_lh = cur_lh, delta_max = 0.0;
+        for (int k = 1; total_rounds < max_rounds; k++) {
+            if (fixed_len == BRLEN_OPTIMIZE)
+                tree_->optimizeAllBranches(min(k + 1, 3), eps);
+            else if (fixed_len == BRLEN_SCALE) {
+                double scaling = 1.0;
+                tree_->optimizeTreeLengthScaling(MIN_BRLEN_SCALE, scaling, MAX_BRLEN_SCALE, gradient_epsilon);
+            }
+            n_lh_++;
+            cur_lh = tree_->computeLikelihood();
+            if (em_enabled_) {
+                for (char ax : em_axes_) {
+                    if (ax == 'W') cur_lh = emWeights(cur_lh);
+                    else if (ax == 'R') cur_lh = emRates(cur_lh, gradient_epsilon);
+                    else if (ax == 'F') cur_lh = emProfiles(cur_lh);
+                }
+            }
+            if (target || polish_per_level || !em_enabled_)
+                cur_lh = polish(gradient_epsilon);
+            rounds_++;
+            total_rounds++;
 
-        new_lh = polish(gradient_epsilon);
-        rounds_ = k;
-
-        if (verbose_mode >= VB_MED) {
-            tree_->getModel()->writeInfo(cout);
-            tree_->getRate()->writeInfo(cout);
-            if (fixed_len == BRLEN_SCALE)
-                cout << "Scaled tree length: " << tree_->treeLength() << endl;
-        }
-        if (new_lh > best.logl) snapshot(best, new_lh);
-        if (new_lh > cur_lh + logl_epsilon) {
-            cur_lh = new_lh;
+            if (verbose_mode >= VB_MED) {
+                tree_->getModel()->writeInfo(cout);
+                tree_->getRate()->writeInfo(cout);
+                if (fixed_len == BRLEN_SCALE)
+                    cout << "Scaled tree length: " << tree_->treeLength() << endl;
+            }
+            if (cur_lh > best.logl) snapshot(best, cur_lh);
+            double delta = cur_lh - prev_lh;
+            prev_lh = cur_lh;
+            delta_max = max(delta_max, delta);
             if (write_info) {
                 ostringstream os;
-                os << (k + 1) << ". Current log-likelihood: " << cur_lh;
+                os << (rounds_ + 1) << ". Current log-likelihood: " << cur_lh;
+                if (levels.size() > 1) os << " (level " << eps << ")";
                 if (verbose_mode >= VB_MED) os << " (after " << (getRealTime() - t0) << " wall-clock sec)";
                 say(os.str());
             }
-        } else {
-            cur_lh = max(cur_lh, new_lh);
-            break;
+            // NOTE(design 10): coarse levels stop when a round gains less than 1%
+            // of the best round at that level (with eps as the absolute floor);
+            // the target level uses the default loop's rule (gain below logl_epsilon)
+            if (target) { if (delta < logl_epsilon) break; }
+            else if (delta < eps || (k >= 2 && delta < 0.01 * delta_max)) break;
         }
     }
+    logl_epsilon_ = logl_epsilon;
     if (fixed_len == BRLEN_OPTIMIZE)
         cur_lh = tree_->optimizeAllBranches(100, logl_epsilon);
     else if (fixed_len == BRLEN_SCALE) {
@@ -436,13 +468,131 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     }
     if (params.ag_stats) {
         ostringstream os;
-        os << "AG stats: rounds=" << rounds_ << " bfgs_iterations=" << n_bfgs_iter_ << " likelihood_evaluations=" << n_lh_ << " gradient_evaluations=" << n_grad_
+        os << "AG stats: rounds=" << rounds_ << " levels=" << levels.size() << " bfgs_iterations=" << n_bfgs_iter_
+           << " likelihood_evaluations=" << n_lh_ << " gradient_evaluations=" << n_grad_
+           << " em_steps(W/R/F)=" << n_em_w_ << "/" << n_em_r_ << "/" << n_em_f_ << " em_reverts=" << n_em_revert_
            << " fd_fallbacks=" << n_fd_fallback_ << " parameters=" << map_->ndim()
            << " time=" << setprecision(3) << (getRealTime() - t0) << " sec";
         say(os.str());
     }
     tree_->setCurScore(cur_lh);
     return cur_lh;
+}
+
+/* ---------------------------------------------------------------------- */
+/* EM axes                                                                 */
+/* ---------------------------------------------------------------------- */
+
+double GradientOptimizer::renormalise() {
+    vector<double> th;
+    map_->pack(th);
+    map_->unpack(th);      // floors, mean rate 1, ptn_invar, clearAllPartialLH
+    n_lh_++;
+    return tree_->computeLikelihood();
+}
+
+double GradientOptimizer::acceptOrRevert(const BestState &before, double before_lh, double after_lh, const char *axis) {
+    if (std::isfinite(after_lh) && after_lh >= before_lh - 1e-9) return after_lh;
+    restore(before);
+    n_lh_++;
+    n_em_revert_++;
+    double lh = tree_->computeLikelihood();
+    if (verbose_mode >= VB_MED) {
+        ostringstream os;
+        os << "AG: EM step on axis " << axis << " rejected (" << setprecision(10) << after_lh << " < " << before_lh << ")";
+        say(os.str());
+    }
+    return lh;
+}
+
+double GradientOptimizer::emWeights(double cur_lh) {
+    ModelMixture *mix = dynamic_cast<ModelMixture*>(tree_->getModel());
+    if (!mix || mix->fix_prop || mix->size() < 2) return cur_lh;
+    BestState before;
+    snapshot(before, cur_lh);
+    tree_->clearAllPartialLH();
+    mix->optimizeWeights();               // EM of Wang et al. (2008) on the mixture weights
+    n_lh_ += 2;
+    n_em_w_++;
+    return acceptOrRevert(before, cur_lh, renormalise(), "W");
+}
+
+double GradientOptimizer::emRates(double cur_lh, double gradient_epsilon) {
+    RateHeterogeneity *rate = tree_->getRate();
+    if (rate->getNDim() == 0) return cur_lh;
+    BestState before;
+    snapshot(before, cur_lh);
+    tree_->clearAllPartialLH();
+    RateFree *rf = dynamic_cast<RateFree*>(rate);
+    if (rf) rf->optimizeWithEM();          // rates and proportions, EM with per-category tree scaling
+    else rate->optimizeParameters(gradient_epsilon);   // alpha and/or p_inv by the model's own routine
+    n_lh_ += 4;
+    n_em_r_++;
+    // the rate model may leave the mean rate away from 1; put the scale on the
+    // branch lengths as the default epilogue does, then renormalise exactly
+    double mean = rate->rescaleRates();
+    if (fabs(mean - 1.0) > 1e-6 && Params::getInstance().fixed_branch_length != BRLEN_FIX)
+        tree_->scaleLength(mean);
+    return acceptOrRevert(before, cur_lh, renormalise(), "R");
+}
+
+double GradientOptimizer::emProfiles(double cur_lh) {
+    ModelMixture *mix = dynamic_cast<ModelMixture*>(tree_->getModel());
+    if (!mix) return cur_lh;
+    const int S = tree_->aln->num_states, K = (int)mix->size();
+    vector<int> est;
+    for (int m = 0; m < K; m++)
+        if (mix->at(m)->getFreqType() == FREQ_ESTIMATE && mix->at(m)->getNDim() > 0) est.push_back(m);
+    if (est.empty()) return cur_lh;
+    BestState before;
+    snapshot(before, cur_lh);
+    // E-step: posterior class membership per pattern (summed over rate categories)
+    tree_->clearAllPartialLH();
+    tree_->computePatternLhCat(WSL_MIXTURE);
+    const double *lhcat = tree_->getPatternLhCatPointer();
+    const Alignment *aln = tree_->aln;
+    const size_t nptn = aln->getNPattern(), nseq = aln->getNSeq();
+    // M-step (design 10): posterior-weighted site compositions
+    vector<vector<double>> newpi(K, vector<double>(S, 0.0));
+    vector<double> cnt(S);
+    for (size_t ptn = 0; ptn < nptn; ptn++) {
+        const double *row = lhcat + ptn * K;
+        double tot = tree_->ptn_invar[ptn];
+        for (int m = 0; m < K; m++) tot += row[m];
+        if (tot <= 0.0) continue;
+        fill(cnt.begin(), cnt.end(), 0.0);
+        for (size_t s = 0; s < nseq; s++) {
+            int st = aln->at(ptn)[s];
+            if (st < S) cnt[st] += 1.0;
+        }
+        double f = tree_->ptn_freq[ptn] / tot;
+        for (int m : est) {
+            double post = row[m] * f;
+            for (int x = 0; x < S; x++) newpi[m][x] += post * cnt[x];
+        }
+    }
+    vector<vector<double>> oldpi(K, vector<double>(S));
+    for (int m : est) {
+        memcpy(oldpi[m].data(), mix->at(m)->state_freq, S * sizeof(double));
+        double sum = 0.0;
+        for (int x = 0; x < S; x++) { newpi[m][x] += 0.5; sum += newpi[m][x]; }   // pseudo-count
+        for (int x = 0; x < S; x++) newpi[m][x] /= sum;
+    }
+    n_em_f_++;
+    // full step, then a half step (geometric) before giving up
+    const double steps[] = { 1.0, 0.5 };
+    for (double a : steps) {
+        for (int m : est) {
+            vector<double> pi(S);
+            double sum = 0.0;
+            for (int x = 0; x < S; x++) { pi[x] = exp((1.0 - a) * log(max(oldpi[m][x], 1e-300)) + a * log(newpi[m][x])); sum += pi[x]; }
+            for (int x = 0; x < S; x++) pi[x] /= sum;
+            mix->at(m)->setStateFrequency(pi.data());
+        }
+        double lh = renormalise();
+        if (std::isfinite(lh) && lh >= cur_lh - 1e-9) return lh;
+    }
+    return acceptOrRevert(before, cur_lh, -HUGE_VAL, "F");
 }
 
 /* ---------------------------------------------------------------------- */

@@ -6160,7 +6160,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "                           (reversible models and mixtures; others use the default)" << endl
     << "  --ag-start warm|cold     Warm start from C-series profiles (default) or random" << endl
     << "  --ag-multistart NUM      Multi-start candidates (default: auto; 0 to disable)" << endl
-    << "  --ag-cascade on|off      Cascading precision levels (default: on)" << endl
+    << "  --ag-cascade on|off      Cascading precision levels (default: off)" << endl
     << "  --ag-optalg BFGS|LBFGSB  Driver for the joint polish (default: BFGS)" << endl
     << "  --ag-gradient-check [T]  Log analytic vs numerical gradients per parameter" << endl
     << "                           (relative tolerance T, default 1e-4)" << endl
@@ -7451,8 +7451,8 @@ void Params::setDefault() {
     ag_multistart_budget = 500;
     ag_start = "warm";
     ag_em_ratios = "1,2,5,10";
-    ag_cascade = true;
-    ag_polish = "final";
+    ag_cascade = false;
+    ag_polish = "per-level";
     ag_em_axes = "W,R,F";
     ag_stats = false;
     ag_abort_after = "";

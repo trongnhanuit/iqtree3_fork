@@ -101,6 +101,19 @@ private:
     void gradientCheckStep(const std::vector<double> &theta, const std::vector<double> &g);
     void say(const std::string &line) const;
 
+    // ---- EM axes (design 10): each is one M-step, accepted only if the
+    //      production log-likelihood does not decrease; returns the new logL ----
+    /** W: mixture weights by ModelMixture::optimizeWeights */
+    double emWeights(double cur_lh);
+    /** R: free rates/proportions by RateFree::optimizeWithEM, alpha/p_inv by the rate model's own optimiser */
+    double emRates(double cur_lh, double gradient_epsilon);
+    /** F: profiles from posterior-weighted site compositions */
+    double emProfiles(double cur_lh);
+    /** restore `before` if `after_lh` is below `before_lh`; returns the accepted logL */
+    double acceptOrRevert(const BestState &before, double before_lh, double after_lh, const char *axis);
+    /** put the model back on the parametrised manifold (floors, mean rate 1, ptn_invar) and return logL */
+    double renormalise();
+
     ModelFactory *factory_;
     PhyloTree *tree_;
     std::unique_ptr<ModelParamMap> map_;
@@ -112,6 +125,9 @@ private:
     double delta_max_ = 0.0;
     // counters (--ag-stats)
     long n_lh_ = 0, n_grad_ = 0, n_fd_fallback_ = 0, n_bfgs_iter_ = 0;
+    long n_em_w_ = 0, n_em_r_ = 0, n_em_f_ = 0, n_em_revert_ = 0;
+    bool em_enabled_ = false;
+    std::string em_axes_;
     bool warned_fallback_ = false;
     bool gradcheck_started_ = false;
     std::vector<double> theta_, grad_;

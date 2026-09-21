@@ -287,3 +287,44 @@ disagreement into an error.
 
 Not in version 1 (later stages): per-axis EM warm start, cascading
 precision, multi-start, checkpointing of the optimiser's own state.
+
+## 10. EM axes and cascading precision (version 1.1)
+
+For vectors of at least 50 parameters (or with `--ag-force`) each round of
+section 9 also runs, before the polish, one accept-or-revert M-step per
+axis listed in `--ag-em-axes` (default `W,R,F`):
+
+* **W** mixture weights: `ModelMixture::optimizeWeights`, the EM of Wang
+  et al. (2008) on the class posteriors;
+* **R** site rates: `RateFree::optimizeWithEM` for `+R` (rates and
+  proportions, with per-category tree scaling), otherwise the rate model's
+  own optimiser (Brent on alpha and/or p_inv). Afterwards the mean rate is
+  moved onto the branch lengths as the default epilogue does;
+* **F** profiles of `+FO` classes: posterior class memberships (summed
+  over rate categories) times the site compositions, with a pseudo-count
+  of 0.5; a full step is tried, then a geometric half step.
+
+Every axis snapshots the state (theta and branch lengths), runs its
+M-step, renormalises through `pack`/`unpack` (floors, mean rate 1,
+`ptn_invar`) and keeps the result only if the production log-likelihood
+did not decrease. The steps use IQ-TREE's own EM code where it exists; the
+F step is the plan's composition heuristic, which the guard makes safe.
+
+With `--ag-cascade on` (default off) the rounds run at decreasing precision
+levels `{100, 10, 1, 0.1}` (those above `logl_epsilon`) and then at
+`logl_epsilon`. At a coarse level a round is the branch step plus the EM
+axes plus, with `--ag-polish per-level` (the default), the polish, and the
+level ends when a round gains less than `eps` or, from the second round on,
+less than 1% of the best round at that level. The target level runs the
+full round of section 9 with the default loop's rule. All levels share the
+`num_param_iterations` cap and the final best-state guard. The cascade is
+off by default because on the LG+F4+R4 benchmark it reached the same
+optimum as the single level (-4982.65 vs -4982.66) in 40 s instead of 30 s,
+and without the per-level polish the EM-only coarse levels steered the
+search to a worse basin (-4988.7); dropping the F axis costs 13-21
+log-likelihood units on that benchmark, so all three axes stay on.
+
+Floors (section 6): state frequencies at `min_state_freq` and mixture
+weights at 1e-3 as in the default optimiser's bounds, `p_inv` at most the
+fraction of constant sites; an entry held at its floor reports a zero
+gradient in the flat direction.

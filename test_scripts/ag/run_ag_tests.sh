@@ -16,7 +16,8 @@
 #   quality    the live optimiser: the same command with the flag off and on; the
 #              final log-likelihood with the flag must be >= the default's minus a
 #              tolerance (times are reported); -Q must use the new path per
-#              partition and -p must fall back with the warning
+#              partition and -p must fall back with the warning; a simulated
+#              two-profile mixture must be recovered within absolute tolerances
 #
 # Cases run in parallel, at most N processes at a time (default: half the cores).
 # Exit code 0 = all cases passed, 1 = a failure, 2 = usage.
@@ -152,7 +153,8 @@ run_oracle() {   # id alisim_model newick iqtree_model
 }
 
 run_threads() {   # compare analytic columns at -nt 1 vs -nt 4
-    local id="t_threads" dir="$OUT_DIR/$id" rc=0
+    local id="t_threads"
+    local dir="$OUT_DIR/$id" rc=0
     mkdir -p "$dir"
     (
         cd "$dir" || exit 1
@@ -217,8 +219,61 @@ run_quality() {   # id tol args: flag off vs flag on, same binary
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
+run_recovery() {   # simulated two-profile mixture: weights and profiles must be recovered (absolute tolerance)
+    local id="q_recovery"
+    local dir="$OUT_DIR/$id" rc=0
+    mkdir -p "$dir"
+    (
+        cd "$dir" || exit 1
+        if [ "${AG_SANITIZER:-0}" = "1" ]; then
+            # AliSim has a pre-existing AddressSanitizer report of its own
+            # (new-delete-type-mismatch), so the simulation cannot run under the
+            # sanitizer binary; the optimiser itself is covered by the other cases
+            echo "  skipped in sanitizer mode (AliSim is not sanitizer-clean)"; exit 0
+        fi
+        P1="0.18/0.1/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.02/0.02/0.02/0.02/0.02/0.02"
+        P2="0.02/0.02/0.02/0.02/0.02/0.02/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.1/0.18"
+        echo "(((A:0.08,B:0.12):0.05,(C:0.1,D:0.07):0.06):0.04,((E:0.09,F:0.11):0.05,(G:0.06,H:0.13):0.07):0.03);" > t.nwk
+        "$BIN" --alisim sim -t t.nwk -m "MIX{LG+F{$P1}:1:0.3,LG+F{$P2}:1:0.7}+G4{0.8}" --length 1500 -seed 11 -redo -quiet > alisim.stdout 2>&1 || { echo "  alisim failed"; exit 1; }
+        "$BIN" -s sim.phy -m "MIX{LG+FO,LG+FO}+G4" -te t.nwk -nt 1 -seed $SEED --prefix on -redo --analytical-gradients --ag-force --ag-stats > on.stdout 2>&1 || { echo "  flag-on run failed"; exit 1; }
+        grep "AG stats" on.stdout | head -1
+        python3 - "$P1" "$P2" <<'PY' || exit 1
+import sys, re, itertools, math
+p1 = [float(x) for x in sys.argv[1].split("/")]; p2 = [float(x) for x in sys.argv[2].split("/")]
+truth = [(0.3, p1), (0.7, p2)]
+rows = []
+for l in open("on.iqtree"):
+    m = re.match(r"\s*\d+\s+\S+\s+([0-9.]+)\s+([0-9.]+)\s+\S+FO\{([^}]*)\}", l)
+    if m:
+        rows.append((float(m.group(2)), [float(x) for x in m.group(3).split(",")]))
+if len(rows) != 2:
+    print("  could not parse two components from on.iqtree"); sys.exit(1)
+best = None
+for perm in itertools.permutations(range(2)):
+    dw = max(abs(rows[perm[i]][0] - truth[i][0]) for i in range(2))
+    rmse = max(math.sqrt(sum((a - b) ** 2 for a, b in zip(rows[perm[i]][1], truth[i][1])) / 20) for i in range(2))
+    if best is None or dw + rmse < best[0] + best[1]:
+        best = (dw, rmse)
+print("  recovery: max |weight error| = %.3f (tol 0.08), max profile RMSE = %.4f (tol 0.02)" % best)
+sys.exit(0 if best[0] <= 0.08 and best[1] <= 0.02 else 1)
+PY
+        if [ "$FULL" = "1" ]; then
+            "$BIN" -s sim.phy -m "MIX{LG+FO,LG+FO}+G4" -te t.nwk -nt 1 -seed $SEED --prefix off -redo > off.stdout 2>&1 || { echo "  flag-off run failed"; exit 1; }
+            old=$(grep -m1 "^Log-likelihood of the tree" off.iqtree | grep -Eo '[-]?[0-9]+\.[0-9]+' | head -1)
+            new=$(grep -m1 "^Log-likelihood of the tree" on.iqtree | grep -Eo '[-]?[0-9]+\.[0-9]+' | head -1)
+            echo "  logl flag-off=$old flag-on=$new"
+            awk -v a="$old" -v b="$new" 'BEGIN { exit (b >= a - 0.1) ? 0 : 1 }' || { echo "  flag-on worse than flag-off"; exit 1; }
+        fi
+        echo "  recovery: PASS"
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
 run_partitions() {   # -Q takes the new path per partition; -p falls back with the warning
-    local id="q_partitions" dir="$OUT_DIR/$id" rc=0
+    local id="q_partitions"
+    local dir="$OUT_DIR/$id" rc=0
     mkdir -p "$dir"
     (
         cd "$dir" || exit 1
@@ -257,6 +312,7 @@ if [ "$SUITE" = "quality" ] || [ "$SUITE" = "all" ]; then
         ORDER+=("$id"); throttle; run_quality "$id" "$tol" "$args" &
     done
     ORDER+=("q_partitions"); throttle; run_partitions &
+    ORDER+=("q_recovery"); throttle; run_recovery &
 fi
 wait
 

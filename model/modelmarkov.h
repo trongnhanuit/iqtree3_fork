@@ -47,6 +47,7 @@ class ModelMarkov : public ModelSubst, public EigenDecomposition
     friend class ModelPoMo;
     friend class PartitionModel;
     friend class PartitionModelPlen;
+    friend class ModelParamMap;   // reads/writes the 1-indexed rate variables (model/modelparammap.h)
 	
 public:
 	/**

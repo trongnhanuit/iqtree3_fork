@@ -1609,6 +1609,16 @@ double ModelFactory::optimizeParameters(int fixed_len, bool write_info,
         }
     }
 
+    // --ag-gradient-check-only / --ag-dump-gradient: debug tools evaluated at the
+    // initial point of the optimisation (design doc, section 7).
+    if (Params::getInstance().ag_gradient_check_only || Params::getInstance().ag_dump_gradient) {
+        int rc = GradientOptimizer::gradientCheckOnly(this, tree);
+        if (Params::getInstance().ag_gradient_check_only) {
+            cout.flush();
+            exit(rc);
+        }
+    }
+
     // For UpperBounds -----------
     //cout<<"MLCheck = "<<tree->mlCheck <<endl;
     if(tree->mlCheck == 0){

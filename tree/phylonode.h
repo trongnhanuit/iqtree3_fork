@@ -34,6 +34,7 @@ class PhyloNeighbor : public Neighbor {
     friend class PhyloTreeMixlen;
     friend class MemSlotVector;
     friend class ParsTree;
+    friend class PhyloGradient;   // attaches private outside-partial buffers (model/phylogradient.h)
 
 public:
     friend class TinaTree;

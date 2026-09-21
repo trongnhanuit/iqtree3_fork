@@ -352,6 +352,7 @@ class PhyloTree : public MTree, public Optimization, public CheckpointFactory {
     friend class PhyloTreeMixlen;
     friend class MemSlotVector;
     friend class ModelFactory;
+    friend class PhyloGradient;   // reads current_it/_pattern_lh for the analytic-gradient engine
     friend class IQTreeMix;
 public:
     /**

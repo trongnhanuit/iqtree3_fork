@@ -1646,15 +1646,17 @@ double ModelFactory::optimizeParameters(int fixed_len, bool write_info,
 #endif
     
     // --analytical-gradients: this alternating loop is the single seam where the
-    // analytic pipeline will replace the default optimiser (design doc, section 3.2).
+    // analytic pipeline replaces the default optimiser (design doc, section 3.2).
     // The prologue above and the epilogue below are shared by both paths.
-    {
-        string ag_why;
-        if (Params::getInstance().analytical_gradients &&
-            !GradientOptimizer::supports(this, ag_why) && !ag_warned) {
-            outWarning("--analytical-gradients not applicable (" + ag_why + "); using standard optimizer");
-            ag_warned = true;
-        }
+    string ag_why;
+    if (Params::getInstance().analytical_gradients && GradientOptimizer::supports(this, ag_why)) {
+        GradientOptimizer ag(this);
+        cur_lh = ag.optimize(fixed_len, write_info, logl_epsilon, gradient_epsilon, cur_lh);
+        i = ag.rounds() + 1;               // "took i-1 rounds" below stays meaningful
+    } else {
+    if (Params::getInstance().analytical_gradients && !ag_warned) {
+        outWarning("--analytical-gradients not applicable (" + ag_why + "); using standard optimizer");
+        ag_warned = true;
     }
 
     for (i = 2; i < tree->params->num_param_iterations; i++) {
@@ -1734,6 +1736,7 @@ double ModelFactory::optimizeParameters(int fixed_len, bool write_info,
         }
 #endif
     }
+    }   // end of the default alternating loop
 
     // normalize rates s.t. branch lengths are #subst per site
 //    if (Params::getInstance().optimize_alg_gammai != "EM")

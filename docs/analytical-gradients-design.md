@@ -232,3 +232,58 @@ also carry the tree's Newton derivative. `rel_err =
 model, tree, `dlogL/dt`, `dlogL/dQ` per component and the natural
 gradients, which `test_scripts/ag/oracle.py` checks against an independent
 NumPy implementation.
+
+## 9. The optimiser (`GradientOptimizer`), version 1
+
+`ModelFactory::optimizeParameters` keeps its prologue (initial likelihood,
+`mlInitial`) and epilogue (rate rescaling, root position, `writeInfo`,
+"took N rounds") for both paths; only the alternating loop in the middle is
+replaced when `--analytical-gradients` is set and `supports()` accepts the
+model (section 3.2 of the plan). `supports()` refuses, with a one-line
+reason printed once, everything the engine does not cover: partition or
+tree-mixture containers, heterotachy, fused `*G`/`*R`, codon, PoMo, DNA
+error models, non-reversible kernels, site-specific models or rates,
+`+ASC`, `-mem`, MPI with several processes, models without free parameters,
+and the special DNA frequency parametrisations. Edge-linked partition
+models (`-p`/`-q`) never reach the hook; the option parser clears the flag
+for them with a warning. Per-partition models (`-Q`/`-S`) enter the hook
+once per partition, possibly concurrently, so the optimiser keeps no global
+state and prints inside a critical section.
+
+One `optimize()` call runs, for round `k = 1, 2, ...` up to the
+`num_param_iterations` cap:
+
+1. the branch-length step of the default loop (Newton on all branches, tree
+   length scaling, or nothing, according to `fixed_len`);
+2. one joint BFGS minimisation of `-logL(theta)` over the whole vector of
+   section 6, with the engine's gradient (`derivativeFunk`) and the
+   existing `dfpmin` driver (`--ag-optalg LBFGSB` uses L-BFGS-B with 20
+   retained updates instead). The bounds are numerical fences only, and
+   `restartParameters` never randomises. Inside one minimisation the
+   `stopEarly` hook ends the search once a step gains less than 1% of the
+   largest step so far *and* less than `logl_epsilon`;
+
+and stops when a round improves the log-likelihood by less than
+`logl_epsilon`, exactly the acceptance rule of the default loop. It ends
+with the same terminal branch optimisation. Before round 1, identical `+FO`
+profiles (the `+Fk` default start) are made distinct, because they are a
+fixed point of every gradient method: protein models take the first `k`
+profiles of the smallest C-series with at least `k` classes, other data a
+light log-normal jitter from a private seeded generator.
+
+Safety nets: a non-finite likelihood inside a line search returns a huge
+value (a rejected step, never a crash); a gradient with a non-finite entry
+or an eigendecomposition failing `||U U^-1 - I|| < 1e-8` falls back to the
+base class's finite differences for that step, warning once; and the whole
+call ends by restoring the best state seen (parameters and branch lengths)
+if the final log-likelihood is below both the entry score and the best
+round, because `IQTree::optimizeModelParameters` aborts on a regression
+larger than 1. `--ag-stats` prints the counts of likelihood and gradient
+evaluations; `--ag-gradient-check [tol]` re-checks every parameter against
+central differences at every `k`-th gradient evaluation
+(`--ag-gradient-check-every k`) and appends the rows to
+`<prefix>.gradcheck.tsv`, and `--ag-gradient-check-strict` turns a
+disagreement into an error.
+
+Not in version 1 (later stages): per-axis EM warm start, cascading
+precision, multi-start, checkpointing of the optimiser's own state.

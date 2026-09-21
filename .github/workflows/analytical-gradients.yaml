@@ -52,7 +52,8 @@ jobs:
       - name: Identity gate
         run: |
           chmod +x test_scripts/ag/identity.sh
-          ./test_scripts/ag/identity.sh ../base/build/iqtree3 build/iqtree3 identity_out
+          # from Stage 3 on the flag changes results, so a flagged run must differ
+          ./test_scripts/ag/identity.sh ../base/build/iqtree3 build/iqtree3 identity_out --expect-flag-differs
 
       - name: Upload identity outputs on failure
         if: failure()
@@ -62,8 +63,8 @@ jobs:
           path: identity_out
 
   # Gradient correctness: --ag-gradient-check-only on a fixed set of models,
-  # the NumPy oracle on simulated data (with its self-test), and thread
-  # equality (test_scripts/ag/run_ag_tests.sh).
+  # the NumPy oracle on simulated data (with its self-test), thread equality,
+  # and the live optimiser against the default path (test_scripts/ag/run_ag_tests.sh).
   ag-tests:
     name: Gradient tests (gradcheck, oracle, threads)
     runs-on: ubuntu-22.04
@@ -139,6 +140,7 @@ jobs:
         run: |
           chmod +x test_scripts/ag/run_ag_tests.sh
           ./test_scripts/ag/run_ag_tests.sh build/iqtree3 ag_san_out --suite gradcheck
+          ./test_scripts/ag/run_ag_tests.sh build/iqtree3 ag_san_out_live --suite quality
 
       - name: Upload sanitizer outputs on failure
         if: failure()

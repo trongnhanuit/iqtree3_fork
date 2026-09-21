@@ -2,7 +2,7 @@
 # Test driver for the --analytical-gradients work.
 #
 # Usage:
-#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|all] [-j N]
+#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|all] [-j N] [--full]
 #
 # Suites:
 #   gradcheck  --ag-gradient-check-only on a fixed set of models; PASS = exit 0
@@ -13,6 +13,10 @@
 #              the oracle self-test that must fail on a perturbed gradient
 #   threads    the same model at -nt 1 and -nt 4 must give equal analytic gradients
 #              (relative 1e-9); also documents that lnL agrees
+#   quality    the live optimiser: the same command with the flag off and on; the
+#              final log-likelihood with the flag must be >= the default's minus a
+#              tolerance (times are reported); -Q must use the new path per
+#              partition and -p must fall back with the warning
 #
 # Cases run in parallel, at most N processes at a time (default: half the cores).
 # Exit code 0 = all cases passed, 1 = a failure, 2 = usage.
@@ -23,15 +27,17 @@ BIN="${1:-}"
 OUT_DIR="${2:-ag_test_out}"
 SUITE="all"
 MAXJOBS=0
+FULL=0
 argv=("$@")
 for ((k=0; k<${#argv[@]}; k++)); do
     case "${argv[$k]}" in
         --suite) SUITE="${argv[$((k+1))]:-all}" ;;
         -j) MAXJOBS="${argv[$((k+1))]:-0}" ;;
+        --full) FULL=1 ;;
     esac
 done
 if [ -z "$BIN" ] || [ ! -x "$BIN" ]; then
-    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|all] [-j N]" >&2
+    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|all] [-j N] [--full]" >&2
     exit 2
 fi
 if [ "$MAXJOBS" -le 0 ]; then
@@ -76,13 +82,26 @@ ORACLE=(
   "o_dna_5tax_r3|GTR{1,2,1,1,3}+F{0.25,0.25,0.25,0.25}+R3{0.3,0.2,0.4,0.8,0.3,2.0}|((A:0.1,B:0.2):0.05,(C:0.15,D:0.05):0.1,E:0.3);|GTR+F+R3"
 )
 
+# ---- quality cases: "<id>|<tolerance>|<iqtree arguments>" (run with the flag off and on) ----
+QUALITY=(
+  "q_dna_gtrfo_g4_search|0.1|-s $EX/example.phy -m GTR+FO+G4"
+  "q_dna_gtr_i_g4_search|0.1|-s $EX/example.phy -m GTR+F+I+G4"
+  "q_aa_lg_f2_g4_te|0.1|-s $EX/aa_example.phy -m LG+F2+G4 -te $HERE/data/aa_example_lg.nwk"
+  "q_dna_mix_link_te|0.1|-s $EX/example.phy -m MIX{GTR+FO,GTR+FO}+G4 --link-exchange-rates -te $HERE/data/example_gtr_g.nwk"
+)
+QUALITY_FULL=(
+  "q_aa_lg_f4_r4_search|0.1|-s $WD/turtle_aa.fasta -m LG+F4+R4"
+  "q_aa_lg_c10_r4_search|0.1|-s $WD/turtle_aa.fasta -m LG+C10+R4"
+)
+[ "$FULL" = "1" ] && QUALITY+=("${QUALITY_FULL[@]}")
+
 # Sanitizer mode (AG_SANITIZER=1, binary built with -fsanitize=address,undefined and
 # UBSAN_OPTIONS=halt_on_error=0): IQ-TREE's existing code has UBSan findings of its
 # own (e.g. an uninitialised bool read in ModelMarkov's constructor), so a case fails
 # only on (a) any AddressSanitizer report, (b) an undefined-behaviour report whose
 # location is in the new files, or (c) a failed gradient check. Other reports are
 # listed as pre-existing and ignored.
-SAN_NEW_FILES='phylogradient|gradientoptimizer'
+SAN_NEW_FILES='phylogradient|gradientoptimizer|modelparammap'
 
 run_grad() {   # id args -> report/<id>.txt, marker FAIL
     local id="$1" args="$2" dir="$OUT_DIR/$1"
@@ -160,6 +179,63 @@ PY
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
+run_quality() {   # id tol args: flag off vs flag on, same binary
+    local id="$1" tol="$2" args="$3" dir="$OUT_DIR/$1" rc=0
+    mkdir -p "$dir"
+    (
+        cd "$dir" || exit 1
+        local t0 t1 t2 old new
+        t0=$(date +%s)
+        if [ "${AG_SANITIZER:-0}" = "1" ]; then
+            # sanitizer mode exercises the new code only: the flag-off run is the
+            # default path, which the sanitizer job does not need and which is slow
+            # under ASan; the flag-on run must finish without a report in new files
+            # shellcheck disable=SC2086
+            "$BIN" $args -nt 1 -seed $SEED --prefix on -redo --analytical-gradients --ag-stats > on.stdout 2>&1 || { echo "  flag-on run failed"; exit 1; }
+            local asan ubsan_new
+            asan=$(grep -c "ERROR: AddressSanitizer" on.stdout)
+            ubsan_new=$(grep -E "runtime error" on.stdout | grep -c -E "$SAN_NEW_FILES")
+            echo "  sanitizer: asan_reports=$asan ubsan_in_new_files=$ubsan_new"
+            [ "$asan" = "0" ] && [ "$ubsan_new" = "0" ] || exit 1
+            grep -c "AG stats" on.stdout | sed 's/^/  AG stats lines: /'
+            exit 0
+        fi
+        # shellcheck disable=SC2086
+        "$BIN" $args -nt 1 -seed $SEED --prefix off -redo > off.stdout 2>&1 || { echo "  flag-off run failed"; exit 1; }
+        t1=$(date +%s)
+        # shellcheck disable=SC2086
+        "$BIN" $args -nt 1 -seed $SEED --prefix on -redo --analytical-gradients --ag-stats > on.stdout 2>&1 || { echo "  flag-on run failed"; exit 1; }
+        t2=$(date +%s)
+        old=$(grep -m1 "^Log-likelihood of the tree" off.iqtree | grep -Eo '[-]?[0-9]+\.[0-9]+' | head -1)
+        new=$(grep -m1 "^Log-likelihood of the tree" on.iqtree | grep -Eo '[-]?[0-9]+\.[0-9]+' | head -1)
+        grep -c "AG stats" on.stdout | sed 's/^/  AG stats lines: /'
+        echo "  logl flag-off=$old flag-on=$new  time flag-off=$((t1-t0))s flag-on=$((t2-t1))s"
+        awk -v a="$old" -v b="$new" -v tol="$tol" 'BEGIN { if (b >= a - tol) { print "  quality: PASS"; exit 0 } else { print "  quality: FAIL (flag-on worse than flag-off by more than " tol ")"; exit 1 } }'
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
+run_partitions() {   # -Q takes the new path per partition; -p falls back with the warning
+    local id="q_partitions" dir="$OUT_DIR/$id" rc=0
+    mkdir -p "$dir"
+    (
+        cd "$dir" || exit 1
+        "$BIN" -s "$WD/turtle_aa.fasta" -Q "$WD/turtle_aa.nex" -m LG+F+G4 -nt 1 -seed $SEED --prefix q -redo --analytical-gradients --ag-stats > q.stdout 2>&1 || { echo "  -Q run failed"; exit 1; }
+        n=$(grep -c "AG stats" q.stdout)
+        echo "  -Q: $n per-partition AG stats lines"
+        [ "$n" -ge 2 ] || { echo "  -Q did not use the analytic path"; exit 1; }
+        "$BIN" -s "$WD/turtle_aa.fasta" -p "$WD/turtle_aa.nex" -m LG+F+G4 -nt 1 -seed $SEED --prefix p -redo --analytical-gradients > p.stdout 2>&1 || { echo "  -p run failed"; exit 1; }
+        grep -q "not applicable to edge-linked partition models" p.stdout || { echo "  -p did not print the fallback warning"; exit 1; }
+        [ "$(grep -c "AG stats" p.stdout)" = "0" ] || { echo "  -p used the analytic path"; exit 1; }
+        echo "  -p: fell back with the warning"
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
 throttle() { while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$MAXJOBS" ]; do sleep 1; done; }
 
 ORDER=()
@@ -174,6 +250,13 @@ if [ "$SUITE" = "oracle" ] || [ "$SUITE" = "all" ]; then
 fi
 if [ "$SUITE" = "threads" ] || [ "$SUITE" = "all" ]; then
     ORDER+=("t_threads"); throttle; run_threads &
+fi
+if [ "$SUITE" = "quality" ] || [ "$SUITE" = "all" ]; then
+    for e in "${QUALITY[@]}"; do
+        IFS='|' read -r id tol args <<< "$e"
+        ORDER+=("$id"); throttle; run_quality "$id" "$tol" "$args" &
+    done
+    ORDER+=("q_partitions"); throttle; run_partitions &
 fi
 wait
 

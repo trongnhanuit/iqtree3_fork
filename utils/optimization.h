@@ -164,6 +164,18 @@ public:
 	virtual bool restartParameters(double guess[], int ndim, double lower[], double upper[], bool bound_check[], int iteration);
 
 	/**
+		Early-stopping hook consulted by dfpmin() after every accepted line
+		search and by lbfgsb() at every new iterate. The default never stops,
+		so existing optimisers are unaffected. Used by the analytical-gradient
+		optimiser for its improvement-based stopping rule.
+		@param iter iteration number (1-based)
+		@param f_prev function value before the iteration
+		@param f_new function value after it
+		@return true to stop the minimisation at the current point
+	*/
+	virtual bool stopEarly(int iter, double f_prev, double f_new) { return false; }
+
+	/**
 		multi dimensional optimization by BFGS method
 		@param guess the initial starting point
 		@param ndim number of dimension
@@ -192,7 +204,7 @@ public:
      @return minimized function value
      After the function is invoked, the values of x will be updated
     */
-    double L_BFGS_B(int nvar, double* vars, double* lower, double* upper, double pgtol = 1e-5, int maxit = 5); // changed maxit 1000 -> 5 by Thomas on Sept 11, 15
+    double L_BFGS_B(int nvar, double* vars, double* lower, double* upper, double pgtol = 1e-5, int maxit = 5, int m = 10); // changed maxit 1000 -> 5 by Thomas on Sept 11, 15; m = number of retained updates
 
     /** internal function called by L_BFGS_B
         should return function value 

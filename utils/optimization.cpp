@@ -830,10 +830,17 @@ void Optimization::dfpmin(double p[], int n, double lower[], double upper[]
 	for (its=1;its<=ITMAX;its++) {
 		*iter=its;
 		lnsrch(n,p,fp,g,xi,pnew,fret,stpmax,&check, lower, upper);
+		double fp_before = fp;
 		fp = *fret;
 		for (i=1;i<=n;i++) {
 			xi[i]=pnew[i]-p[i];
 			p[i]=pnew[i];
+		}
+		// NOTE(design 6.3): early-stopping hook; default false, so no change for existing callers.
+		// dfpmin allocates with new_vector, so every return must FREEALL first.
+		if (stopEarly(its, fp_before, fp)) {
+			FREEALL
+			return;
 		}
 		test=0.0;
 		for (i=1;i<=n;i++) {
@@ -1115,7 +1122,7 @@ double Optimization::minimizeNewton(double xmin, double xguess, double xmax, dou
 #undef JMAX*/
 
 
-double Optimization::L_BFGS_B(int n, double* x, double* l, double* u, double pgtol, int maxit) {
+double Optimization::L_BFGS_B(int n, double* x, double* l, double* u, double pgtol, int maxit, int m) {
 	int i;
 	double Fmin;
 	int fail;
@@ -1123,7 +1130,7 @@ double Optimization::L_BFGS_B(int n, double* x, double* l, double* u, double pgt
 	int grcount;
 	char msg[100];
 
-	int m = 10;          // number of BFGS updates retained in the "L-BFGS-B" method. It defaults to 5.
+	// m = number of BFGS updates retained in the "L-BFGS-B" method (parameter, default 10)
 
 	int *nbd;           // 0: unbounded; 1: lower bounded; 2: both lower & upper; 3: upper bounded
 	nbd = new int[n];
@@ -1204,6 +1211,7 @@ void Optimization::lbfgsb(int n, int m, double *x, double *l, double *u, int *nb
 	}
 
 	*fail = 0;
+	double f_prev_x = HUGE_VAL;   // value at the previous NEW_X, for stopEarly()
 	g = (double*) malloc (n * sizeof(double));
 	/* this needs to be zeroed for snd in mainlb to be zeroed */
 	wa = (double *) malloc((2*m*n+4*n+11*m*m+8*m) * sizeof(double));
@@ -1230,6 +1238,11 @@ void Optimization::lbfgsb(int n, int m, double *x, double *l, double *u, int *nb
 				*fail = 1;
 				break;
 			}
+			// NOTE(design 6.3): early-stopping hook (default false)
+			if (stopEarly(iter, f_prev_x, f)) {
+				break;
+			}
+			f_prev_x = f;
 		} else if (strncmp(task, "WARN", 4) == 0) {
 			*fail = 51;
 			break;

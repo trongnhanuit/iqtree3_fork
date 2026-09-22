@@ -64,7 +64,10 @@ jobs:
 
   # Gradient correctness: --ag-gradient-check-only on a fixed set of models,
   # the NumPy oracle on simulated data (with its self-test), thread equality,
-  # and the live optimiser against the default path (test_scripts/ag/run_ag_tests.sh).
+  # the live optimiser against the default path, and the robust integration
+  # cases (abort/resume, checkpoint compatibility, ModelFinder, PMSF, fault
+  # injection, concurrent partitions) via test_scripts/ag/run_ag_tests.sh.
+  # Longer runs are in analytical-gradients-nightly.yaml.
   ag-tests:
     name: Gradient tests (gradcheck, oracle, threads)
     runs-on: ubuntu-22.04

@@ -1,0 +1,52 @@
+# Nightly, longer checks for the --analytical-gradients work: the full quality
+# suite (slow protein cases behind --full), the robust integration suite, and the
+# concurrent-partition run repeated at 4 threads. Not part of the per-push gates.
+name: Analytical gradients (nightly)
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: analytical-gradients-nightly
+  cancel-in-progress: true
+
+jobs:
+  ag-nightly:
+    name: Full quality and robust suites
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y gcc g++ libeigen3-dev libboost-dev python3-numpy
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DUSE_CMAPLE=OFF -DUSE_LSD2=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          make -j iqtree3
+
+      - name: Quality suite (--full) and robust suite
+        run: |
+          chmod +x test_scripts/ag/run_ag_tests.sh
+          ./test_scripts/ag/run_ag_tests.sh build/iqtree3 ag_nightly_quality --suite quality --full
+          ./test_scripts/ag/run_ag_tests.sh build/iqtree3 ag_nightly_robust --suite robust
+
+      - name: Upload outputs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ag_nightly_out
+          path: |
+            ag_nightly_quality
+            ag_nightly_robust

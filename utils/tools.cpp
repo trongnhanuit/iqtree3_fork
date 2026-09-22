@@ -6165,6 +6165,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --ag-gradient-check [T]  Log analytic vs numerical gradients per parameter" << endl
     << "                           (relative tolerance T, default 1e-4)" << endl
     << "  --ag-stats               Report likelihood and gradient evaluation counts" << endl
+    << "                           (details: docs/analytical-gradients-design.md)" << endl
 
     << endl << "RATE HETEROGENEITY AMONG SITES:" << endl
     << "  -m ...+I             A proportion of invariable sites" << endl

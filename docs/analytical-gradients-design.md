@@ -8,8 +8,9 @@ parameter, and the optimiser built on them. Source comments of the form
 |---|---|
 | `model/phylogradient.h/.cpp` | the gradient engine (`PhyloGradient`) |
 | `model/modelparammap.h/.cpp` | unconstrained parameter vector and chain rule (`ModelParamMap`) |
-| `model/gradientoptimizer.h/.cpp` | capability check, gradient-check tool, self-test, later the optimiser |
-| `test_scripts/ag/` | identity gate, gradient test driver, NumPy oracle |
+| `model/gradientoptimizer.h/.cpp` | capability check, the optimiser (sections 9-12), gradient-check tool, self-test |
+| `test_scripts/ag/` | identity gate, gradient test driver (suites gradcheck, oracle, threads, quality, robust), NumPy oracle, benchmark |
+| `.github/workflows/analytical-gradients*.yaml` | per-push gates and the nightly long checks, called from `ci.yaml` |
 
 Without `--analytical-gradients` none of this code runs; the default
 optimiser is byte-for-byte the previous one (checked by
@@ -387,3 +388,43 @@ two-profile mixture all three starts reach the same optimum.
   reports it once and uses finite differences for that step. The
   environment variable `AG_TEST_FAULT_EDGE=k` injects such a throw at the
   k-th edge for the test.
+
+## 13. Benchmark (`test_scripts/ag/bench.py`)
+
+    bench.py <iqtree3> <out_dir> [--quick | --full] [--big] [-j N] [--threads 1,8] [--repeats N] [--seeds ...]
+
+Arms separate the starting point from the optimiser so that speed and
+quality are not conflated: `old-default`, `old-init2` (`-init_nucl_freq 2`),
+`old-c10warm` (the default optimiser started from C10 profiles with
+`-mfopt`), `old-em` (`-optalg_qmix EM`), `new-warm` (the flag), `new-cold`
+(`--ag-start cold`) and `new-multi` (`--ag-multistart -1`). Datasets are
+AliSim simulations on random Yule-Harding trees with the truth recorded
+(DNA GTR+FO+G4, LG and WAG four-profile mixtures with free rates, C10 with
+free rates, GTR20 with C10, and with `--big` 100 taxa x 20000 sites and an
+F60 stress case) plus the repository's real alignments. Simulated data are
+fitted on the true tree (`-te`) and, with `--full`, also with a tree
+search; real data always with a search. Every run records the final
+log-likelihood, wall time, peak memory, tree length, the optimiser's
+evaluation counts and, for simulated mixtures, the RMSE of the recovered
+weights and profiles after matching the classes to the truth.
+`results.tsv` holds one row per run; `bench_report.py` turns it into
+`summary.md` (and plots when matplotlib is available). `--quick` runs
+three datasets with three arms at one thread; `--full` adds the rest with
+two thread counts and three timing repeats.
+
+## 14. Command-line summary
+
+| Option | Meaning |
+|---|---|
+| `--analytical-gradients` | use the analytic optimiser for supported models (others fall back with a NOTE) |
+| `--ag-start warm|cold` | C-series warm start (default) or random cold start of the profiles |
+| `--ag-multistart N` | N jittered start candidates, refined by EM; 0 (default) off, -1 automatic |
+| `--ag-em-axes W,R,F` | EM axes per round (weights, rates, profiles); empty disables EM |
+| `--ag-cascade on|off` | precision cascade (default off) |
+| `--ag-polish final|per-level` | polish at the target level only or at every cascade level (default) |
+| `--ag-optalg BFGS|LBFGSB` | driver of the joint polish |
+| `--ag-stats` | print evaluation counts, EM steps and reverts |
+| `--ag-gradient-check [tol]`, `--ag-gradient-check-every k`, `--ag-gradient-check-strict` | check analytic against numerical gradients during the search |
+| `--ag-gradient-check-only`, `--ag-dump-gradient`, `--ag-selftest` | one-shot checks at the initial point (tests) |
+| `--ag-force` | engage EM axes and start-point work regardless of the size gate |
+| `--ag-abort-after init|round:N` | write the checkpoint and exit at that phase (resume tests) |

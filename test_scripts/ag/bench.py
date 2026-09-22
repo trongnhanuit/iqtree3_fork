@@ -227,9 +227,16 @@ def run(cmd, cwd, log):
         full = cmd
     t0 = time.time()
     with open(log, "w") as lf:
+        # own process group, so a timeout kills IQ-TREE itself and not only the time wrapper
+        proc = subprocess.Popen(full, cwd=cwd, stdout=lf, stderr=subprocess.STDOUT, start_new_session=True)
         try:
-            rc = subprocess.call(full, cwd=cwd, stdout=lf, stderr=subprocess.STDOUT, timeout=RUN_TIMEOUT)
+            rc = proc.wait(timeout=RUN_TIMEOUT)
         except subprocess.TimeoutExpired:
+            try:
+                os.killpg(proc.pid, 9)
+            except OSError:
+                pass
+            proc.wait()
             rc = 124
     wall, rss = time.time() - t0, float("nan")
     if timebin and os.path.exists(tfile):

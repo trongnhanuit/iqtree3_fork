@@ -359,3 +359,31 @@ plus multi-start -4992.2. Ranking candidates by their initial likelihood
 commits to a basin that the polish cannot leave; the C-series warm start
 already provides the diversity the profiles need. On a simulated
 two-profile mixture all three starts reach the same optimum.
+
+## 12. Integration: checkpoints, partitions, faults (version 1.1)
+
+* **Checkpoint.** The only optimiser state that must survive a restart is
+  whether the start-point work has been done; `ModelFactory` writes it as
+  `ag_init_done` inside its own checkpoint struct, and only when the flag
+  is set, so the default path's checkpoint stays byte-identical. A
+  checkpoint written by either path is read by the other (the missing key
+  simply reads as false). `--ag-abort-after init|round:N` writes the tree
+  and model checkpoint at that phase without marking the model
+  optimisation finished and exits; a rerun without `-redo` restores the
+  parameters and continues to the same optimum. Nothing is written from
+  inside an OpenMP region: the checkpoint map is shared between
+  partitions.
+* **Partitions.** `-Q`/`-S` models enter the hook once per partition,
+  concurrently when threads allow. The optimiser keeps no static state,
+  prints through a critical section and skips checkpoint writes while in
+  parallel; repeated 4-thread runs give the same log-likelihood.
+* **Other callers.** ModelFinder candidates and the PMSF guide-tree fit
+  use the optimiser like any other call; PMSF's site-specific second pass
+  and every other unsupported configuration fall back with one NOTE.
+  +I+G restarts (`--opt-gamma-inv`) run through the same hook.
+* **Faults.** If anything throws inside the outside pass, the RAII guards
+  restore every neighbour and the engine restores the tree's root
+  bookkeeping before rethrowing; the optimiser catches the exception,
+  reports it once and uses finite differences for that step. The
+  environment variable `AG_TEST_FAULT_EDGE=k` injects such a throw at the
+  k-th edge for the test.

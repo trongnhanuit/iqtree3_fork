@@ -155,6 +155,7 @@ private:
     std::vector<char> inv_gaponly;                               // per pattern: gap-only invariant pattern
     int nchunks = 1;
 
+    int fault_edge_ = -1;                                        // AG_TEST_FAULT_EDGE (tests only)
     std::vector<double*> pool_lh;
     std::vector<UBYTE*> pool_scale;
     size_t buffer_bytes = 0;

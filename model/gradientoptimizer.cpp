@@ -197,7 +197,15 @@ double GradientOptimizer::derivativeFunk(double x[], double dfx[]) {
     theta_.assign(x + 1, x + 1 + n);
     map_->unpack(theta_);
     PhyloGradient::Result res;
-    bool ok = engine_->compute(res) && eigenResidualOk();
+    bool ok = false;
+    try {
+        ok = engine_->compute(res) && eigenResidualOk();
+    } catch (std::exception &e) {
+        // NOTE(design 12): the engine's RAII guard has restored every neighbour;
+        // the tree is reusable and this step falls back to finite differences
+        say(string("NOTE: analytic gradient failed (") + e.what() + "); using finite differences for this step");
+        ok = false;
+    }
     n_grad_++;
     n_lh_++;   // the engine's forward pass is one likelihood evaluation
     if (!ok) {
@@ -431,6 +439,22 @@ void GradientOptimizer::multiStart(bool write_info, double gradient_epsilon) {
     }
 }
 
+void GradientOptimizer::abortAfter(const string &phase) {
+    Params &params = Params::getInstance();
+    if (params.ag_abort_after.empty() || params.ag_abort_after != phase) return;
+#ifdef _OPENMP
+    if (omp_in_parallel()) return;   // the checkpoint map is shared between partitions
+#endif
+    // the tree and the model factory checkpoint themselves; finishedModelInit
+    // stays unset, so the rerun restores these parameters and continues
+    tree_->saveCheckpoint();
+    factory_->saveCheckpoint();
+    factory_->getCheckpoint()->dump(true);
+    say("AG: --ag-abort-after " + phase + ": checkpoint written, exiting for the resume test");
+    cout.flush();
+    exit(0);
+}
+
 double GradientOptimizer::polish(double gradient_epsilon) {
     int n = map_->ndim();
     vector<double> x(n + 1), lower(n + 1), upper(n + 1);
@@ -486,6 +510,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     else breakSymmetry(write_info);
     if (first) multiStart(write_info, gradient_epsilon);
     if (first) factory_->ag_init_done = true;
+    if (first) abortAfter("init");
     double cur_lh = entry_logl;
     {
         vector<double> th;
@@ -558,6 +583,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
             // NOTE(design 10): coarse levels stop when a round gains less than 1%
             // of the best round at that level (with eps as the absolute floor);
             // the target level uses the default loop's rule (gain below logl_epsilon)
+            abortAfter("round:" + convertIntToString(rounds_));
             if (target) { if (delta < logl_epsilon) break; }
             else if (delta < eps || (k >= 2 && delta < 0.01 * delta_max)) break;
         }

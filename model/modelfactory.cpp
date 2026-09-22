@@ -1079,6 +1079,9 @@ void ModelFactory::saveCheckpoint() {
 //    CKP_SAVE(fused_mix_rate);
 //    CKP_SAVE(unobserved_ptns);
 //    CKP_SAVE(joint_optimize);
+    // --analytical-gradients only (design 12): the default path's checkpoint stays byte-identical
+    if (Params::getInstance().analytical_gradients)
+        CKP_SAVE(ag_init_done);
     endCheckpoint();
     CheckpointFactory::saveCheckpoint();
 }
@@ -1090,6 +1093,7 @@ void ModelFactory::restoreCheckpoint() {
 //    CKP_RESTORE(fused_mix_rate);
 //    CKP_RESTORE(unobserved_ptns);
 //    CKP_RESTORE(joint_optimize);
+    CKP_RESTORE(ag_init_done);   // absent in checkpoints of the default path: get() returns false
     endCheckpoint();
 }
 

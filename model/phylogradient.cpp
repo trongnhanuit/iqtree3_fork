@@ -11,6 +11,8 @@
 #include <cmath>
 #include <cstring>
 #include <algorithm>
+#include <stdexcept>
+#include <cstdlib>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -42,6 +44,9 @@ PhyloGradient::OutsideGuard::~OutsideGuard() noexcept {
 /* ---------------------------------------------------------------------- */
 
 PhyloGradient::PhyloGradient(PhyloTree *t) : tree(t) {
+    // test hook (design 12): throw at the k-th edge of the outside pass to
+    // prove that the RAII guard leaves the tree reusable
+    if (const char *e = getenv("AG_TEST_FAULT_EDGE")) fault_edge_ = atoi(e);
 }
 
 PhyloGradient::~PhyloGradient() {
@@ -227,8 +232,17 @@ bool PhyloGradient::compute(Result &res) {
     int depth = max(u->isLeaf() ? 0 : treeDepth(u, v), v->isLeaf() ? 0 : treeDepth(v, u));
     ensurePool(depth);
 
-    if (!u->isLeaf()) visit(u, v, 0, res);
-    if (!v->isLeaf()) visit(v, u, 0, res);
+    try {
+        if (!u->isLeaf()) visit(u, v, 0, res);
+        if (!v->isLeaf()) visit(v, u, 0, res);
+    } catch (...) {
+        // the guards have restored every neighbour on the way out; restore the
+        // tree state too, then let the caller decide (design 12)
+        tree->current_it = saved_it;
+        tree->current_it_back = saved_back;
+        tree->theta_computed = false;
+        throw;
+    }
 
     finishQ(res);
 
@@ -250,6 +264,10 @@ void PhyloGradient::visit(PhyloNode *node, PhyloNode *dad, int depth, Result &re
         PhyloNeighbor *rev = (PhyloNeighbor*)child->findNeighbor(node);   // child -> node (outside partial)
 
         OutsideGuard guard(rev, poolLh(depth), poolScale(depth));
+        if (fault_edge_ >= 0 && res.num_edges == fault_edge_) {
+            fault_edge_ = -1;   // one-shot: later gradients must be analytic again
+            throw std::runtime_error("AG_TEST_FAULT_EDGE: injected fault inside the outside pass");
+        }
         // The kernel computes rev (node's side away from child) from node's other
         // neighbours: the parent-side reverse neighbour attached one level up (or
         // the resident root-edge partial) and the resident sibling partials, and

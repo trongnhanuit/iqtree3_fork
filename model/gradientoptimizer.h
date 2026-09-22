@@ -104,6 +104,8 @@ private:
     /** append gradient-check rows for the current theta/gradient to <prefix>.gradcheck.tsv */
     void gradientCheckStep(const std::vector<double> &theta, const std::vector<double> &g);
     void say(const std::string &line) const;
+    /** --ag-abort-after <phase>: write the checkpoint (never inside an OpenMP region) and exit, for resume tests */
+    void abortAfter(const std::string &phase);
 
     // ---- EM axes (design 10): each is one M-step, accepted only if the
     //      production log-likelihood does not decrease; returns the new logL ----

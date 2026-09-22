@@ -17,7 +17,8 @@
 #              final log-likelihood with the flag must be >= the default's minus a
 #              tolerance (times are reported); -Q must use the new path per
 #              partition and -p must fall back with the warning; a simulated
-#              two-profile mixture must be recovered within absolute tolerances
+#              two-profile mixture must be recovered within absolute tolerances,
+#              and warm, cold and multi-start must reach the same optimum on it
 #
 # Cases run in parallel, at most N processes at a time (default: half the cores).
 # Exit code 0 = all cases passed, 1 = a failure, 2 = usage.
@@ -271,6 +272,41 @@ PY
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
+run_starts() {   # warm (default), cold and multi-start must reach the same optimum on the simulated mixture
+    local id="q_starts"
+    local dir="$OUT_DIR/$id" rc=0
+    mkdir -p "$dir"
+    (
+        cd "$dir" || exit 1
+        if [ "${AG_SANITIZER:-0}" = "1" ]; then echo "  skipped in sanitizer mode (AliSim is not sanitizer-clean)"; exit 0; fi
+        P1="0.18/0.1/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.02/0.02/0.02/0.02/0.02/0.02"
+        P2="0.02/0.02/0.02/0.02/0.02/0.02/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.1/0.18"
+        echo "(((A:0.08,B:0.12):0.05,(C:0.1,D:0.07):0.06):0.04,((E:0.09,F:0.11):0.05,(G:0.06,H:0.13):0.07):0.03);" > t.nwk
+        "$BIN" --alisim sim -t t.nwk -m "MIX{LG+F{$P1}:1:0.3,LG+F{$P2}:1:0.7}+G4{0.8}" --length 1500 -seed 11 -redo -quiet > alisim.stdout 2>&1 || { echo "  alisim failed"; exit 1; }
+        for v in "warm|--ag-start warm --ag-multistart 0" "cold|--ag-start cold --ag-multistart 0" "multi|--ag-multistart 20"; do
+            name="${v%%|*}"; opts="${v#*|}"
+            # shellcheck disable=SC2086
+            "$BIN" -s sim.phy -m "MIX{LG+FO,LG+FO}+G4" -te t.nwk -nt 1 -seed $SEED --prefix $name -redo --analytical-gradients --ag-force --ag-stats $opts > $name.stdout 2>&1 || { echo "  $name run failed"; exit 1; }
+            grep -E "AG: (cold|multi)" $name.stdout | head -2
+            echo "  $name: $(grep -m1 "^Log-likelihood of the tree" $name.iqtree | cut -d" " -f1-5) $(grep "AG stats" $name.stdout | head -1 | grep -o "likelihood_evaluations=[0-9]*")"
+        done
+        python3 - <<'PY' || exit 1
+import re
+v = {}
+for n in ("warm", "cold", "multi"):
+    v[n] = float(re.search(r"tree: (-?[0-9.]+)", open(n + ".iqtree").read()).group(1))
+best = max(v.values())
+worst = min(v.values())
+print("  starts: spread %.3f (tol 0.5)" % (best - worst))
+raise SystemExit(0 if best - worst <= 0.5 else 1)
+PY
+        echo "  starts: PASS"
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
 run_partitions() {   # -Q takes the new path per partition; -p falls back with the warning
     local id="q_partitions"
     local dir="$OUT_DIR/$id" rc=0
@@ -313,6 +349,7 @@ if [ "$SUITE" = "quality" ] || [ "$SUITE" = "all" ]; then
     done
     ORDER+=("q_partitions"); throttle; run_partitions &
     ORDER+=("q_recovery"); throttle; run_recovery &
+    ORDER+=("q_starts"); throttle; run_starts &
 fi
 wait
 

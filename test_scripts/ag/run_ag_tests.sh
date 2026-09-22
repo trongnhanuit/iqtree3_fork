@@ -2,7 +2,7 @@
 # Test driver for the --analytical-gradients work.
 #
 # Usage:
-#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|all] [-j N] [--full]
+#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|all] [-j N] [--full]
 #
 # Suites:
 #   gradcheck  --ag-gradient-check-only on a fixed set of models; PASS = exit 0
@@ -19,6 +19,10 @@
 #              partition and -p must fall back with the warning; a simulated
 #              two-profile mixture must be recovered within absolute tolerances,
 #              and warm, cold and multi-start must reach the same optimum on it
+#   robust     integration behaviour: abort/resume from the checkpoint, checkpoint
+#              cross-compatibility with the default path, ModelFinder, PMSF's
+#              site-specific pass, +I+G restarts, fault injection, concurrent
+#              partitions at 4 threads
 #
 # Cases run in parallel, at most N processes at a time (default: half the cores).
 # Exit code 0 = all cases passed, 1 = a failure, 2 = usage.
@@ -39,7 +43,7 @@ for ((k=0; k<${#argv[@]}; k++)); do
     esac
 done
 if [ -z "$BIN" ] || [ ! -x "$BIN" ]; then
-    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|all] [-j N] [--full]" >&2
+    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|all] [-j N] [--full]" >&2
     exit 2
 fi
 if [ "$MAXJOBS" -le 0 ]; then
@@ -327,6 +331,100 @@ run_partitions() {   # -Q takes the new path per partition; -p falls back with t
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
+# ---- robust suite: integration behaviour of the live optimiser ----
+robust_case() {   # id: runs the named check inside its own directory, marker FAIL on non-zero exit
+    local id="$1"
+    local dir="$OUT_DIR/$id" rc=0
+    mkdir -p "$dir"
+    ( cd "$dir" && robust_$id ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+logl_of() { grep -m1 "^Log-likelihood of the tree" "$1" | grep -Eo '[-]?[0-9]+\.[0-9]+' | head -1; }
+within() { awk -v a="$1" -v b="$2" -v tol="$3" 'BEGIN { d = a - b; if (d < 0) d = -d; exit (d <= tol) ? 0 : 1 }'; }
+
+robust_x_abort_resume() {   # X1: abort after the start-point phase, resume from the checkpoint, same optimum
+    local ARGS="-s $EX/aa_example.phy -m LG+F2+G4 -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-force"
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix full -redo > full.stdout 2>&1 || { echo "  uninterrupted run failed"; return 1; }
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix part -redo --ag-abort-after init > part1.stdout 2>&1
+    grep -q "checkpoint written, exiting" part1.stdout || { echo "  abort did not happen"; return 1; }
+    [ -f part.ckp.gz ] || { echo "  no checkpoint written"; return 1; }
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix part > part2.stdout 2>&1 || { echo "  resumed run failed"; return 1; }
+    local a b; a=$(logl_of full.iqtree); b=$(logl_of part.iqtree)
+    echo "  uninterrupted=$a resumed=$b"
+    # the report prints four decimals, so 1e-3 is the finest honest tolerance here
+    within "$a" "$b" 1e-3 || { echo "  resumed optimum differs by more than 1e-3"; return 1; }
+    echo "  abort/resume: PASS"
+}
+
+robust_x_ckp_crosscompat() {   # X11: a checkpoint written by either path is read by the other
+    local ARGS="-s $EX/example.phy -m GTR+FO+G4 -te $HERE/data/example_gtr_g.nwk -nt 1 -seed $SEED"
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix a -redo --analytical-gradients > a1.stdout 2>&1 || return 1
+    local a1; a1=$(logl_of a.iqtree)
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix a --undo > a2.stdout 2>&1 || { echo "  default path could not continue from the flagged checkpoint"; return 1; }
+    grep -q "CHECKPOINT: Model parameters restored" a2.stdout || { echo "  model not restored from the flagged checkpoint"; return 1; }
+    within "$a1" "$(logl_of a.iqtree)" 1e-3 || { echo "  logl changed after reading the flagged checkpoint"; return 1; }
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix b -redo > b1.stdout 2>&1 || return 1
+    local b1; b1=$(logl_of b.iqtree)
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix b --undo --analytical-gradients > b2.stdout 2>&1 || { echo "  flagged path could not continue from the default checkpoint"; return 1; }
+    grep -q "CHECKPOINT: Model parameters restored" b2.stdout || { echo "  model not restored from the default checkpoint"; return 1; }
+    within "$b1" "$(logl_of b.iqtree)" 1e-3 || { echo "  logl changed after reading the default checkpoint"; return 1; }
+    echo "  flagged->default $a1, default->flagged $b1: PASS"
+}
+
+robust_x_modelfinder() {   # X7: ModelFinder with the flag exits 0 and uses the analytic path for its candidates
+    "$BIN" -s "$EX/example.phy" -m MF -mset GTR -mrate G,I+G -nt 1 -seed $SEED --prefix mf -redo --analytical-gradients --ag-stats > mf.stdout 2>&1 || { echo "  ModelFinder run failed"; return 1; }
+    local n; n=$(grep -c "AG stats" mf.stdout)
+    echo "  ModelFinder: $n analytic optimisations, best model $(grep -m1 "Best-fit model" mf.iqtree | cut -c1-60)"
+    [ "$n" -ge 1 ] || { echo "  analytic path not used"; return 1; }
+    echo "  modelfinder: PASS"
+}
+
+robust_x_pmsf() {   # X8: PMSF guide-tree fit uses the flag, the site-specific second pass falls back with a NOTE
+    "$BIN" -s "$EX/aa_example.phy" -m LG+C10+G4 -ft "$HERE/data/aa_example_lg.nwk" -nt 1 -seed $SEED --prefix pmsf -redo --analytical-gradients --ag-stats > pmsf.stdout 2>&1 || { echo "  PMSF run failed"; return 1; }
+    grep -q "not applicable (site-specific model)" pmsf.stdout || { echo "  no NOTE for the site-specific pass"; return 1; }
+    [ "$(grep -c "AG stats" pmsf.stdout)" -ge 1 ] || { echo "  guide-tree pass did not use the analytic path"; return 1; }
+    echo "  pmsf: PASS (guide-tree pass analytic, site-specific pass fell back)"
+}
+
+robust_x_gammai_restart() {   # X12: +I+G restarts (--opt-gamma-inv) with the flag exit 0
+    "$BIN" -s "$EX/example.phy" -m GTR+F+I+G4 --opt-gamma-inv -te "$HERE/data/example_gtr_g.nwk" -nt 1 -seed $SEED --prefix gi -redo --analytical-gradients --ag-stats > gi.stdout 2>&1 || { echo "  run failed"; return 1; }
+    "$BIN" -s "$EX/example.phy" -m GTR+F+I+G4 --opt-gamma-inv -te "$HERE/data/example_gtr_g.nwk" -nt 1 -seed $SEED --prefix gi0 -redo > gi0.stdout 2>&1 || return 1
+    echo "  logl flag-off=$(logl_of gi0.iqtree) flag-on=$(logl_of gi.iqtree)"
+    awk -v a="$(logl_of gi0.iqtree)" -v b="$(logl_of gi.iqtree)" 'BEGIN { exit (b >= a - 0.1) ? 0 : 1 }' || { echo "  flag-on worse"; return 1; }
+    echo "  gamma-invar restarts: PASS"
+}
+
+robust_x_fault() {   # X14: an exception inside the outside pass leaves the tree reusable (fallback for that step)
+    AG_TEST_FAULT_EDGE=3 "$BIN" -s "$EX/aa_example.phy" -m LG+F2+G4 -te "$HERE/data/aa_example_lg.nwk" -nt 1 -seed $SEED --prefix fault -redo --analytical-gradients --ag-stats > fault.stdout 2>&1 || { echo "  faulted run failed"; return 1; }
+    grep -q "analytic gradient failed (AG_TEST_FAULT_EDGE" fault.stdout || { echo "  fault was not reported"; return 1; }
+    "$BIN" -s "$EX/aa_example.phy" -m LG+F2+G4 -te "$HERE/data/aa_example_lg.nwk" -nt 1 -seed $SEED --prefix clean -redo --analytical-gradients > clean.stdout 2>&1 || return 1
+    echo "  logl faulted=$(logl_of fault.iqtree) clean=$(logl_of clean.iqtree) $(grep -o "fd_fallbacks=[0-9]*" fault.stdout | head -1)"
+    grep -q "fd_fallbacks=1 " fault.stdout || { echo "  expected exactly one fallback (the injected fault is one-shot)"; return 1; }
+    within "$(logl_of fault.iqtree)" "$(logl_of clean.iqtree)" 0.5 || { echo "  faulted run ended far from the clean run"; return 1; }
+    echo "  fault injection: PASS"
+}
+
+robust_x_threads_partitions() {   # X5: -Q at 4 threads (partitions enter the hook concurrently) is deterministic
+    local i
+    for i in 1 2; do
+        "$BIN" -s "$WD/turtle_aa.fasta" -Q "$WD/turtle_aa.nex" -m LG+F+G4 -nt 4 -seed $SEED --prefix r$i -redo --analytical-gradients > r$i.stdout 2>&1 || { echo "  run $i failed"; return 1; }
+    done
+    echo "  logl run1=$(logl_of r1.iqtree) run2=$(logl_of r2.iqtree)"
+    within "$(logl_of r1.iqtree)" "$(logl_of r2.iqtree)" 1e-3 || { echo "  runs differ"; return 1; }
+    echo "  concurrent partitions: PASS"
+}
+
+ROBUST=(x_abort_resume x_ckp_crosscompat x_modelfinder x_pmsf x_gammai_restart x_fault x_threads_partitions)
+
 throttle() { while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$MAXJOBS" ]; do sleep 1; done; }
 
 ORDER=()
@@ -350,6 +448,9 @@ if [ "$SUITE" = "quality" ] || [ "$SUITE" = "all" ]; then
     ORDER+=("q_partitions"); throttle; run_partitions &
     ORDER+=("q_recovery"); throttle; run_recovery &
     ORDER+=("q_starts"); throttle; run_starts &
+fi
+if [ "$SUITE" = "robust" ] || [ "$SUITE" = "all" ]; then
+    for id in "${ROBUST[@]}"; do ORDER+=("$id"); throttle; robust_case "$id" & done
 fi
 wait
 

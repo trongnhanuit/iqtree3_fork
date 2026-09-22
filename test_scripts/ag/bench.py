@@ -21,8 +21,14 @@ the recovered weights and profiles against the truth after matching the
 classes.
 
 Usage:
-  bench.py <iqtree_binary> <out_dir> [--quick | --full] [--big] [-j N]
+  bench.py <iqtree_binary> <out_dir> [--quick | --full | --thorough] [--big] [-j N]
            [--threads 1,8] [--repeats N] [--seeds 101,102] [--only name,name]
+
+--thorough: LG+F10, GTR20+F12 and GTR20+C60 (with and without -mwopt) under
++R8, +I+G4 and +I+R10 variants, 32 taxa x 3000 sites (C60: 24 x 2000), three replicates, on
+the true tree, every analytic setting (warm/cold start, cascade, multi-start,
+without EM) against the default optimiser and its EM variant; -j defaults
+to 70% of the cores.
 
 Outputs in <out_dir>: results.tsv, summary.md, manifest.json, plots (if
 matplotlib is available). Re-generate the report with bench_report.py, or
@@ -40,6 +46,7 @@ import itertools
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
+RUN_TIMEOUT = 12 * 3600   # seconds per run; a run past it is recorded with status exit124
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
@@ -57,8 +64,39 @@ def mix4(base, weights):
     return "MIX{%s}" % ",".join("%s+F{%s}:1:%s" % (base, p, w) for p, w in zip((P1, P2, P3, P4), weights))
 
 
-# name -> dict(sim=(alisim model, ntaxa, length) | real=path, model=iqtree model args, tiers)
+def cseries(k):
+    """profiles (name -> list) and weights of the built-in C<k> mixture, read from model/modelmixture.cpp"""
+    src = open(os.path.join(ROOT, "model", "modelmixture.cpp")).read()
+    prof = {m.group(1): [float(x) for x in m.group(2).split()]
+            for m in re.finditer(r"^frequency (C%dpi\d+) = ([0-9. ]+);" % k, src, re.M)}
+    line = re.search(r"^model C%d = [^;]+;" % k, src, re.M).group(0)
+    weights = {n: float(w) for n, w in re.findall(r"(C%dpi\d+):1:([0-9.]+)" % k, line)}
+    return prof, weights
+
+
+def cmix(base, k, n):
+    """MIX of the first n profiles of C<k> under exchangeabilities `base`, weights renormalised"""
+    prof, w = cseries(k)
+    names = ["C%dpi%d" % (k, i + 1) for i in range(n)]
+    tot = sum(w[x] for x in names)
+    return "MIX{%s}" % ",".join("%s+F{%s}:1:%.6f" % (base, "/".join("%g" % v for v in prof[x]), w[x] / tot) for x in names)
+
+
+IG = "+I{0.15}+G4{0.7}"
+IR10 = "+I{0.1}+R10{0.1,0.1,0.1,0.25,0.1,0.45,0.1,0.7,0.1,0.95,0.1,1.2,0.1,1.5,0.1,1.9,0.1,2.5,0.1,3.6}"
+
+# name -> dict(sim=(alisim model, ntaxa, length) | real=path | alias_of=name, model=iqtree model args, tiers)
+# tier "thorough": the user's three model families with several rate-heterogeneity variants (32 taxa x 3000 sites)
 DATASETS = {
+    "th_lg_f10_r8":       dict(sim=("LG+C10" + R8, 32, 3000), model="LG+F10+R8", tier="thorough"),
+    "th_lg_f10_ig":       dict(sim=("LG+C10" + IG, 32, 3000), model="LG+F10+I+G4", tier="thorough"),
+    "th_lg_f10_ir10":     dict(sim=("LG+C10" + IR10, 32, 3000), model="LG+F10+I+R10", tier="thorough"),
+    "th_gtr20_f12_r8":    dict(sim=(cmix("WAG", 20, 12) + R8, 32, 3000), model="GTR20+F12+R8 --gtr20-model LG", tier="thorough"),
+    "th_gtr20_f12_ig":    dict(sim=(cmix("WAG", 20, 12) + IG, 32, 3000), model="GTR20+F12+I+G4 --gtr20-model LG", tier="thorough"),
+    "th_gtr20_c60_r8":    dict(sim=("WAG+C60" + R8, 24, 2000), model="GTR20+C60+R8 --gtr20-model LG", tier="thorough"),
+    "th_gtr20_c60_r8_mwopt": dict(alias_of="th_gtr20_c60_r8", model="GTR20+C60+R8 --gtr20-model LG -mwopt", tier="thorough"),
+    "th_gtr20_c60_ig":    dict(sim=("WAG+C60" + IG, 24, 2000), model="GTR20+C60+I+G4 --gtr20-model LG", tier="thorough"),
+    "th_gtr20_c60_ig_mwopt": dict(alias_of="th_gtr20_c60_ig", model="GTR20+C60+I+G4 --gtr20-model LG -mwopt", tier="thorough"),
     "sim_dna_gtr_g4":   dict(sim=("GTR{1.5,3,0.8,1.2,2.5}+F{0.3,0.2,0.2,0.3}+G4{0.7}", 20, 5000), model="GTR+FO+G4", tier="quick"),
     "sim_lg_f4_r4":     dict(sim=(mix4("LG", (0.25, 0.25, 0.25, 0.25)) + R4, 20, 4000), model="LG+F4+R4", tier="quick"),
     "real_aa_example_lg_f2_g4": dict(real="example/aa_example.phy", model="LG+F2+G4", tier="quick"),
@@ -81,7 +119,12 @@ ARMS = {
     "old-em":      ("-optalg_qmix EM", "full"),
     "old-c10warm": ("__C10WARM__", "full"),
     "new-multi":   ("--analytical-gradients --ag-stats --ag-multistart -1", "full"),
+    # thorough tier: every analytic setting against both default-optimiser variants
+    "new-cascade":    ("--analytical-gradients --ag-stats --ag-cascade on", "thorough"),
+    "new-noem":       ("--analytical-gradients --ag-stats --ag-em-axes none", "thorough"),   # "none": no W/R/F letters -> no EM step
+    "new-cold-multi": ("--analytical-gradients --ag-stats --ag-start cold --ag-multistart -1", "thorough"),
 }
+THOROUGH_ARMS = ["old-default", "old-em", "new-warm", "new-cascade", "new-cold", "new-multi", "new-noem", "new-cold-multi"]
 
 
 def c10warm_model(model):
@@ -94,7 +137,12 @@ def c10warm_model(model):
 
 
 def truth_from_alisim(model):
-    """weights and profiles of an explicit MIX{...+F{...}:1:w,...}[+R..] simulation model"""
+    """weights and profiles of an explicit MIX{...+F{...}:1:w,...}[+R..] or <base>+C<k>[+..] simulation model"""
+    mc = re.match(r"^[A-Za-z0-9]+\+C(\d+)(\+.*)?$", model)
+    if mc:
+        k = int(mc.group(1))
+        prof, w = cseries(k)
+        return [(w["C%dpi%d" % (k, i + 1)], prof["C%dpi%d" % (k, i + 1)]) for i in range(k)]
     if not model.startswith("MIX{"):
         return None
     depth, end = 0, -1
@@ -127,9 +175,10 @@ def parse_iqtree_report(path):
         elif line.startswith("Total tree length"):
             out["tree_length"] = float(re.search(r": ([0-9.]+)", line).group(1))
         else:
-            mm = re.match(r"\s*\d+\s+\S+\s+([0-9.]+)\s+([0-9.]+)\s+\S+F[O]?\{([^}]*)\}", line)
-            if mm:
-                out["comps"].append((float(mm.group(2)), [float(x) for x in mm.group(3).split(",")]))
+            mm = re.match(r"\s*\d+\s+\S+\s+([0-9.]+)\s+([0-9.]+)\s+(\S+)", line)
+            if mm and re.search(r"\+F", mm.group(3)):
+                mp = re.search(r"\+FO?\{([^}]*)\}", mm.group(3))
+                out["comps"].append((float(mm.group(2)), [float(x) for x in mp.group(1).split(",")] if mp else None))
     return out
 
 
@@ -138,6 +187,9 @@ def rmse_vs_truth(comps, truth):
     if not comps or not truth or len(comps) != len(truth):
         return float("nan"), float("nan")
     k = len(truth)
+    if any(c[1] is None for c in comps):
+        # fixed profiles (C-series): classes keep their order, only the weights are estimated
+        return math.sqrt(sum((comps[i][0] - truth[i][0]) ** 2 for i in range(k)) / k), float("nan")
 
     def cost(perm):
         return sum(sum((a - b) ** 2 for a, b in zip(comps[perm[i]][1], truth[i][1])) for i in range(k))
@@ -175,7 +227,10 @@ def run(cmd, cwd, log):
         full = cmd
     t0 = time.time()
     with open(log, "w") as lf:
-        rc = subprocess.call(full, cwd=cwd, stdout=lf, stderr=subprocess.STDOUT)
+        try:
+            rc = subprocess.call(full, cwd=cwd, stdout=lf, stderr=subprocess.STDOUT, timeout=RUN_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            rc = 124
     wall, rss = time.time() - t0, float("nan")
     if timebin and os.path.exists(tfile):
         try:
@@ -228,6 +283,7 @@ def main(argv):
         a = argv[i]
         if a == "--quick": mode = "quick"
         elif a == "--full": mode, threads, repeats = "full", [1, 8], 3
+        elif a == "--thorough": mode, seeds, jobs = "thorough", [101, 102, 103], max(1, int((os.cpu_count() or 4) * 0.7))
         elif a == "--big": big = True
         elif a == "-j": i += 1; jobs = int(argv[i])
         elif a == "--threads": i += 1; threads = [int(x) for x in argv[i].split(",")]
@@ -238,11 +294,14 @@ def main(argv):
             print("unknown argument", a); return 2
         i += 1
     os.makedirs(out_dir, exist_ok=True)
-    tiers = {"quick"} if mode == "quick" else {"quick", "full"}
+    tiers = {"quick"} if mode == "quick" else {"quick", "full"} if mode == "full" else {"thorough"}
     if big:
         tiers.add("big")
     datasets = {n: d for n, d in DATASETS.items() if d["tier"] in tiers and (only is None or n in only)}
-    arms = {n: a for n, (a, t) in ARMS.items() if t in tiers}
+    if mode == "thorough":
+        arms = {n: ARMS[n][0] for n in THOROUGH_ARMS}
+    else:
+        arms = {n: a for n, (a, t) in ARMS.items() if t in tiers}
 
     # 1. simulate
     sim_dir = os.path.join(out_dir, "data")
@@ -251,6 +310,8 @@ def main(argv):
     for name, d in datasets.items():
         if "real" in d:
             inputs[(name, 0)] = (os.path.join(ROOT, d["real"]), None, None)
+            continue
+        if "alias_of" in d:
             continue
         model, ntaxa, length = d["sim"]
         for seed in seeds:
@@ -261,6 +322,10 @@ def main(argv):
                 if rc != 0:
                     print("simulation failed:", name, seed); return 1
             inputs[(name, seed)] = (prefix + ".phy", prefix + ".treefile", truth_from_alisim(model))
+    for name, d in datasets.items():
+        if "alias_of" in d:
+            for seed in seeds:
+                inputs[(name, seed)] = inputs[(d["alias_of"], seed)]
 
     # 2. the run list
     tasks = []
@@ -273,6 +338,8 @@ def main(argv):
             for thr in threads:
                 for arm, extra in arms.items():
                     model = d["model"]
+                    if arm == "old-em" and not re.search(r"\+(F\d+|C\d+)", model.split()[0]):
+                        continue   # -optalg_qmix EM only applies to mixtures
                     if extra == "__C10WARM__":
                         cm = c10warm_model(model.split()[0])
                         if cm is None:

@@ -321,6 +321,116 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
         say("AG: " + convertIntToString((int)est.size()) + " identical starting profiles; symmetry broken with " + how);
 }
 
+void GradientOptimizer::coldStart(bool write_info) {
+    ModelMixture *mix = dynamic_cast<ModelMixture*>(tree_->getModel());
+    if (!mix) return;
+    const int S = tree_->aln->num_states;
+    vector<ModelMarkov*> est;
+    for (size_t m = 0; m < mix->size(); m++)
+        if (mix->at(m)->getFreqType() == FREQ_ESTIMATE && mix->at(m)->getNDim() > 0) est.push_back(mix->at(m));
+    if (est.empty()) return;
+    vector<double> emp(S);
+    tree_->aln->computeStateFreq(emp.data());
+    std::mt19937_64 rng((unsigned long long)Params::getInstance().ran_seed + 7919ULL);
+    std::normal_distribution<double> normal(0.0, 1.0);
+    const double A = 0.9;
+    for (size_t m = 0; m < est.size(); m++) {
+        vector<double> pi(S);
+        double sum = 0.0;
+        for (int k = 0; k < S; k++) { pi[k] = max(emp[k], 1e-4) * exp(A * normal(rng)); sum += pi[k]; }
+        for (int k = 0; k < S; k++) pi[k] /= sum;
+        est[m]->setStateFrequency(pi.data());
+    }
+    if (!mix->fix_prop)
+        for (size_t m = 0; m < mix->size(); m++) mix->setMixtureWeight((int)m, 1.0 / mix->size());
+    renormalise();
+    if (write_info || verbose_mode >= VB_MED)
+        say("AG: cold start: " + convertIntToString((int)est.size()) + " profiles jittered around the empirical frequencies, equal weights");
+}
+
+void GradientOptimizer::multiStart(bool write_info, double gradient_epsilon) {
+    Params &params = Params::getInstance();
+    const int nest = map_->numProfileClasses();
+    int N = params.ag_multistart;
+    if (N < 0) N = nest >= 2 ? min(100, 10 * nest) : 0;
+    if (N <= 0 || nest < 2 || map_->profileParams().empty()) return;
+    const vector<int> &fidx = map_->profileParams();
+    const long lh_before = n_lh_;
+    // 1. candidates: log-normal jitter of the profiles in theta (log-ratio) space,
+    //    half heavy (A = 0.9), half light (A = 0.01); each scored by one likelihood
+    vector<double> base;
+    map_->pack(base);
+    std::mt19937_64 rng((unsigned long long)params.ran_seed + 7919ULL * 2);
+    std::normal_distribution<double> normal(0.0, 1.0);
+    struct Cand { vector<double> theta; double logl; bool heavy; };
+    vector<Cand> cands;
+    cands.push_back({ base, -HUGE_VAL, false });
+    for (int i = 0; i < N; i++) {
+        Cand c { base, -HUGE_VAL, i < N / 2 };
+        double A = c.heavy ? 0.9 : 0.01;
+        for (int j : fidx) c.theta[j] += A * normal(rng);
+        cands.push_back(c);
+    }
+    for (auto &c : cands) {
+        map_->unpack(c.theta);
+        n_lh_++;
+        c.logl = tree_->computeLikelihood();
+    }
+    n_multistart_ += N;
+    // 2. keep the 5 best and 5 random heavy candidates
+    vector<int> order(cands.size());
+    for (size_t i = 0; i < order.size(); i++) order[i] = (int)i;
+    sort(order.begin(), order.end(), [&](int a, int b) { return cands[a].logl > cands[b].logl; });
+    vector<int> chosen;
+    for (size_t i = 0; i < order.size() && chosen.size() < 5; i++) chosen.push_back(order[i]);
+    vector<int> heavy;
+    for (size_t i = 0; i < cands.size(); i++)
+        if (cands[i].heavy && find(chosen.begin(), chosen.end(), (int)i) == chosen.end()) heavy.push_back((int)i);
+    for (int k = 0; k < 5 && !heavy.empty(); k++) {
+        size_t r = (size_t)(rng() % heavy.size());
+        chosen.push_back(heavy[r]);
+        heavy.erase(heavy.begin() + r);
+    }
+    // 3. refine each with EM rounds (W step, then `ratio` F steps, then R step)
+    //    within the likelihood-evaluation budget
+    vector<int> ratios;
+    {
+        stringstream ss(params.ag_em_ratios);
+        string tok;
+        while (getline(ss, tok, ',')) if (!tok.empty()) ratios.push_back(max(1, atoi(tok.c_str())));
+        if (ratios.empty()) ratios.push_back(1);
+    }
+    const long budget_each = max(1L, (long)params.ag_multistart_budget / (long)chosen.size());
+    BestState best;
+    BestState brlen0;
+    snapshot(brlen0, 0.0);
+    double best_initial = cands[order[0]].logl;
+    for (int ci : chosen) {
+        restore(brlen0);
+        map_->unpack(cands[ci].theta);
+        n_lh_++;
+        double lh = tree_->computeLikelihood();
+        const long start = n_lh_;
+        for (int r : ratios) {
+            if (n_lh_ - start > budget_each) break;
+            lh = emWeights(lh);
+            for (int f = 0; f < r && n_lh_ - start <= budget_each; f++) lh = emProfiles(lh);
+            lh = emRates(lh, gradient_epsilon);
+        }
+        if (lh > best.logl) snapshot(best, lh);
+    }
+    if (best.valid) restore(best);
+    n_lh_++;
+    double final_lh = tree_->computeLikelihood();
+    if (write_info || verbose_mode >= VB_MED) {
+        ostringstream os;
+        os << "AG: multi-start: " << N << " candidates, " << chosen.size() << " refined, best initial logl "
+           << setprecision(10) << best_initial << ", after refinement " << final_lh
+           << " (" << (n_lh_ - lh_before) << " likelihood evaluations)";
+        say(os.str());
+    }
+}
+
 double GradientOptimizer::polish(double gradient_epsilon) {
     int n = map_->ndim();
     vector<double> x(n + 1), lower(n + 1), upper(n + 1);
@@ -368,7 +478,14 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     snapshot(entry, entry_logl);
     best = entry;
 
-    breakSymmetry(write_info);
+    // NOTE(design 11): start-point work runs once per ModelFactory, on the
+    // main (write_info) optimisation only: ModelFinder candidates, NNI refits
+    // and +I+G restarts keep their current parameters
+    const bool first = write_info && !factory_->ag_init_done;
+    if (first && params.ag_start == "cold") coldStart(write_info);
+    else breakSymmetry(write_info);
+    if (first) multiStart(write_info, gradient_epsilon);
+    if (first) factory_->ag_init_done = true;
     double cur_lh = entry_logl;
     {
         vector<double> th;
@@ -471,6 +588,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
         os << "AG stats: rounds=" << rounds_ << " levels=" << levels.size() << " bfgs_iterations=" << n_bfgs_iter_
            << " likelihood_evaluations=" << n_lh_ << " gradient_evaluations=" << n_grad_
            << " em_steps(W/R/F)=" << n_em_w_ << "/" << n_em_r_ << "/" << n_em_f_ << " em_reverts=" << n_em_revert_
+           << " multistart_candidates=" << n_multistart_
            << " fd_fallbacks=" << n_fd_fallback_ << " parameters=" << map_->ndim()
            << " time=" << setprecision(3) << (getRealTime() - t0) << " sec";
         say(os.str());

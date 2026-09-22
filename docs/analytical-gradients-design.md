@@ -328,3 +328,34 @@ Floors (section 6): state frequencies at `min_state_freq` and mixture
 weights at 1e-3 as in the default optimiser's bounds, `p_inv` at most the
 fraction of constant sites; an entry held at its floor reports a zero
 gradient in the flat direction.
+
+## 11. Start points: warm, cold, multi-start (version 1.1)
+
+Start-point work happens once per `ModelFactory`, on the main
+optimisation only (the one that prints progress); ModelFinder candidates,
+NNI refits and +I+G restarts keep their current parameters.
+
+* **warm** (default): the parameters as IQ-TREE initialised them, with
+  identical `+FO` profiles made distinct (section 9).
+* **cold** (`--ag-start cold`): every `+FO` profile is drawn as
+  `pi_k proportional to pi_emp,k * exp(0.9 z_k)`, `z ~ N(0,1)`, around the
+  empirical frequencies, with equal mixture weights.
+* **multi-start** (`--ag-multistart N`; `-1` selects `min(100, 10 K)` for
+  `K >= 2` estimated profiles; default 0, off): `N` candidates are made from the
+  start by jittering the profile entries in log-ratio space, half heavily
+  (0.9) and half lightly (0.01); each costs one likelihood evaluation. The
+  five best and five random heavy candidates are refined with EM rounds
+  (a weight step, then `r` profile steps for each `r` in `--ag-em-ratios`,
+  then a rate step), sharing `--ag-multistart-budget` likelihood
+  evaluations, and the best refined candidate becomes the start of the
+  optimisation. All random numbers come from a private generator seeded
+  from `-seed`, so the global stream and the default path are untouched.
+
+Multi-start is off by default because it did not pay on the LG+F4+R4
+benchmark (fixed tree, same binary): warm start -4982.7 in 31 s,
+multi-start with 40 candidates -4986.8 in 68 s, cold start -5000.6, cold
+plus multi-start -4992.2. Ranking candidates by their initial likelihood
+(before any optimisation) compares noise, and the EM refinement then
+commits to a basin that the polish cannot leave; the C-series warm start
+already provides the diversity the profiles need. On a simulated
+two-profile mixture all three starts reach the same optimum.

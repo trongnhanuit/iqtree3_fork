@@ -95,6 +95,10 @@ private:
     double polish(double gradient_epsilon);
     /** identical +FO profiles are a fixed point of every gradient method (design 6.4); make them distinct */
     void breakSymmetry(bool write_info);
+    /** --ag-start cold: profiles jittered around the empirical frequencies, equal weights (design 11) */
+    void coldStart(bool write_info);
+    /** --ag-multistart: score jittered candidates, refine the best few with EM, keep the best (design 11) */
+    void multiStart(bool write_info, double gradient_epsilon);
     /** per component ||U U^-1 - I||_inf < 1e-8 (design 5.5) */
     bool eigenResidualOk() const;
     /** append gradient-check rows for the current theta/gradient to <prefix>.gradcheck.tsv */
@@ -127,6 +131,7 @@ private:
     long n_lh_ = 0, n_grad_ = 0, n_fd_fallback_ = 0, n_bfgs_iter_ = 0;
     long n_em_w_ = 0, n_em_r_ = 0, n_em_f_ = 0, n_em_revert_ = 0;
     bool em_enabled_ = false;
+    long n_multistart_ = 0;
     std::string em_axes_;
     bool warned_fallback_ = false;
     bool gradcheck_started_ = false;

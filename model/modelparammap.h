@@ -57,6 +57,10 @@ public:
 
     /** which mixture components need dlogL/dQ from the engine */
     const std::vector<bool> &needQ() const { return need_q_; }
+    /** theta indices of the +FO profile entries (F blocks) */
+    const std::vector<int> &profileParams() const { return profile_params_; }
+    /** number of components with estimated profiles */
+    int numProfileClasses() const { return (int)fblocks_.size(); }
 
     /** current model -> theta */
     void pack(std::vector<double> &theta) const;
@@ -133,6 +137,7 @@ private:
     // entries held at a floor by the last unpack() (design 6): their theta
     // gradient is reported as zero, the direction being flat there
     std::vector<char> clamped_;
+    std::vector<int> profile_params_;
     double freq_floor_ = 1e-4, weight_floor_ = 1e-3;
 
     NaturalGradient nat_;

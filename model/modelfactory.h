@@ -237,6 +237,8 @@ public:
 		for this factory, so re-entries (NNI refits, ModelFinder candidates) stay quiet
 	*/
 	bool ag_warned = false;
+	/** --analytical-gradients: start-point work (cold start, multi-start) done once per factory */
+	bool ag_init_done = false;
 
 	/**
 		TRUE to store transition matrix into this hash table for computation efficiency

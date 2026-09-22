@@ -153,6 +153,8 @@ ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree)
     }
     freq_floor_ = Params::getInstance().min_state_freq;
     clamped_.assign(ndim(), 0);
+    for (auto &blk : fblocks_)
+        for (size_t j = 0; j < blk.states.size(); j++) profile_params_.push_back(blk.offset + (int)j);
 }
 
 void ModelParamMap::addParam(const string &name, double lo, double hi) {

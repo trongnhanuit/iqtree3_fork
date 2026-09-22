@@ -1311,8 +1311,8 @@ void parseArg(int argc, char *argv[], Params &params) {
                 if (cnt >= argc)
                     throw "Use --ag-multistart <N>";
                 params.ag_multistart = convert_int(argv[cnt]);
-                if (params.ag_multistart < 0)
-                    throw "--ag-multistart requires N >= 0";
+                if (params.ag_multistart < -1)
+                    throw "--ag-multistart requires N >= 0 (or -1 for auto)";
                 continue;
             }
             if (strcmp(argv[cnt], "--ag-multistart-budget") == 0) {
@@ -6159,7 +6159,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --analytical-gradients   Exact-gradient EM+BFGS optimisation of model parameters" << endl
     << "                           (reversible models and mixtures; others use the default)" << endl
     << "  --ag-start warm|cold     Warm start from C-series profiles (default) or random" << endl
-    << "  --ag-multistart NUM      Multi-start candidates (default: auto; 0 to disable)" << endl
+    << "  --ag-multistart NUM      Multi-start candidates (default: 0 = off; -1 for auto)" << endl
     << "  --ag-cascade on|off      Cascading precision levels (default: off)" << endl
     << "  --ag-optalg BFGS|LBFGSB  Driver for the joint polish (default: BFGS)" << endl
     << "  --ag-gradient-check [T]  Log analytic vs numerical gradients per parameter" << endl
@@ -7447,7 +7447,7 @@ void Params::setDefault() {
     ag_gradient_check_only = false;
     ag_gradient_check_strict = false;
     ag_optalg = "BFGS";
-    ag_multistart = -1;
+    ag_multistart = 0;
     ag_multistart_budget = 500;
     ag_start = "warm";
     ag_em_ratios = "1,2,5,10";

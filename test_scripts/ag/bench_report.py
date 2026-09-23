@@ -83,14 +83,16 @@ def write_summary(rows, path, manifest=None):
         lines.append("Git: `%s`  " % manifest.get("git", "?"))
         lines.append("Mode: %s, repeats: %s, host: %s" % (manifest.get("mode"), manifest.get("repeats"), manifest.get("host")))
         lines.append("")
-    lines.append("Columns: lnL = median final log-likelihood over repeats; dlnL = difference to the best arm "
+    lines.append("Columns: lnL = median final log-likelihood over repeats; dlnL = difference to the best optimiser arm "
                  "(0 = best); wall = median seconds; speedup = old-default wall / this wall; RSS = peak memory (MB); "
                  "evals = the optimiser's likelihood/gradient evaluation counts (new arms only); RMSE = recovered "
-                 "mixture weights / profiles against the simulation truth (simulated data only).")
+                 "mixture weights / profiles against the simulation truth (simulated data only). The `truth` row, "
+                 "where present, is the simulation model evaluated on the true tree with fixed branch lengths "
+                 "(no optimisation): a reference for lnL, not an arm.")
     lines.append("")
     for (ds, mode, thr) in sorted(blocks):
         arms = blocks[(ds, mode, thr)]
-        best = max(v["logl"] for _, v in arms if not math.isnan(v["logl"]))
+        best = max(v["logl"] for a, v in arms if a != "truth" and not math.isnan(v["logl"]))
         old = [v for a, v in arms if a == "old-default"]
         old_wall = old[0]["wall"] if old else float("nan")
         lines.append("## %s, tree: %s, threads: %s" % (ds, mode, thr))
@@ -98,7 +100,7 @@ def write_summary(rows, path, manifest=None):
         lines.append("| arm | lnL | dlnL | wall (s) | speedup | RSS (MB) | evals lh/grad | RMSE w | RMSE pi | n |")
         lines.append("|---|---|---|---|---|---|---|---|---|---|")
         for arm, v in sorted(arms, key=lambda av: -av[1]["logl"] if not math.isnan(av[1]["logl"]) else 1e9):
-            speed = old_wall / v["wall"] if v["wall"] and not math.isnan(old_wall) else float("nan")
+            speed = old_wall / v["wall"] if arm != "truth" and v["wall"] and not math.isnan(old_wall) else float("nan")
             evals = "-" if math.isnan(v["lh_evals"]) else "%d/%d" % (v["lh_evals"], v["grad_evals"])
             note = " (%d failed)" % v["failed"] if v["failed"] else ""
             lines.append("| %s%s | %s | %s | %s | %s | %s | %s | %s | %s | %d |" % (
@@ -124,7 +126,7 @@ def plot(summ, out_dir):
     for (ds, mode, thr), arms in blocks.items():
         arms = sorted(arms)
         names = [a for a, _ in arms]
-        best = max(v["logl"] for _, v in arms if not math.isnan(v["logl"]))
+        best = max(v["logl"] for a, v in arms if a != "truth" and not math.isnan(v["logl"]))
         fig, ax = plt.subplots(1, 2, figsize=(10, 3.5))
         ax[0].bar(names, [v["logl"] - best for _, v in arms])
         ax[0].set_ylabel("lnL - best")

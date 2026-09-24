@@ -5695,8 +5695,28 @@ IQTree* reconstructGappedSeqs(Params &params, IQTree* original_tree)
              << endl << "CHECKPOINT: Resuming analysis from " << filename << endl << endl;
     }
      
+    // Several deep call functions read Params::getInstance() directly instead
+    // of the tree's own params pointer
+    // So, here we temporarily set the expected settings for binary run to the global_params
+    // Then restore them back below runPhyloAnalysisAfterReadingAln
+    Params &global_params = Params::getInstance();
+    const string bk_model_name = global_params.model_name;
+    char* const bk_out_prefix = global_params.out_prefix;
+    const bool bk_print_tree_lh = global_params.print_tree_lh;
+    const int bk_write_intermediate_trees = global_params.write_intermediate_trees;
+    global_params.model_name = params.model_name;
+    global_params.out_prefix = params.out_prefix;
+    global_params.print_tree_lh = params.print_tree_lh;
+    global_params.write_intermediate_trees = params.write_intermediate_trees;
+
     runPhyloAnalysisAfterReadingAln(params, checkpoint, tree, alignment);
-    
+
+    // restore the global params
+    global_params.model_name = bk_model_name;
+    global_params.out_prefix = bk_out_prefix;
+    global_params.print_tree_lh = bk_print_tree_lh;
+    global_params.write_intermediate_trees = bk_write_intermediate_trees;
+
     // restore allow_nonrev_bin of the common/global Params
     Params::getInstance().allow_nonrev_bin = bk_allow_nonrev_bin;
     

@@ -5637,6 +5637,11 @@ IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
     strcpy(params.user_file, tmp_in_treefile.c_str());
     params.min_iterations = 0;
     params.stop_condition = SC_FIXED_ITERATION;
+    // fix the starting tree so ModelFinder's fast-ML step does not run NNI on the binary data;
+    // without this, the binary tree's topology can differ from the original tree's, and
+    // gsr_tree->findNodeID(node->id) in printAncestralOrExtantSequences then attaches the
+    // gap posterior to the wrong node (bug #1 from PR review)
+    params.start_tree = STT_USER_TREE;
     
     // update prefix for output files of binary data
     string tmp_out_prefix = (string)params.out_prefix + ".bin";

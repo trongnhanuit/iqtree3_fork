@@ -57,11 +57,17 @@ void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQT
 
 /**
     reconstruct (ancestral/extant) sequences with gaps from faked binary data
-    @param[in] params program parameters (clone a new instance)
+    @param[in,out] params program parameters for the binary-data run; this function mutates it
+        in place (model, tree, prefix, ...), so the CALLER must supply an object it owns and that
+        outlives the returned tree: the returned IQTree keeps a raw Params* pointing back at this
+        very object (via IQTree::setParams), so it must not be a temporary or a by-value copy that
+        goes out of scope when this function returns (bug #2 from PR review: this used to take
+        Params by value, leaving the returned tree's params pointer dangling into a destroyed
+        stack frame)
     @param[in] original_tree the original tree
     @return a tree that could be used to output gap and non-gap characters
 */
-IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree);
+IQTree* reconstructGappedSeqs(Params &params, IQTree* original_tree);
 
 /*! \brief Run CMaple algorithm for phylogenetic inference (if suitable)
  *  @param params program parameters

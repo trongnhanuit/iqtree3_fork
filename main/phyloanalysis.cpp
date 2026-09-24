@@ -2705,8 +2705,12 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     
     // reconstruct gapped sequences, if needed
     IQTree* gsr_tree = nullptr;
-    if (iqtree.params->gapped_seq_reconstruction)
-        gsr_tree = reconstructGappedSeqs(*iqtree.params, &iqtree);
+    // clone params for locally used inside gsr_tree
+    Params* gsr_params = nullptr;
+    if (iqtree.params->gapped_seq_reconstruction) {
+        gsr_params = new Params(*iqtree.params);
+        gsr_tree = reconstructGappedSeqs(*gsr_params, &iqtree);
+    }
     
     // print ancestral/extant sequences if reconstructed
     if (params.print_ancestral_sequence || params.print_extant_seqs)
@@ -2763,6 +2767,8 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
         delete gsr_tree;
         delete gsr_alignment;
     }
+    // delete gsr_params after gsr_tree (which points into it); safe no-op if never allocated
+    delete gsr_params;
     
     if (params.print_site_state_freq != WSF_NONE && !params.site_freq_file && !params.tree_freq_file) {
         string site_freq_file = params.out_prefix;
@@ -5493,7 +5499,7 @@ void runPhyloAnalysisAfterReadingAln(Params &params, Checkpoint *checkpoint, IQT
     checkpoint->dump(true);
 }
 
-IQTree* reconstructGappedSeqs(Params params, IQTree* original_tree)
+IQTree* reconstructGappedSeqs(Params &params, IQTree* original_tree)
 {
     ASSERT(original_tree && original_tree->aln);
     

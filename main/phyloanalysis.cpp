@@ -2709,6 +2709,21 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
     Params* gsr_params = nullptr;
     if (iqtree.params->gapped_seq_reconstruction) {
         gsr_params = new Params(*iqtree.params);
+        // create a clean Params instance for binary data
+        // to avoid inherit inapplicable settings
+        gsr_params->setDefault();
+        // only clone neccessary settings
+        gsr_params->num_threads = iqtree.params->num_threads;
+        gsr_params->ran_seed = iqtree.params->ran_seed;
+        gsr_params->subsampling_seed = iqtree.params->subsampling_seed;
+        gsr_params->out_prefix = iqtree.params->out_prefix;
+        gsr_params->partition_type = iqtree.params->partition_type;
+        gsr_params->ignore_checkpoint = iqtree.params->ignore_checkpoint;
+        gsr_params->force_unfinished = iqtree.params->force_unfinished;
+        gsr_params->opt_gammai = iqtree.params->opt_gammai;
+        gsr_params->optimize_alg_gammai = iqtree.params->optimize_alg_gammai;
+        // avoid mapping onto the wrong or a missing node
+        gsr_params->ignore_identical_seqs = false;
         gsr_tree = reconstructGappedSeqs(*gsr_params, &iqtree);
     }
     
@@ -4618,7 +4633,10 @@ void runStandardBootstrap(Params &params, Alignment *alignment, IQTree *tree) {
     params.localbp_replicates = 0;
     params.aLRT_test = false;
     params.aBayes_test = false;
-    
+    // gap-ASR/ESR reconstruction should describe the final ML tree, not every bootstrap
+    bool saved_gapped_seq_reconstruction = params.gapped_seq_reconstruction;
+    params.gapped_seq_reconstruction = false;
+
     if (params.suppress_output_flags & OUT_TREEFILE)
         outError("Suppress .treefile not allowed for standard bootstrap");
     string treefile_name = params.out_prefix;
@@ -4794,6 +4812,9 @@ void runStandardBootstrap(Params &params, Alignment *alignment, IQTree *tree) {
         params.localbp_replicates = saved_localbp_replicates;
         params.aLRT_test = saved_aLRT_test;
         params.aBayes_test = saved_aBayes_test;
+        // restore gap-ASR/ESR reconstruction for the analysis of the original alignment (the
+        // tree bootstrap support values get assigned to), now that the replicate loop is done
+        params.gapped_seq_reconstruction = saved_gapped_seq_reconstruction;
 
         if (params.num_runs == 1)
             runTreeReconstruction(params, tree);

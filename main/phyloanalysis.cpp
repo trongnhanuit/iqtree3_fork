@@ -2728,7 +2728,7 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
                 
                 // extract the gsr_tree
                 PhyloTree* partition_gsr_tree = gsr_tree;
-                if (gsr_tree->isSuperTree())
+                if (gsr_tree && gsr_tree->isSuperTree())
                 {
                     partition_gsr_tree = ((PhyloSuperTree*)gsr_tree)->at(part_id);
                 }

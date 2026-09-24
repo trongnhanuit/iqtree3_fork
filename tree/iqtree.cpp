@@ -2361,8 +2361,9 @@ string IQTree::optimizeModelParameters(bool printInfo, double logl_epsilon) {
 }
 
 string IQTree::ensureModelParametersAreSet(double initEpsilon) {
-    // if using partition models, don't allow mixing reversible and non-reversible models
-    if (isSuperTree())
+    // If using partition models, don't allow mixing reversible and non-reversible models
+    // without -gap-asr/esr, IQ-TREE still supports that mixing with topology-unlinked partitions (-S)
+    if (isSuperTree() && (params->gapped_seq_reconstruction || params->partition_type != TOPO_UNLINKED))
     {
         ((PhyloSuperTree*) this)->validatePartitionModel();
     }

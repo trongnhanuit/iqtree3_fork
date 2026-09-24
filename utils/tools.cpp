@@ -5684,6 +5684,14 @@ void parseArg(int argc, char *argv[], Params &params) {
                  " The site-frequency model is only estimated for a single-partition alignment,"
                  " and was previously ignored without warning.");
 
+    // don't support both -gap-asr/-gap-esr and --no-treefile/--no-outfiles
+    if (params.gapped_seq_reconstruction && (params.suppress_output_flags & OUT_TREEFILE)) {
+        outWarning("--no-treefile/--no-outfiles is not supported together with -gap-asr/-gap-esr:"
+                   " the tree file is needed internally to reconstruct gapped sequences, so it"
+                   " will still be written.");
+        params.suppress_output_flags &= ~OUT_TREEFILE;
+    }
+
     // Users have to specify a random seed to run AliSim
     if (params.alisim_active && !params.seed_specified)
         outError("To make the simulation reproducible, please specify a random seed via `-seed <NUM>`");

@@ -254,9 +254,10 @@ void computeMarginalState(const bool is_ancestral, PhyloTree *tree, PhyloNode *n
     }
     
     //            int *joint_ancestral_node = joint_ancestral + (node->id - tree->leafNum)*nptn;
-    
+
     // set node name if neccessary
-    if (node->name.empty() || !isalpha(node->name[0])) {
+    // only for ancestral (internal) nodes: for extant (tip) nodes this would rename real taxa
+    if (is_ancestral && (node->name.empty() || !isalpha(node->name[0]))) {
         node->name = "Node" + convertIntToString(node->id-tree->leafNum+1);
     }
 }

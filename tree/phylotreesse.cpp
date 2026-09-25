@@ -126,11 +126,13 @@ void PhyloTree::setLikelihoodKernel(LikelihoodKernel lk) {
     if (!aln) {
 #if INSTRSET < 2
         computeLikelihoodBranchPointer = &PhyloTree::computeLikelihoodBranchGenericSIMD<Vec1d, SAFE_LH>;
-        computeLikelihoodBranchFakeLeafPointer = &PhyloTree::computeLikelihoodBranchFakeLeafGenericSIMD<Vec1d, SAFE_LH>;
+        computeLikelihoodBranchESRPointer = &PhyloTree::computeLikelihoodBranchESRGenericSIMD<Vec1d, SAFE_LH>;
         computeLikelihoodDervPointer = &PhyloTree::computeLikelihoodDervGenericSIMD<Vec1d, SAFE_LH>;
         computeLikelihoodDervMixlenPointer = nullptr;
         computePartialLikelihoodPointer = &PhyloTree::computePartialLikelihoodGenericSIMD<Vec1d, SAFE_LH>;
-        computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d, SAFE_LH>;
+        // computeLikelihoodFromBufferGenericSIMD has no SAFE_NUMERIC template parameter
+        // (it only reads back the already-computed theta_all buffer)
+        computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d>;
         sse = LK_386;
 #else
         computeLikelihoodBranchPointer = nullptr;
@@ -177,20 +179,22 @@ void PhyloTree::setLikelihoodKernel(LikelihoodKernel lk) {
     //--- naive kernel for site-specific model ---
     if (model_factory && model_factory->model->isSiteSpecificModel()) {
         computeLikelihoodBranchPointer = &PhyloTree::computeLikelihoodBranchGenericSIMD<Vec1d, SAFE_LH, false, true>;
-        computeLikelihoodBranchFakeLeafPointer = &PhyloTree::computeLikelihoodBranchFakeLeafGenericSIMD<Vec1d, SAFE_LH, false, true>;
+        computeLikelihoodBranchESRPointer = &PhyloTree::computeLikelihoodBranchESRGenericSIMD<Vec1d, SAFE_LH, false, true>;
         computeLikelihoodDervPointer = &PhyloTree::computeLikelihoodDervGenericSIMD<Vec1d, SAFE_LH, false, true>;
         computePartialLikelihoodPointer = &PhyloTree::computePartialLikelihoodGenericSIMD<Vec1d, SAFE_LH, false, true>;
-        computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d, SAFE_LH, false, true>;
+        // computeLikelihoodFromBufferGenericSIMD has no SAFE_NUMERIC template parameter
+        // (it only reads back the already-computed theta_all buffer)
+        computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d, false, true>;
         return;
     }
 
     //--- naive (no SIMD) kernel ---
     computeLikelihoodBranchPointer = &PhyloTree::computeLikelihoodBranchGenericSIMD<Vec1d, SAFE_LH>;
-    computeLikelihoodBranchFakeLeafPointer = &PhyloTree::computeLikelihoodBranchFakeLeafGenericSIMD<Vec1d, SAFE_LH>;
+    computeLikelihoodBranchESRPointer = &PhyloTree::computeLikelihoodBranchESRGenericSIMD<Vec1d, SAFE_LH>;
     computeLikelihoodDervPointer = &PhyloTree::computeLikelihoodDervGenericSIMD<Vec1d, SAFE_LH>;
     computeLikelihoodDervMixlenPointer = nullptr;
     computePartialLikelihoodPointer = &PhyloTree::computePartialLikelihoodGenericSIMD<Vec1d, SAFE_LH>;
-    computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d, SAFE_LH>;
+    computeLikelihoodFromBufferPointer = &PhyloTree::computeLikelihoodFromBufferGenericSIMD<Vec1d>;
 #else
     computeLikelihoodBranchPointer = nullptr;
     computeLikelihoodBranchESRPointer = nullptr;

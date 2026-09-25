@@ -1911,6 +1911,7 @@ SuperAlignment* SuperAlignment::convertToBin(const string& new_model_name)
     // partition-presence pattern instead, and asserts the pattern list starts empty
     new_aln->clear();
     new_aln->pattern_index.clear();
+    new_aln->site_pattern.clear();
     new_aln->init();
     
     return new_aln;

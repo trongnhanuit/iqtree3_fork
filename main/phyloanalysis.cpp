@@ -2720,6 +2720,8 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
         gsr_params->partition_type = iqtree.params->partition_type;
         gsr_params->ignore_checkpoint = iqtree.params->ignore_checkpoint;
         gsr_params->force_unfinished = iqtree.params->force_unfinished;
+        // -redo/-mredo must also force the binary run's ModelFinder to redo,
+        gsr_params->model_test_again = iqtree.params->model_test_again;
         gsr_params->opt_gammai = iqtree.params->opt_gammai;
         gsr_params->optimize_alg_gammai = iqtree.params->optimize_alg_gammai;
         // avoid mapping onto the wrong or a missing node

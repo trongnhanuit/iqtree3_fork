@@ -5692,6 +5692,14 @@ void parseArg(int argc, char *argv[], Params &params) {
         params.suppress_output_flags &= ~OUT_TREEFILE;
     }
 
+    // don't support both -gap-asr/-gap-esr and -o
+    // an outgroup-rooted main tree and a default-rooted binary tree can end up numbering internal nodes
+    // differently, silently misattaching gap posteriors to the wrong nodes
+    if (params.gapped_seq_reconstruction && params.root) {
+        outWarning("-o (outgroup) is ignored since it not supported together with -gap-asr/-gap-esr.");
+        params.root = nullptr;
+    }
+
     // Users have to specify a random seed to run AliSim
     if (params.alisim_active && !params.seed_specified)
         outError("To make the simulation reproducible, please specify a random seed via `-seed <NUM>`");

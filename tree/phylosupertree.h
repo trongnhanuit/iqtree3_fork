@@ -434,7 +434,7 @@ public:
         @param[out] ptn_ancestral_seq vector of state with highest probability
     */
     virtual void computeMarginalExtantState(PhyloNeighbor *dad_branch, PhyloNode *dad,
-        double *ptn_ancestral_prob, int *ptn_ancestral_seq);
+        double *ptn_ancestral_prob, int *ptn_ancestral_seq) override;
 
     /**
         compute sequence probability for an internal/extant node by marginal reconstruction

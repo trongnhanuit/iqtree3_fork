@@ -1130,8 +1130,8 @@ double PhyloTree::implComputingNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *
     }
     
     // if computing ESR
-    double* transposed_trans_mat;
-    double* pattern_lh_cat_state_esr;
+    double* transposed_trans_mat = nullptr;
+    double* pattern_lh_cat_state_esr = nullptr;
     size_t block_size_esr = block;
     if (computing_esr)
     {

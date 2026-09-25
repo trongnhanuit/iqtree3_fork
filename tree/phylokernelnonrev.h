@@ -1299,26 +1299,6 @@ double PhyloTree::implComputingNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *
                         if (!SAFE_NUMERIC)
                             lh_ptn += lh_cat[c];
                     }
-                    
-                    // if needed, compute ESR from the ASR * the transition matrix (for the original blength)
-                    if (computing_esr)
-                    {
-                        VectorClass* ancestral_seq_state = (VectorClass*)(_pattern_lh_cat_state + ptn*block);
-                        VectorClass* extant_seq_state = (VectorClass*)(pattern_lh_cat_state_esr + ptn*block);
-                        for (size_t c = 0; c < ncat_mix; c++) {
-                            for (size_t i = 0; i < nstates; i++) {
-        #ifdef KERNEL_FIX_STATES
-                                dotProductVec<VectorClass, double, nstates, FMA>(transposed_trans_mat_ptr, ancestral_seq_state, extant_seq_state[i]);
-        #else
-                                dotProductVec<VectorClass, double, FMA>(transposed_trans_mat_ptr, ancestral_seq_state, extant_seq_state[i], nstates);
-        #endif
-                                transposed_trans_mat_ptr += nstates;
-
-                            }
-                            extant_seq_state += nstates;
-                            ancestral_seq_state += nstates;
-                        }
-                    }
                 } else {
                     for (size_t c = 0; c < ncat_mix; c++) {
     #ifdef KERNEL_FIX_STATES
@@ -1346,12 +1326,19 @@ double PhyloTree::implComputingNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *
                         vc_min_scale_ptr[i] = min_scale;
                         
                         double *this_lh_cat = &_pattern_lh_cat[ptn*ncat_mix + i];
+                        double *this_lh_state = _pattern_lh_cat_state ? &_pattern_lh_cat_state[ptn*block + i] : nullptr;
                         for (size_t c = 0; c < ncat_mix; c++) {
-                            // rescale lh_cat if neccessary
+                            // rescale lh_cat (and the per-state breakdown used for ASR/ESR) if neccessary
                             if (scale_dad[c] == min_scale+1) {
                                 this_lh_cat[c*VectorClass::size()] *= SCALING_THRESHOLD;
+                                if (this_lh_state)
+                                    for (size_t s = 0; s < nstates; s++)
+                                        this_lh_state[c*nstates*VectorClass::size() + s*VectorClass::size()] *= SCALING_THRESHOLD;
                             } else if (scale_dad[c] > min_scale+1) {
                                 this_lh_cat[c*VectorClass::size()] = 0.0;
+                                if (this_lh_state)
+                                    for (size_t s = 0; s < nstates; s++)
+                                        this_lh_state[c*nstates*VectorClass::size() + s*VectorClass::size()] = 0.0;
                             }
                         }
                         scale_dad += ncat_mix;
@@ -1362,6 +1349,26 @@ double PhyloTree::implComputingNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *
                 } else {
                     for (size_t i = 0; i < VectorClass::size(); i++) {
                         vc_min_scale_ptr[i] = dad_branch->scale_num[ptn+i];
+                    }
+                }
+                // if needed, compute ESR from the ASR * the transition matrix (for the original blength);
+                // this must run after the SAFE_NUMERIC rescale above so ESR inherits the corrected,
+                // common-scale ancestral values instead of raw per-category-scaled ones
+                if (computing_esr)
+                {
+                    VectorClass* ancestral_seq_state = (VectorClass*)(_pattern_lh_cat_state + ptn*block);
+                    VectorClass* extant_seq_state = (VectorClass*)(pattern_lh_cat_state_esr + ptn*block);
+                    for (size_t c = 0; c < ncat_mix; c++) {
+                        for (size_t i = 0; i < nstates; i++) {
+    #ifdef KERNEL_FIX_STATES
+                            dotProductVec<VectorClass, double, nstates, FMA>(transposed_trans_mat_ptr, ancestral_seq_state, extant_seq_state[i]);
+    #else
+                            dotProductVec<VectorClass, double, FMA>(transposed_trans_mat_ptr, ancestral_seq_state, extant_seq_state[i], nstates);
+    #endif
+                            transposed_trans_mat_ptr += nstates;
+                        }
+                        extant_seq_state += nstates;
+                        ancestral_seq_state += nstates;
                     }
                 }
                 vc_min_scale *= LOG_SCALING_THRESHOLD;
@@ -1506,12 +1513,19 @@ double PhyloTree::implComputingNonrevLikelihoodBranchGenericSIMD(PhyloNeighbor *
                         }
                         vc_min_scale_ptr[i] = min_scale;
                         double *this_lh_cat = &_pattern_lh_cat[ptn*ncat_mix + i];
+                        double *this_lh_state = _pattern_lh_cat_state ? &_pattern_lh_cat_state[ptn*block + i] : nullptr;
                         for (size_t c = 0; c < ncat_mix; c++) {
                             if (sum_scale[c] == min_scale+1) {
                                 this_lh_cat[c*VectorClass::size()] *= SCALING_THRESHOLD;
+                                if (this_lh_state)
+                                    for (size_t s = 0; s < nstates; s++)
+                                        this_lh_state[c*nstates*VectorClass::size() + s*VectorClass::size()] *= SCALING_THRESHOLD;
                             } else if (sum_scale[c] > min_scale+1) {
                                 // reset if category is scaled a lot
                                 this_lh_cat[c*VectorClass::size()] = 0.0;
+                                if (this_lh_state)
+                                    for (size_t s = 0; s < nstates; s++)
+                                        this_lh_state[c*nstates*VectorClass::size() + s*VectorClass::size()] = 0.0;
                             }
                         }
                         scale_dad += ncat_mix;

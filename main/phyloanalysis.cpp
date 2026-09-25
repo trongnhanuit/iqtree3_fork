@@ -2725,6 +2725,10 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
         // avoid mapping onto the wrong or a missing node
         gsr_params->ignore_identical_seqs = false;
         gsr_tree = reconstructGappedSeqs(*gsr_params, &iqtree);
+        // the checkpoint reconstructGappedSeqs created was already deleted there;
+        // clear the tree's dangling pointer to it defensively
+        if (gsr_tree)
+            gsr_tree->setCheckpoint(nullptr);
     }
     
     // print ancestral/extant sequences if reconstructed
@@ -2781,6 +2785,8 @@ void printMiscInfo(Params &params, IQTree &iqtree, double *pattern_lh) {
         Alignment* gsr_alignment = gsr_tree->aln;
         delete gsr_tree;
         delete gsr_alignment;
+        delete[] gsr_params->user_file;
+        delete[] gsr_params->out_prefix;
     }
     // delete gsr_params after gsr_tree (which points into it); safe no-op if never allocated
     delete gsr_params;
@@ -5723,7 +5729,7 @@ IQTree* reconstructGappedSeqs(Params &params, IQTree* original_tree)
     // Don't set finished = true for the checkpoint of the binary-data run
     // To avoid the case when the interuption occurs between the end of the binary-data run and the original-data run
     // If letting the checkpoint of the binary-data run to be finished, users cannot get the output of -gap-esr/asr unless they use -redo
-    checkpoint->eraseKeyPrefix("finished");
+    checkpoint->putBool("finished", false);
     checkpoint->dump(true);
     // delete checkpoint
     try {

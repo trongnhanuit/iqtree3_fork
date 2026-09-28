@@ -18,7 +18,8 @@
 #              tolerance (times are reported); -Q must use the new path per
 #              partition and -p must fall back with the warning; a simulated
 #              two-profile mixture must be recovered within absolute tolerances,
-#              and warm, cold and multi-start must reach the same optimum on it
+#              and warm, cold and multi-start must reach the same optimum on it;
+#              --ag-udm-name above K=60 must be used if valid, else error
 #   robust     integration behaviour: abort/resume from the checkpoint, checkpoint
 #              cross-compatibility with the default path, ModelFinder, PMSF's
 #              site-specific pass, +I+G restarts, fault injection, concurrent
@@ -331,6 +332,35 @@ run_partitions() {   # -Q takes the new path per partition; -p falls back with t
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
+run_udm_start() {   # K>60 warm start: no name warns+jitters; a valid name is used; an insufficient name errors
+    local id="q_udm_start"
+    local dir="$OUT_DIR/$id" rc=0
+    mkdir -p "$dir"
+    local FIX="$HERE/data/synthetic_udm_fixture.nex"   # synthetic, made-up profiles: no third-party data
+    (
+        cd "$dir" || exit 1
+        local ARGS="-s $EX/aa_example.phy -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-force --ag-abort-after init -redo"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS -m LG+F70 --prefix noname > noname.stdout 2>&1
+        grep -q "classes exceed C60; jittering" noname.stdout || { echo "  no-name run did not warn about K>60"; exit 1; }
+        grep -q "AG: 70 identical starting profiles; symmetry broken with log-normal jitter" noname.stdout || { echo "  no-name run did not fall back to jitter"; exit 1; }
+        echo "  no --ag-udm-name (K=70): warned and jittered, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS -m LG+F62 -mdef "$FIX" --ag-udm-name TESTUDM --prefix okname > okname.stdout 2>&1
+        grep -q 'AG: 62 identical starting profiles; symmetry broken with "TESTUDM" profiles (--ag-udm-name)' okname.stdout || { echo "  a valid --ag-udm-name was not used"; exit 1; }
+        echo "  --ag-udm-name TESTUDM (K=62, exact fit): used, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS -m LG+F70 -mdef "$FIX" --ag-udm-name TESTUDM --prefix badname > badname.stdout 2>&1
+        local rc2=$?
+        [ "$rc2" != "0" ] || { echo "  an insufficient --ag-udm-name should have failed but exited 0"; exit 1; }
+        grep -q "does not define 70 frequency profiles" badname.stdout || { echo "  the expected error message was not printed"; exit 1; }
+        echo "  --ag-udm-name TESTUDM (K=70, fixture has only 62): errored, PASS"
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
 # ---- robust suite: integration behaviour of the live optimiser ----
 robust_case() {   # id: runs the named check inside its own directory, marker FAIL on non-zero exit
     local id="$1"
@@ -448,6 +478,7 @@ if [ "$SUITE" = "quality" ] || [ "$SUITE" = "all" ]; then
     ORDER+=("q_partitions"); throttle; run_partitions &
     ORDER+=("q_recovery"); throttle; run_recovery &
     ORDER+=("q_starts"); throttle; run_starts &
+    ORDER+=("q_udm_start"); throttle; run_udm_start &
 fi
 if [ "$SUITE" = "robust" ] || [ "$SUITE" = "all" ]; then
     for id in "${ROBUST[@]}"; do ORDER+=("$id"); throttle; robust_case "$id" & done

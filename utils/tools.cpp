@@ -1333,6 +1333,13 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.ag_start = argv[cnt];
                 continue;
             }
+            if (strcmp(argv[cnt], "--ag-udm-name") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-udm-name <NAME>";
+                params.ag_udm_name = argv[cnt];
+                continue;
+            }
             if (strcmp(argv[cnt], "--ag-em-ratios") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -6159,6 +6166,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --analytical-gradients   Exact-gradient EM+BFGS optimisation of model parameters" << endl
     << "                           (reversible models and mixtures; others use the default)" << endl
     << "  --ag-start warm|cold     Warm start from C-series profiles (default) or random" << endl
+    << "  --ag-udm-name NAME       Above C60, warm-start from NAME's profiles (via -mdef)" << endl
     << "  --ag-multistart NUM      Multi-start candidates (default: 0 = off; -1 for auto)" << endl
     << "  --ag-cascade on|off      Cascading precision levels (default: off)" << endl
     << "  --ag-optalg BFGS|LBFGSB  Driver for the joint polish (default: BFGS)" << endl
@@ -7451,6 +7459,7 @@ void Params::setDefault() {
     ag_multistart = 0;
     ag_multistart_budget = 500;
     ag_start = "warm";
+    ag_udm_name = "";
     ag_em_ratios = "1,2,5,10";
     ag_cascade = false;
     ag_polish = "per-level";

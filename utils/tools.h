@@ -1854,6 +1854,8 @@ public:
     int ag_multistart_budget;
     /** --ag-start <warm|cold>: starting point for estimated profiles */
     string ag_start;
+    /** --ag-udm-name NAME: above C60, warm-start from NAME's profiles (via -mdef) instead of jitter */
+    string ag_udm_name;
     /** --ag-em-ratios list: profile:weight EM ratios used in multi-start refinement */
     string ag_em_ratios;
     /** --ag-cascade <on|off>: cascading precision levels 100,10,1,0.1,target */

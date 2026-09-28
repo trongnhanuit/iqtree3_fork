@@ -21,7 +21,7 @@ the recovered weights and profiles against the truth after matching the
 classes.
 
 Usage:
-  bench.py <iqtree_binary> <out_dir> [--quick | --full | --thorough | --mini] [--big] [-j N]
+  bench.py <iqtree_binary> <out_dir> [--quick | --full | --thorough | --mini | --sizegate] [--big] [-j N]
            [--threads 1,8] [--repeats N] [--seeds 101,102] [--only name,name] [--dry-run]
 
 --thorough: LG+F10, GTR20+F12 and GTR20+C60 (linked exchangeabilities, with
@@ -42,7 +42,18 @@ actually finishes in reasonable time; same truth methodology and arms as
 --thorough. -j defaults to 25% of the cores (a --thorough run holds 50%, so
 both together stay within 75% of the machine).
 
-In the --thorough and --mini tiers every simulated dataset also gets a
+--sizegate: does the em_enabled_ = ndim>=50 gate (model/gradientoptimizer.cpp)
+matter below 50 parameters? 7 small families x 4 rate-heterogeneity variants
+(bare, +I, +I+G4, +I+R4), 40 taxa, arms old-default / new-gate (today's
+behaviour) / new-force (--ag-force bypasses the gate). Plain: GTR (DNA), LG
+(protein) - R axis only, no mixture. Mixtures, all <=50 params even at
++I+R4: MIX{GTR+FO,GTR+FO} (unlinked 2-class DNA), GTR+F4 (linked 4-class
+DNA), MIX{HKY+FO,GTR+FO} (unlinked, heterogeneous base models), LG+F2
+(protein) - all F+W axes; LG+C10 -mwopt (fixed profiles, weights free) - W
+axis only. S (exchangeabilities) never has an EM axis in any case, mixture
+or not. -j defaults to 50% of the cores.
+
+In the --thorough, --mini and --sizegate tiers every simulated dataset also gets a
 `truth` row: the log-likelihood of the simulation model itself on the true
 tree with fixed branch lengths (-blfix), i.e. no optimisation at all. It is
 a reference for the lnL columns, not an optimiser arm (no speed-up, excluded
@@ -144,6 +155,32 @@ def random_c60_mix(base, seed):
 IG = "+I{0.15}+G4{0.5}"
 IR10 = "+I{0.1}+R10{0.2,0.05,0.16,0.15,0.14,0.3,0.12,0.5,0.1,0.75,0.08,1.0,0.07,1.4,0.06,1.9,0.04,2.6,0.03,3.8}"
 
+# sizegate tier: the same 4 RHAS variants (fit-string suffix, matching AliSim truth
+# suffix) applied to every small-parameter family, to check whether the EM/cascade
+# size gate (ndim >= 50) should stay
+SIZEGATE_RHAS = [
+    ("", ""),
+    ("+I", "+I{0.1}"),
+    ("+I+G4", "+I{0.1}+G4{0.6}"),
+    ("+I+R4", "+I{0.1}+R4{0.15,0.2,0.35,0.6,0.35,1.4,0.15,2.4}"),
+]
+
+
+def sizegate_family(datasets, prefix, sim_base, fit_base, ntaxa, length, extra=""):
+    """add 4 dataset entries (one per SIZEGATE_RHAS variant) for one small-parameter family;
+    sim_base is an AliSim model string or callable(seed) -> string, without any RHAS suffix;
+    fit_base is the corresponding -m argument (no RHAS); extra is appended after the RHAS
+    suffix in the fit model field (e.g. "-mwopt"), same convention as elsewhere in DATASETS"""
+    tags = ["bare", "i", "ig", "ir4"]
+    for tag, (ffit, ftruth) in zip(tags, SIZEGATE_RHAS):
+        if callable(sim_base):
+            sim = (lambda s, sim_base=sim_base, ftruth=ftruth: sim_base(s) + ftruth)
+        else:
+            sim = sim_base + ftruth
+        model = fit_base + ffit + ((" " + extra) if extra else "")
+        datasets["sg_%s_%s" % (prefix, tag)] = dict(sim=(sim, ntaxa, length), model=model, tier="sizegate")
+
+
 # name -> dict(sim=(alisim model | callable(seed) -> model, ntaxa, length) | real=path | alias_of=name,
 #              model=iqtree model args, tier)
 # tier "thorough": three model families with several rate-heterogeneity variants (32 taxa x 3000 sites)
@@ -180,6 +217,26 @@ DATASETS = {
     "sim_gtr20_f60_r8":     dict(sim=("LG+C60" + R8, 50, 20000), model="GTR20+F60+R8 --gtr20-model LG", tier="big"),
 }
 
+sizegate_family(DATASETS, "gtr", "GTR{1.5,3,0.8,1.2,2.5}+F{0.3,0.2,0.2,0.3}", "GTR", 40, 2000)
+sizegate_family(DATASETS, "lg", "LG", "LG", 40, 1500)
+sizegate_family(DATASETS, "mix2dna",
+                "MIX{GTR{1.5,3,0.8,1.2,2.5}+F{0.35/0.15/0.15/0.35}:1:0.4,"
+                "GTR{0.8,2,1.3,0.9,2.8}+F{0.15/0.35/0.35/0.15}:1:0.6}",
+                "MIX{GTR+FO,GTR+FO}", 40, 2000)
+sizegate_family(DATASETS, "f4dna",
+                "MIX{GTR{1.4,2.8,0.9,1.1,2.3}+F{0.4/0.2/0.2/0.2}:1:0.2,"
+                "GTR{1.4,2.8,0.9,1.1,2.3}+F{0.2/0.4/0.2/0.2}:1:0.25,"
+                "GTR{1.4,2.8,0.9,1.1,2.3}+F{0.2/0.2/0.4/0.2}:1:0.25,"
+                "GTR{1.4,2.8,0.9,1.1,2.3}+F{0.2/0.2/0.2/0.4}:1:0.3}",
+                "GTR+F4", 40, 2000)
+sizegate_family(DATASETS, "hetmix",
+                "MIX{HKY{3.5}+F{0.3/0.2/0.2/0.3}:1:0.45,GTR{1.2,2.5,0.7,1.0,2.0}+F{0.2/0.3/0.3/0.2}:1:0.55}",
+                "MIX{HKY+FO,GTR+FO}", 40, 2000)
+sizegate_family(DATASETS, "lgf2", (lambda s: random_profile_mix("LG", 2, s)), "LG+F2", 40, 1500)
+sizegate_family(DATASETS, "c10w", "LG+C10", "LG+C10", 40, 1500, extra="-mwopt")
+
+SIZEGATE_ARMS = ["old-default", "new-gate", "new-force"]
+
 ARMS = {
     "old-default": ("", "quick"),
     "new-warm":    ("--analytical-gradients --ag-stats", "quick"),
@@ -192,6 +249,11 @@ ARMS = {
     "new-cascade":    ("--analytical-gradients --ag-stats --ag-cascade on", "thorough"),
     "new-noem":       ("--analytical-gradients --ag-stats --ag-em-axes none", "thorough"),   # "none": no W/R/F letters -> no EM step
     "new-cold-multi": ("--analytical-gradients --ag-stats --ag-start cold --ag-multistart -1", "thorough"),
+    # sizegate tier: does the ndim>=50 EM/cascade gate matter below 50 parameters?
+    # new-gate is today's actual default behaviour; new-force bypasses the gate
+    # (--ag-force is otherwise a no-op, see docs/analytical-gradients-design.md sec 10)
+    "new-gate":  ("--analytical-gradients --ag-stats", "sizegate"),
+    "new-force": ("--analytical-gradients --ag-stats --ag-force", "sizegate"),
 }
 THOROUGH_ARMS = ["old-default", "new-warm", "new-cascade", "new-cold", "new-multi", "new-noem", "new-cold-multi"]
 MINI_ARMS = THOROUGH_ARMS   # same set; the point of this tier is small enough data that old-default finishes
@@ -235,12 +297,27 @@ def truth_from_alisim(model):
     if end < 0:
         return None
     comps = []
-    for part in model[4:end].split(","):
+    for part in split_top_level(model[4:end]):
         mm = re.match(r".*\+F\{([^}]*)\}:1:([0-9.]+)$", part)
         if not mm:
             return None
         comps.append((float(mm.group(2)), [float(x) for x in mm.group(1).split("/")]))
     return comps
+
+
+def split_top_level(s):
+    """split on commas at brace depth 0 (so per-class model params like GTR{1,2,3} are not split)"""
+    parts, depth, start = [], 0, 0
+    for i, ch in enumerate(s):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            parts.append(s[start:i])
+            start = i + 1
+    parts.append(s[start:])
+    return parts
 
 
 def read_truth(prefix):
@@ -384,6 +461,7 @@ def main(argv):
         elif a == "--full": mode, threads, repeats = "full", [1, 8], 3
         elif a == "--thorough": mode, seeds, jobs = "thorough", [101, 102, 103], max(1, min(28, int((os.cpu_count() or 4) * 0.5)))
         elif a == "--mini": mode, seeds, jobs = "mini", [101, 102], max(1, min(14, int((os.cpu_count() or 4) * 0.25)))
+        elif a == "--sizegate": mode, seeds, jobs = "sizegate", [101, 102], max(1, min(28, int((os.cpu_count() or 4) * 0.5)))
         elif a == "--big": big = True
         elif a == "--dry-run": dry = True
         elif a == "-j": i += 1; jobs = int(argv[i])
@@ -395,12 +473,14 @@ def main(argv):
             print("unknown argument", a); return 2
         i += 1
     os.makedirs(out_dir, exist_ok=True)
-    tiers = {"quick"} if mode == "quick" else {"quick", "full"} if mode == "full" else {"thorough"} if mode == "thorough" else {"mini"}
+    tiers = {"quick"} if mode == "quick" else {"quick", "full"} if mode == "full" else {mode}
     if big:
         tiers.add("big")
     datasets = {n: d for n, d in DATASETS.items() if d["tier"] in tiers and (only is None or n in only)}
     if mode in ("thorough", "mini"):
         arms = {n: ARMS[n][0] for n in (THOROUGH_ARMS if mode == "thorough" else MINI_ARMS)}
+    elif mode == "sizegate":
+        arms = {n: ARMS[n][0] for n in SIZEGATE_ARMS}
     else:
         arms = {n: a for n, (a, t) in ARMS.items() if t in tiers}
 
@@ -442,7 +522,7 @@ def main(argv):
         modes = ["te"] if tree else []
         if not tree or mode == "full":
             modes.append("search")
-        if tree and truth is not None and mode in ("thorough", "mini"):
+        if tree and truth is not None and mode in ("thorough", "mini", "sizegate"):
             for thr in threads:
                 tasks.append((name, seed, "te", thr, "truth", 0, aln, tree, truth, sim_model(d, seed), "-blfix"))
         for tmode in modes:

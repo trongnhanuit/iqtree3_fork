@@ -7469,7 +7469,7 @@ void Params::setDefault() {
     ag_em_ratios = "1,2,5,10";
     ag_cascade = false;
     ag_polish = "per-level";
-    ag_em_axes = "F,W,R";
+    ag_em_axes = "W,R,F";
     ag_stats = false;
     ag_abort_after = "";
     ag_dump_gradient = false;

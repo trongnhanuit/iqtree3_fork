@@ -293,19 +293,32 @@ precision, multi-start, checkpointing of the optimiser's own state.
 ## 10. EM axes and cascading precision (version 1.1)
 
 Each round of section 9 also runs, before the polish, one accept-or-revert
-M-step per axis listed in `--ag-em-axes` (default `F,W,R`, subject only to
+M-step per axis listed in `--ag-em-axes` (default `W,R,F`, subject only to
 that option; see the note below on the parameter-count gate this used to
 also require):
 
-* **F** profiles of `+FO` classes: posterior class memberships (summed
-  over rate categories) times the site compositions, with a pseudo-count
-  of 0.5; a full step is tried, then a geometric half step;
 * **W** mixture weights: `ModelMixture::optimizeWeights`, the EM of Wang
   et al. (2008) on the class posteriors;
 * **R** site rates: `RateFree::optimizeWithEM` for `+R` (rates and
   proportions, with per-category tree scaling), otherwise the rate model's
   own optimiser (Brent on alpha and/or p_inv). Afterwards the mean rate is
   moved onto the branch lengths as the default epilogue does.
+* **F** profiles of `+FO` classes: posterior class memberships (summed
+  over rate categories) times the site compositions, with a pseudo-count
+  of 0.5; a full step is tried, then a geometric half step;
+
+A dedicated `--emorder` benchmark (`test_scripts/ag/bench.py`) compared
+`W,R,F` against `F,W,R` on 5 randomised families (profiles, weights and,
+for the GTR/GTR20 families, exchangeabilities all drawn per seed). The two
+orders were indistinguishable on small mixtures (`LG+F2`, `GTR+F4`, a
+2-component `MIX`), `F,W,R` was 2-5 lnL units better and 2-2.6x faster on
+`LG+F4+R4`, but on the largest family tested (`GTR20+F8+I+R4`, 8 profile
+classes over 20 states with linked GTR20 exchangeabilities) `W,R,F` found
+an optimum 157-191 lnL units better on both seeds, at roughly 2.2-2.6x the
+wall time. `W,R,F` is the default because that failure mode is worse and
+the family it appears on (many linked profile classes) is the harder,
+more realistic case; `--ag-em-axes F,W,R` recovers the faster order where
+it is known to help.
 
 Every axis snapshots the state (theta and branch lengths), runs its
 M-step, renormalises through `pack`/`unpack` (floors, mean rate 1,
@@ -458,7 +471,7 @@ two thread counts and three timing repeats.
 | `--ag-udm-name NAME` | above C60, warm-start from NAME's profiles (via `-mdef`) instead of jitter |
 | `--ag-warm-select index|weight` | borrow the first K, or (default) the K highest-weighted, reference profiles |
 | `--ag-multistart N` | N jittered start candidates, refined by EM; 0 (default) off, -1 automatic |
-| `--ag-em-axes F,W,R` | EM axes per round (profiles, weights, rates); empty disables EM |
+| `--ag-em-axes W,R,F` | EM axes per round (weights, rates, profiles); empty disables EM |
 | `--ag-cascade on|off` | precision cascade (default off) |
 | `--ag-polish final|per-level` | polish at the target level only or at every cascade level (default) |
 | `--ag-optalg BFGS|LBFGSB` | driver of the joint polish |

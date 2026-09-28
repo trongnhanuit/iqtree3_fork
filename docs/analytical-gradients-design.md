@@ -369,7 +369,12 @@ NNI refits and +I+G restarts keep their current parameters.
   `NAMEpi#`, so an unmodified UDM file from Schrempf et al. 2020,
   https://github.com/dschrempf/EDCluster, works as-is). IQ-TREE bundles
   no UDM data itself, avoiding the GPLv3 vs. GPLv2-or-later question.
-  An insufficient `NAME` is an error, not a silent fallback.
+  An insufficient `NAME` is an error, not a silent fallback. By default
+  the first K components (by declared order) are borrowed; `--ag-warm-select
+  weight` borrows the K highest-weighted ones instead, reading weights from
+  the family's own composite entry (`model C10 = ...FMIX{C10pi1:1:w,...}`,
+  or `frequency NAME = FMIX{NAME_C0000:1:w,...}` for a UDM file); missing
+  weights are an error there too.
 * **cold** (`--ag-start cold`): every `+FO` profile is drawn as
   `pi_k proportional to pi_emp,k * exp(0.9 z_k)`, `z ~ N(0,1)`, around the
   empirical frequencies, with equal mixture weights.
@@ -451,6 +456,7 @@ two thread counts and three timing repeats.
 | `--analytical-gradients` | use the analytic optimiser for supported models (others fall back with a NOTE) |
 | `--ag-start warm|cold` | C-series warm start (default) or random cold start of the profiles |
 | `--ag-udm-name NAME` | above C60, warm-start from NAME's profiles (via `-mdef`) instead of jitter |
+| `--ag-warm-select index|weight` | borrow the first K or the K highest-weighted reference profiles |
 | `--ag-multistart N` | N jittered start candidates, refined by EM; 0 (default) off, -1 automatic |
 | `--ag-em-axes W,R,F` | EM axes per round (weights, rates, profiles); empty disables EM |
 | `--ag-cascade on|off` | precision cascade (default off) |

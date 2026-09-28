@@ -27,6 +27,10 @@
 
 using namespace std;
 
+// brace-aware top-level comma splitter (model/modelmixture.cpp), reused so
+// weight parsing handles nested braces exactly like the real model-string parser
+size_t getNextModelPos(string &s, size_t curr_pos);
+
 /* ---------------------------------------------------------------------- */
 /* capability check                                                        */
 /* ---------------------------------------------------------------------- */
@@ -81,6 +85,33 @@ string sideLabel(Node *node, Node *dad) {
 string zeroPad4(int v) {
     string s = convertIntToString(v);
     return string(max(0, 4 - (int)s.size()), '0') + s;
+}
+
+// FMIX{name:rate:weight,...} -> [(name, weight), ...], highest weight first.
+// A bare "name" or "name:rate" (no weight) is what the real parser defaults
+// to weight 1 for every entry, indistinguishable from genuinely uniform
+// weights, so any entry missing an explicit weight fails this parse.
+bool parseFmixWeights(const string &description, vector<pair<string, double>> &out) {
+    size_t p = description.find("FMIX{");
+    if (p == string::npos) return false;
+    p += 5;
+    size_t depth = 1, end = string::npos;
+    for (size_t i = p; i < description.size() && depth > 0; i++) {
+        if (description[i] == '{') depth++;
+        else if (description[i] == '}' && --depth == 0) end = i;
+    }
+    if (end == string::npos) return false;
+    string inner = description.substr(p, end - p);
+    for (size_t cur = 0; cur < inner.length(); ) {
+        size_t pos = getNextModelPos(inner, cur);
+        string entry = inner.substr(cur, pos - cur);
+        size_t c1 = entry.find(':'), c2 = (c1 == string::npos) ? string::npos : entry.find(':', c1 + 1);
+        if (c2 == string::npos) return false;
+        out.push_back({entry.substr(0, c1), convert_double_with_distribution(entry.substr(c2 + 1).c_str(), true)});
+        cur = pos + 1;
+    }
+    sort(out.begin(), out.end(), [](auto &a, auto &b) { return a.second > b.second; });
+    return !out.empty();
 }
 
 double relErr(double a, double n, double gmax) {
@@ -300,41 +331,71 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
     // private, seeded generator (no global RNG state touched).
     string how;
     bool done = false;
+    // --ag-warm-select weight: borrow the K highest-weighted profiles of the
+    // reference family instead of the first K by declared order. Weights come
+    // from the family's own composite entry, e.g. "model C10 = ...FMIX{C10pi1:1:w,...}"
+    // or "frequency UDM0004CLR = FMIX{UDM0004CLR_C0000:1:w,...}"; either is found
+    // via findMixModel(). Every listed component must carry an explicit weight
+    // (see parseFmixWeights), or this is an error, not a silent fallback.
+    const bool by_weight = (Params::getInstance().ag_warm_select == "weight");
     if (S == 20 && est.size() <= 60) {
         int kk = 10;
         while (kk < (int)est.size()) kk += 10;
+        string family = "C" + convertIntToString(kk);
         ModelsBlock *models_block = readModelsDefinition(Params::getInstance());
+        vector<string> names;
         bool all = true;
+        if (by_weight) {
+            vector<pair<string, double>> w;
+            NxsModel *composite = models_block->findMixModel(family);
+            all = composite && parseFmixWeights(composite->description, w) && w.size() >= est.size();
+            if (!all) outError("--ag-warm-select weight: " + family + " does not publish per-component weights");
+            for (size_t m = 0; m < est.size(); m++) names.push_back(w[m].first);
+        } else {
+            for (size_t m = 0; m < est.size(); m++) names.push_back(family + "pi" + convertIntToString((int)m + 1));
+        }
         vector<string> descr;
-        for (size_t m = 0; m < est.size() && all; m++) {
-            NxsModel *fm = models_block->findModel("C" + convertIntToString(kk) + "pi" + convertIntToString((int)m + 1));
+        for (size_t m = 0; all && m < names.size(); m++) {
+            NxsModel *fm = models_block->findModel(names[m]);
             if (!fm || !(fm->flag & NM_FREQ)) all = false; else descr.push_back(fm->description);
         }
         delete models_block;
         if (all) {
             for (size_t m = 0; m < est.size(); m++) est[m]->readStateFreq(descr[m]);
-            how = "C" + convertIntToString(kk) + " profiles";
+            how = family + " profiles" + (by_weight ? " (top by weight)" : "");
             done = true;
         }
     }
-    // --ag-udm-name: profiles from a name loaded via -mdef (e.g. a UDM file, not bundled
-    // here). Tries both EDCluster's "<name>_C####" and this codebase's "<name>pi#".
+    // --ag-udm-name: profiles from a name loaded via -mdef (e.g. a UDM file, not
+    // bundled here). Index mode tries both EDCluster's "<name>_C####" and this
+    // codebase's "<name>pi#"; weight mode reads them straight off the composite.
     if (!done && !Params::getInstance().ag_udm_name.empty()) {
         const string &name = Params::getInstance().ag_udm_name;
         ModelsBlock *models_block = readModelsDefinition(Params::getInstance());
+        vector<string> names;
         bool all = true;
+        if (by_weight) {
+            vector<pair<string, double>> w;
+            NxsModel *composite = models_block->findMixModel(name);
+            all = composite && parseFmixWeights(composite->description, w) && w.size() >= est.size();
+            if (!all) outError("--ag-warm-select weight: '" + name + "' does not publish a weighted composite "
+                               "entry (expected 'frequency " + name + " = FMIX{...:rate:weight,...}')");
+            for (size_t m = 0; m < est.size(); m++) names.push_back(w[m].first);
+        } else {
+            for (size_t m = 0; m < est.size(); m++) names.push_back(name + "_C" + zeroPad4((int)m));
+        }
         vector<string> descr;
-        for (size_t m = 0; m < est.size() && all; m++) {
-            NxsModel *fm = models_block->findModel(name + "_C" + zeroPad4((int)m));
-            if (!fm) fm = models_block->findModel(name + "pi" + convertIntToString((int)m + 1));
+        for (size_t m = 0; all && m < names.size(); m++) {
+            NxsModel *fm = models_block->findModel(names[m]);
+            if (!fm && !by_weight) fm = models_block->findModel(name + "pi" + convertIntToString((int)m + 1));
             if (!fm || !(fm->flag & NM_FREQ)) all = false; else descr.push_back(fm->description);
         }
         delete models_block;
         if (all) {
             for (size_t m = 0; m < est.size(); m++) est[m]->readStateFreq(descr[m]);
-            how = "\"" + name + "\" profiles (--ag-udm-name)";
+            how = "\"" + name + "\" profiles (--ag-udm-name" + (by_weight ? ", top by weight)" : ")");
             done = true;
-        } else {
+        } else if (!by_weight) {
             outError("--ag-udm-name '" + name + "' does not define " + convertIntToString((int)est.size()) +
                       " frequency profiles (looked for '" + name + "_C####' and '" + name + "pi#'); "
                       "load them first with -mdef <file.nex>");

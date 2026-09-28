@@ -361,6 +361,37 @@ run_udm_start() {   # K>60 warm start: no name warns+jitters; a valid name is us
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
+run_warm_select() {   # --ag-warm-select weight picks the top-K by published weight, not the first K
+    local id="q_warm_select"
+    local dir="$OUT_DIR/$id" rc=0
+    mkdir -p "$dir"
+    local FIX="$HERE/data/synthetic_udm_fixture.nex"
+    (
+        cd "$dir" || exit 1
+        local ARGS="-s $EX/example.phy -m MIX{GTR+FO,GTR+FO}+G4 -te $HERE/data/example_gtr_g.nwk -mdef $FIX -nt 1 -seed $SEED --analytical-gradients --ag-abort-after init -redo --ag-udm-name TESTUDMW"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS --ag-warm-select weight --prefix w > w.stdout 2>&1
+        grep -q "top by weight" w.stdout || { echo "  weight mode did not report as such"; exit 1; }
+        zcat w.ckp.gz | grep -oE "state_freq: 0\.7, 0\.1, 0\.1, 0\.1|state_freq: 0\.1, 0\.1, 0\.1, 0\.7" | wc -l | grep -q 1 \
+            || { echo "  weight mode did not pick the two highest-weighted profiles (C0001, C0003)"; exit 1; }
+        echo "  weight mode: picked the two highest-weighted profiles, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS --ag-warm-select index --prefix i > i.stdout 2>&1
+        ! grep -q "top by weight" i.stdout || { echo "  index mode reported weight selection"; exit 1; }
+        zcat i.ckp.gz | grep -oE "state_freq: 0\.7, 0\.1, 0\.1, 0\.1|state_freq: 0\.1, 0\.7, 0\.1, 0\.1" | wc -l | grep -q 2 \
+            || { echo "  index mode did not pick the first two profiles by declared order"; exit 1; }
+        echo "  index mode (default): unchanged, first-by-order, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS --ag-udm-name TESTUDMNOWT --ag-warm-select weight --prefix e > e.stdout 2>&1
+        [ "$?" != "0" ] || { echo "  a composite with no published weights should have failed but exited 0"; exit 1; }
+        grep -q "does not publish a weighted composite entry" e.stdout || { echo "  the expected error message was not printed"; exit 1; }
+        echo "  no published weights: errored rather than defaulting silently, PASS"
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
 # ---- robust suite: integration behaviour of the live optimiser ----
 robust_case() {   # id: runs the named check inside its own directory, marker FAIL on non-zero exit
     local id="$1"
@@ -479,6 +510,7 @@ if [ "$SUITE" = "quality" ] || [ "$SUITE" = "all" ]; then
     ORDER+=("q_recovery"); throttle; run_recovery &
     ORDER+=("q_starts"); throttle; run_starts &
     ORDER+=("q_udm_start"); throttle; run_udm_start &
+    ORDER+=("q_warm_select"); throttle; run_warm_select &
 fi
 if [ "$SUITE" = "robust" ] || [ "$SUITE" = "all" ]; then
     for id in "${ROBUST[@]}"; do ORDER+=("$id"); throttle; robust_case "$id" & done

@@ -1340,6 +1340,15 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.ag_udm_name = argv[cnt];
                 continue;
             }
+            if (strcmp(argv[cnt], "--ag-warm-select") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-warm-select <index|weight>";
+                if (strcmp(argv[cnt], "index") != 0 && strcmp(argv[cnt], "weight") != 0)
+                    throw "Invalid option for --ag-warm-select: use 'index' or 'weight'";
+                params.ag_warm_select = argv[cnt];
+                continue;
+            }
             if (strcmp(argv[cnt], "--ag-em-ratios") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -7456,6 +7465,7 @@ void Params::setDefault() {
     ag_multistart_budget = 500;
     ag_start = "warm";
     ag_udm_name = "";
+    ag_warm_select = "index";
     ag_em_ratios = "1,2,5,10";
     ag_cascade = false;
     ag_polish = "per-level";

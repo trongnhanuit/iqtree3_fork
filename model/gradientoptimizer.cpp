@@ -77,6 +77,12 @@ string sideLabel(Node *node, Node *dad) {
     return s;
 }
 
+// zero-padded 4-digit index (EDCluster naming, e.g. "_C0000")
+string zeroPad4(int v) {
+    string s = convertIntToString(v);
+    return string(max(0, 4 - (int)s.size()), '0') + s;
+}
+
 double relErr(double a, double n, double gmax) {
     double d = max(max(fabs(a), fabs(n)), 1e-6 * gmax);
     return d > 0 ? fabs(a - n) / d : 0.0;
@@ -311,7 +317,34 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
             done = true;
         }
     }
+    // --ag-udm-name: profiles from a name loaded via -mdef (e.g. a UDM file, not bundled
+    // here). Tries both EDCluster's "<name>_C####" and this codebase's "<name>pi#".
+    if (!done && !Params::getInstance().ag_udm_name.empty()) {
+        const string &name = Params::getInstance().ag_udm_name;
+        ModelsBlock *models_block = readModelsDefinition(Params::getInstance());
+        bool all = true;
+        vector<string> descr;
+        for (size_t m = 0; m < est.size() && all; m++) {
+            NxsModel *fm = models_block->findModel(name + "_C" + zeroPad4((int)m));
+            if (!fm) fm = models_block->findModel(name + "pi" + convertIntToString((int)m + 1));
+            if (!fm || !(fm->flag & NM_FREQ)) all = false; else descr.push_back(fm->description);
+        }
+        delete models_block;
+        if (all) {
+            for (size_t m = 0; m < est.size(); m++) est[m]->readStateFreq(descr[m]);
+            how = "\"" + name + "\" profiles (--ag-udm-name)";
+            done = true;
+        } else {
+            outError("--ag-udm-name '" + name + "' does not define " + convertIntToString((int)est.size()) +
+                      " frequency profiles (looked for '" + name + "_C####' and '" + name + "pi#'); "
+                      "load them first with -mdef <file.nex>");
+        }
+    }
     if (!done) {
+        if (S == 20 && est.size() > 60)
+            outWarning("AG: " + convertIntToString((int)est.size()) + " classes exceed C60; jittering. "
+                       "For real profiles: -mdef <file.nex> --ag-udm-name <NAME> "
+                       "(e.g. a UDM file from https://github.com/dschrempf/EDCluster).");
         std::mt19937_64 rng((unsigned long long)Params::getInstance().ran_seed + 7919ULL);
         std::normal_distribution<double> normal(0.0, 1.0);
         const double A = 0.1;

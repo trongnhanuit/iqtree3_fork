@@ -361,7 +361,7 @@ run_udm_start() {   # K>60 warm start: no name warns+jitters; a valid name is us
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
-run_warm_select() {   # --ag-warm-select weight picks the top-K by published weight, not the first K
+run_warm_select() {   # --ag-warm-select index|weight|sample: first-K, top-K-by-weight, or a weighted draw
     local id="q_warm_select"
     local dir="$OUT_DIR/$id" rc=0
     mkdir -p "$dir"
@@ -386,6 +386,33 @@ run_warm_select() {   # --ag-warm-select weight picks the top-K by published wei
         [ "$?" != "0" ] || { echo "  a composite with no published weights should have failed but exited 0"; exit 1; }
         grep -q "does not publish a weighted composite entry" e.stdout || { echo "  the expected error message was not printed"; exit 1; }
         echo "  no published weights: errored rather than defaulting silently, PASS"
+        # sample mode: K=2 distinct profiles drawn without replacement, weighted by publication weight
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS --ag-warm-select sample --prefix s1 > s1.stdout 2>&1
+        grep -q "sampled by weight" s1.stdout || { echo "  sample mode did not report as such"; exit 1; }
+        local picks; picks=$(zcat s1.ckp.gz | grep -oE "state_freq: 0\.7, 0\.1, 0\.1, 0\.1|state_freq: 0\.1, 0\.7, 0\.1, 0\.1|state_freq: 0\.1, 0\.1, 0\.7, 0\.1|state_freq: 0\.1, 0\.1, 0\.1, 0\.7")
+        [ "$(echo "$picks" | wc -l)" = "2" ] || { echo "  sample mode did not pick exactly 2 profiles"; exit 1; }
+        [ "$(echo "$picks" | sort -u | wc -l)" = "2" ] || { echo "  sample mode picked the same profile twice"; exit 1; }
+        echo "  sample mode: 2 distinct profiles, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS --ag-warm-select sample --prefix s2 > s2.stdout 2>&1
+        diff <(zcat s1.ckp.gz | grep "state_freq:") <(zcat s2.ckp.gz | grep "state_freq:") > /dev/null \
+            || { echo "  sample mode was not reproducible under the same seed"; exit 1; }
+        echo "  sample mode: reproducible under the same seed, PASS"
+        # K == total published components: nothing to sample, sample coincides with weight
+        local ARGS4="-s $EX/example.phy -m MIX{GTR+FO,GTR+FO,GTR+FO,GTR+FO}+G4 -te $HERE/data/example_gtr_g.nwk -mdef $FIX -nt 1 -seed $SEED --analytical-gradients --ag-abort-after init -redo --ag-udm-name TESTUDMW"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS4 --ag-warm-select weight --prefix w4 > w4.stdout 2>&1
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS4 --ag-warm-select sample --prefix s4 > s4.stdout 2>&1
+        diff <(zcat w4.ckp.gz | grep "state_freq:") <(zcat s4.ckp.gz | grep "state_freq:") > /dev/null \
+            || { echo "  sample mode did not match weight mode when K equals the published total"; exit 1; }
+        echo "  sample mode with K == total: matches weight mode, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS --ag-udm-name TESTUDMNOWT --ag-warm-select sample --prefix es > es.stdout 2>&1
+        [ "$?" != "0" ] || { echo "  sample mode with no published weights should have failed but exited 0"; exit 1; }
+        grep -q "does not publish a weighted composite entry" es.stdout || { echo "  the expected error message was not printed (sample mode)"; exit 1; }
+        echo "  sample mode, no published weights: errored rather than defaulting silently, PASS"
     ) > "$REP/$id.txt" 2>&1
     rc=$?
     (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"

@@ -1856,7 +1856,7 @@ public:
     string ag_start;
     /** --ag-udm-name NAME: above C60, warm-start from NAME's profiles (via -mdef) instead of jitter */
     string ag_udm_name;
-    /** --ag-warm-select <index|weight>: which K reference profiles to borrow for warm-start (default weight) */
+    /** --ag-warm-select <index|weight|sample>: which K reference profiles to borrow for warm-start (default weight) */
     string ag_warm_select;
     /** --ag-em-ratios list: profile:weight EM ratios used in multi-start refinement */
     string ag_em_ratios;

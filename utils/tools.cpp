@@ -1343,9 +1343,9 @@ void parseArg(int argc, char *argv[], Params &params) {
             if (strcmp(argv[cnt], "--ag-warm-select") == 0) {
                 cnt++;
                 if (cnt >= argc)
-                    throw "Use --ag-warm-select <index|weight>";
-                if (strcmp(argv[cnt], "index") != 0 && strcmp(argv[cnt], "weight") != 0)
-                    throw "Invalid option for --ag-warm-select: use 'index' or 'weight'";
+                    throw "Use --ag-warm-select <index|weight|sample>";
+                if (strcmp(argv[cnt], "index") != 0 && strcmp(argv[cnt], "weight") != 0 && strcmp(argv[cnt], "sample") != 0)
+                    throw "Invalid option for --ag-warm-select: use 'index', 'weight' or 'sample'";
                 params.ag_warm_select = argv[cnt];
                 continue;
             }

@@ -114,6 +114,29 @@ bool parseFmixWeights(const string &description, vector<pair<string, double>> &o
     return !out.empty();
 }
 
+// --ag-warm-select sample: draw K distinct entries from w, each proportional to its
+// published weight, without replacement. Reject-and-redraw against the fixed cumulative
+// distribution: equivalent to renormalizing over the remaining pool at each step, but
+// needs no rebuild. Falls back to filling any leftover slots in place if some entries
+// have (near-)zero weight and would otherwise never be drawn.
+vector<string> sampleNamesByWeight(const vector<pair<string, double>> &w, size_t K, uint64_t seed) {
+    vector<double> cum(w.size());
+    double sum = 0.0;
+    for (size_t i = 0; i < w.size(); i++) { sum += w[i].second; cum[i] = sum; }
+    mt19937_64 rng(seed);
+    uniform_real_distribution<double> unif(0.0, sum);
+    vector<bool> taken(w.size(), false);
+    vector<string> names;
+    for (size_t tries = 0; names.size() < K && tries < 1000000; tries++) {
+        size_t i = lower_bound(cum.begin(), cum.end(), unif(rng)) - cum.begin();
+        if (i >= w.size()) i = w.size() - 1;
+        if (!taken[i]) { taken[i] = true; names.push_back(w[i].first); }
+    }
+    for (size_t i = 0; names.size() < K && i < w.size(); i++)
+        if (!taken[i]) { taken[i] = true; names.push_back(w[i].first); }
+    return names;
+}
+
 double relErr(double a, double n, double gmax) {
     double d = max(max(fabs(a), fabs(n)), 1e-6 * gmax);
     return d > 0 ? fabs(a - n) / d : 0.0;
@@ -331,13 +354,16 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
     // private, seeded generator (no global RNG state touched).
     string how;
     bool done = false;
-    // --ag-warm-select weight: borrow the K highest-weighted profiles of the
-    // reference family instead of the first K by declared order. Weights come
-    // from the family's own composite entry, e.g. "model C10 = ...FMIX{C10pi1:1:w,...}"
+    // --ag-warm-select weight|sample: borrow K profiles of the reference family
+    // chosen by their published weight (top-K, or a weighted draw without
+    // replacement) instead of the first K by declared order. Weights come from
+    // the family's own composite entry, e.g. "model C10 = ...FMIX{C10pi1:1:w,...}"
     // or "frequency UDM0004CLR = FMIX{UDM0004CLR_C0000:1:w,...}"; either is found
     // via findMixModel(). Every listed component must carry an explicit weight
     // (see parseFmixWeights), or this is an error, not a silent fallback.
-    const bool by_weight = (Params::getInstance().ag_warm_select == "weight");
+    const string &warm_select = Params::getInstance().ag_warm_select;
+    const bool by_weight = (warm_select == "weight" || warm_select == "sample");
+    const bool by_sample = (warm_select == "sample");
     if (S == 20 && est.size() <= 60) {
         int kk = 10;
         while (kk < (int)est.size()) kk += 10;
@@ -349,8 +375,11 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
             vector<pair<string, double>> w;
             NxsModel *composite = models_block->findMixModel(family);
             all = composite && parseFmixWeights(composite->description, w) && w.size() >= est.size();
-            if (!all) outError("--ag-warm-select weight: " + family + " does not publish per-component weights");
-            for (size_t m = 0; m < est.size(); m++) names.push_back(w[m].first);
+            if (!all) outError("--ag-warm-select " + warm_select + ": " + family + " does not publish per-component weights");
+            if (by_sample && w.size() > est.size())
+                names = sampleNamesByWeight(w, est.size(), (uint64_t)Params::getInstance().ran_seed + 104729ULL);
+            else
+                for (size_t m = 0; m < est.size(); m++) names.push_back(w[m].first);
         } else {
             for (size_t m = 0; m < est.size(); m++) names.push_back(family + "pi" + convertIntToString((int)m + 1));
         }
@@ -362,13 +391,13 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
         delete models_block;
         if (all) {
             for (size_t m = 0; m < est.size(); m++) est[m]->readStateFreq(descr[m]);
-            how = family + " profiles" + (by_weight ? " (top by weight)" : "");
+            how = family + " profiles" + (by_sample ? " (sampled by weight)" : by_weight ? " (top by weight)" : "");
             done = true;
         }
     }
     // --ag-udm-name: profiles from a name loaded via -mdef (e.g. a UDM file, not
     // bundled here). Index mode tries both EDCluster's "<name>_C####" and this
-    // codebase's "<name>pi#"; weight mode reads them straight off the composite.
+    // codebase's "<name>pi#"; weight/sample modes read them straight off the composite.
     if (!done && !Params::getInstance().ag_udm_name.empty()) {
         const string &name = Params::getInstance().ag_udm_name;
         ModelsBlock *models_block = readModelsDefinition(Params::getInstance());
@@ -378,9 +407,12 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
             vector<pair<string, double>> w;
             NxsModel *composite = models_block->findMixModel(name);
             all = composite && parseFmixWeights(composite->description, w) && w.size() >= est.size();
-            if (!all) outError("--ag-warm-select weight: '" + name + "' does not publish a weighted composite "
+            if (!all) outError("--ag-warm-select " + warm_select + ": '" + name + "' does not publish a weighted composite "
                                "entry (expected 'frequency " + name + " = FMIX{...:rate:weight,...}')");
-            for (size_t m = 0; m < est.size(); m++) names.push_back(w[m].first);
+            if (by_sample && w.size() > est.size())
+                names = sampleNamesByWeight(w, est.size(), (uint64_t)Params::getInstance().ran_seed + 104729ULL);
+            else
+                for (size_t m = 0; m < est.size(); m++) names.push_back(w[m].first);
         } else {
             for (size_t m = 0; m < est.size(); m++) names.push_back(name + "_C" + zeroPad4((int)m));
         }
@@ -393,7 +425,7 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
         delete models_block;
         if (all) {
             for (size_t m = 0; m < est.size(); m++) est[m]->readStateFreq(descr[m]);
-            how = "\"" + name + "\" profiles (--ag-udm-name" + (by_weight ? ", top by weight)" : ")");
+            how = "\"" + name + "\" profiles (--ag-udm-name" + (by_sample ? ", sampled by weight)" : by_weight ? ", top by weight)" : ")");
             done = true;
         } else if (!by_weight) {
             outError("--ag-udm-name '" + name + "' does not define " + convertIntToString((int)est.size()) +

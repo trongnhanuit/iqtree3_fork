@@ -269,8 +269,9 @@ and stops when a round improves the log-likelihood by less than
 with the same terminal branch optimisation. Before round 1, identical `+FO`
 profiles (the `+Fk` default start) are made distinct, because they are a
 fixed point of every gradient method: protein models take the first `k`
-profiles of the smallest C-series with at least `k` classes, other data a
-light log-normal jitter from a private seeded generator.
+profiles of the smallest C-series with at least `k` classes (up to C60);
+above that, a light log-normal jitter, unless `--ag-udm-name` names an
+alternative (section 11).
 
 Safety nets: a non-finite likelihood inside a line search returns a huge
 value (a rejected step, never a crash); a gradient with a non-finite entry
@@ -337,7 +338,13 @@ optimisation only (the one that prints progress); ModelFinder candidates,
 NNI refits and +I+G restarts keep their current parameters.
 
 * **warm** (default): the parameters as IQ-TREE initialised them, with
-  identical `+FO` profiles made distinct (section 9).
+  identical `+FO` profiles made distinct (section 9). Above C60, the
+  default is jitter with a warning; `--ag-udm-name NAME` uses `NAME`'s
+  components instead, loaded via `-mdef` (trying `NAME_C####` and
+  `NAMEpi#`, so an unmodified UDM file from Schrempf et al. 2020,
+  https://github.com/dschrempf/EDCluster, works as-is). IQ-TREE bundles
+  no UDM data itself, avoiding the GPLv3 vs. GPLv2-or-later question.
+  An insufficient `NAME` is an error, not a silent fallback.
 * **cold** (`--ag-start cold`): every `+FO` profile is drawn as
   `pi_k proportional to pi_emp,k * exp(0.9 z_k)`, `z ~ N(0,1)`, around the
   empirical frequencies, with equal mixture weights.
@@ -418,6 +425,7 @@ two thread counts and three timing repeats.
 |---|---|
 | `--analytical-gradients` | use the analytic optimiser for supported models (others fall back with a NOTE) |
 | `--ag-start warm|cold` | C-series warm start (default) or random cold start of the profiles |
+| `--ag-udm-name NAME` | above C60, warm-start from NAME's profiles (via `-mdef`) instead of jitter |
 | `--ag-multistart N` | N jittered start candidates, refined by EM; 0 (default) off, -1 automatic |
 | `--ag-em-axes W,R,F` | EM axes per round (weights, rates, profiles); empty disables EM |
 | `--ag-cascade on|off` | precision cascade (default off) |

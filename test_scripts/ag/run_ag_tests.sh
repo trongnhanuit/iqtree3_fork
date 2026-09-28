@@ -339,7 +339,7 @@ run_udm_start() {   # K>60 warm start: no name warns+jitters; a valid name is us
     local FIX="$HERE/data/synthetic_udm_fixture.nex"   # synthetic, made-up profiles: no third-party data
     (
         cd "$dir" || exit 1
-        local ARGS="-s $EX/aa_example.phy -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-abort-after init -redo"
+        local ARGS="-s $EX/aa_example.phy -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-abort-after init --ag-warm-select index -redo"
         # shellcheck disable=SC2086
         "$BIN" $ARGS -m LG+F70 --prefix noname > noname.stdout 2>&1
         grep -q "classes exceed C60; jittering" noname.stdout || { echo "  no-name run did not warn about K>60"; exit 1; }
@@ -380,7 +380,7 @@ run_warm_select() {   # --ag-warm-select weight picks the top-K by published wei
         ! grep -q "top by weight" i.stdout || { echo "  index mode reported weight selection"; exit 1; }
         zcat i.ckp.gz | grep -oE "state_freq: 0\.7, 0\.1, 0\.1, 0\.1|state_freq: 0\.1, 0\.7, 0\.1, 0\.1" | wc -l | grep -q 2 \
             || { echo "  index mode did not pick the first two profiles by declared order"; exit 1; }
-        echo "  index mode (default): unchanged, first-by-order, PASS"
+        echo "  index mode: first-by-order, PASS"
         # shellcheck disable=SC2086
         "$BIN" $ARGS --ag-udm-name TESTUDMNOWT --ag-warm-select weight --prefix e > e.stdout 2>&1
         [ "$?" != "0" ] || { echo "  a composite with no published weights should have failed but exited 0"; exit 1; }

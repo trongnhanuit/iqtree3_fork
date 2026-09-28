@@ -7465,7 +7465,7 @@ void Params::setDefault() {
     ag_multistart_budget = 500;
     ag_start = "warm";
     ag_udm_name = "";
-    ag_warm_select = "index";
+    ag_warm_select = "weight";
     ag_em_ratios = "1,2,5,10";
     ag_cascade = false;
     ag_polish = "per-level";

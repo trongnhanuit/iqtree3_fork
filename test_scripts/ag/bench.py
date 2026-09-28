@@ -49,7 +49,15 @@ GTR/LG; mixtures MIX{GTR+FO,GTR+FO}, GTR+F4, MIX{HKY+FO,GTR+FO}, LG+F2,
 LG+C10 -mwopt) x 4 rate-heterogeneity variants, 40 taxa, arms old-default
 / new-gate. -j defaults to 50% of the cores.
 
-In the --thorough, --mini and --sizegate tiers every simulated dataset also gets a
+--emorder: does the EM axis order matter? 5 families with profiles, weights
+and rate heterogeneity all free at once (LG+F2+I+G4, LG+F4+R4, GTR+F4+I+R4,
+MIX{GTR+FO,GTR+FO}+I+G4, GTR20+F8+I+R4), two seeds, arms new-fwr (today's
+default order) / new-wrf (the original order). DNA/GTR20 truth
+exchangeabilities are random log-normal rates (random_gtr_mix), not a fixed
+matrix, alongside the usual random Dirichlet profiles/weights. -j defaults
+to 50% of the cores.
+
+In the --thorough, --mini, --sizegate and --emorder tiers every simulated dataset also gets a
 `truth` row: the log-likelihood of the simulation model itself on the true
 tree with fixed branch lengths (-blfix), i.e. no optimisation at all. It is
 a reference for the lnL columns, not an optimiser arm (no speed-up, excluded
@@ -148,8 +156,20 @@ def random_c60_mix(base, seed):
     return explicit_mix(base, [(w[i], prof["C60pi%d" % (i + 1)]) for i in range(60)])
 
 
+def random_gtr_mix(freq_center, nrates, k, seed, sigma=0.6):
+    """k random Dirichlet profiles/weights (as random_profile_mix) under a freshly drawn,
+    linked GTR/GTR20 exchangeability matrix: nrates i.i.d. log-normal rates (median 1),
+    seeded reproducibly. nrates=5 -> "GTR{...}" (DNA), 189 -> "GTR20{...}" (protein)."""
+    rng = random.Random("gtr-rates-%d-%d-%d" % (nrates, k, seed))
+    rates = [round(rng.lognormvariate(0.0, sigma), 6) for _ in range(nrates)]
+    subst = ("GTR{%s}" if nrates == 5 else "GTR20{%s}") % ",".join(str(r) for r in rates)
+    BASE_FREQ[subst] = freq_center   # register so random_profile_mix's Dirichlet logic applies unchanged
+    return random_profile_mix(subst, k, seed)
+
+
 IG = "+I{0.15}+G4{0.5}"
 IR10 = "+I{0.1}+R10{0.2,0.05,0.16,0.15,0.14,0.3,0.12,0.5,0.1,0.75,0.08,1.0,0.07,1.4,0.06,1.9,0.04,2.6,0.03,3.8}"
+IR4 = "+I{0.15}" + R4
 
 # sizegate tier: the same 4 RHAS variants (fit-string suffix, matching AliSim truth
 # suffix) applied to every small-parameter family, to check whether the EM/cascade
@@ -231,6 +251,16 @@ sizegate_family(DATASETS, "hetmix",
 sizegate_family(DATASETS, "lgf2", (lambda s: random_profile_mix("LG", 2, s)), "LG+F2", 40, 1500)
 sizegate_family(DATASETS, "c10w", "LG+C10", "LG+C10", 40, 1500, extra="-mwopt")
 
+# emorder tier: EM axis order (F,W,R vs W,R,F), 5 families with profiles+weights+rates
+# all free at once; DNA/GTR20 truth exchangeabilities are random log-normal rates too
+# (random_gtr_mix), not a fixed literal or a named empirical matrix.
+DNA_FREQ_CENTER = [0.3, 0.2, 0.2, 0.3]
+DATASETS["em_lg_f2_ig"] = dict(sim=(lambda s: random_profile_mix("LG", 2, s) + IG, 20, 1500), model="LG+F2+I+G4", tier="emorder")
+DATASETS["em_lg_f4_r4"] = dict(sim=(lambda s: random_profile_mix("LG", 4, s) + R4, 20, 2000), model="LG+F4+R4", tier="emorder")
+DATASETS["em_gtr_f4_ir4"] = dict(sim=(lambda s: random_gtr_mix(DNA_FREQ_CENTER, 5, 4, s) + IR4, 24, 2000), model="GTR+F4+I+R4", tier="emorder")
+DATASETS["em_mix2dna_ig"] = dict(sim=(lambda s: random_gtr_mix(DNA_FREQ_CENTER, 5, 2, s) + IG, 24, 2000), model="MIX{GTR+FO,GTR+FO}+I+G4", tier="emorder")
+DATASETS["em_gtr20_f8_ir4"] = dict(sim=(lambda s: random_gtr_mix(BASE_FREQ["WAG"], 189, 8, s) + IR4, 28, 2500), model="GTR20+F8+I+R4 --gtr20-model LG", tier="emorder")
+
 SIZEGATE_ARMS = ["old-default", "new-gate"]
 
 ARMS = {
@@ -247,9 +277,13 @@ ARMS = {
     "new-cold-multi": ("--analytical-gradients --ag-stats --ag-start cold --ag-multistart -1", "thorough"),
     # sizegate tier (historical, see module docstring); new-force dropped, now a duplicate
     "new-gate": ("--analytical-gradients --ag-stats", "sizegate"),
+    # emorder tier: EM axis order, today's default (F,W,R) vs the original (W,R,F)
+    "new-fwr": ("--analytical-gradients --ag-stats", "emorder"),
+    "new-wrf": ("--analytical-gradients --ag-stats --ag-em-axes W,R,F", "emorder"),
 }
 THOROUGH_ARMS = ["old-default", "new-warm", "new-cascade", "new-cold", "new-multi", "new-noem", "new-cold-multi"]
 MINI_ARMS = THOROUGH_ARMS   # same set; the point of this tier is small enough data that old-default finishes
+EMORDER_ARMS = ["new-fwr", "new-wrf"]
 # arms that only change the start of estimated (+FO) profiles; identical to new-warm when the profiles are fixed
 PROFILE_START_ARMS = ("new-cold", "new-multi", "new-cold-multi")
 
@@ -455,6 +489,7 @@ def main(argv):
         elif a == "--thorough": mode, seeds, jobs = "thorough", [101, 102, 103], max(1, min(28, int((os.cpu_count() or 4) * 0.5)))
         elif a == "--mini": mode, seeds, jobs = "mini", [101, 102], max(1, min(14, int((os.cpu_count() or 4) * 0.25)))
         elif a == "--sizegate": mode, seeds, jobs = "sizegate", [101, 102], max(1, min(28, int((os.cpu_count() or 4) * 0.5)))
+        elif a == "--emorder": mode, seeds, jobs = "emorder", [101, 102], max(1, min(10, int((os.cpu_count() or 4) * 0.5)))
         elif a == "--big": big = True
         elif a == "--dry-run": dry = True
         elif a == "-j": i += 1; jobs = int(argv[i])
@@ -515,7 +550,7 @@ def main(argv):
         modes = ["te"] if tree else []
         if not tree or mode == "full":
             modes.append("search")
-        if tree and truth is not None and mode in ("thorough", "mini", "sizegate"):
+        if tree and truth is not None and mode in ("thorough", "mini", "sizegate", "emorder"):
             for thr in threads:
                 tasks.append((name, seed, "te", thr, "truth", 0, aln, tree, truth, sim_model(d, seed), "-blfix"))
         for tmode in modes:

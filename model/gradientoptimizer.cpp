@@ -553,10 +553,11 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
         if (moved) { n_lh_++; cur_lh = tree_->computeLikelihood(); }
     }
 
-    // NOTE(design 10): EM axes and the cascade engage for large parameter
-    // vectors (or --ag-force); small models get the plain polish of Stage 3.
+    // NOTE(design 10): EM axes/cascade now engage for every model. The former
+    // ndim>=50 gate hid quality losses on small profile mixtures (--sizegate
+    // benchmark), so it was removed rather than retuned.
     em_axes_ = params.ag_em_axes;
-    em_enabled_ = (map_->ndim() >= 50 || params.ag_force) && !em_axes_.empty();
+    em_enabled_ = !em_axes_.empty();
     vector<double> levels;
     if (em_enabled_ && params.ag_cascade) {
         const double coarse[] = { 100.0, 10.0, 1.0, 0.1 };

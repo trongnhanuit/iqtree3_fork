@@ -42,16 +42,12 @@ actually finishes in reasonable time; same truth methodology and arms as
 --thorough. -j defaults to 25% of the cores (a --thorough run holds 50%, so
 both together stay within 75% of the machine).
 
---sizegate: does the em_enabled_ = ndim>=50 gate (model/gradientoptimizer.cpp)
-matter below 50 parameters? 7 small families x 4 rate-heterogeneity variants
-(bare, +I, +I+G4, +I+R4), 40 taxa, arms old-default / new-gate (today's
-behaviour) / new-force (--ag-force bypasses the gate). Plain: GTR (DNA), LG
-(protein) - R axis only, no mixture. Mixtures, all <=50 params even at
-+I+R4: MIX{GTR+FO,GTR+FO} (unlinked 2-class DNA), GTR+F4 (linked 4-class
-DNA), MIX{HKY+FO,GTR+FO} (unlinked, heterogeneous base models), LG+F2
-(protein) - all F+W axes; LG+C10 -mwopt (fixed profiles, weights free) - W
-axis only. S (exchangeabilities) never has an EM axis in any case, mixture
-or not. -j defaults to 50% of the cores.
+--sizegate: historical benchmark (kept for the record, not meant to be
+rerun) that decided the ndim>=50 EM/cascade gate should be removed; see
+docs/analytical-gradients-design.md sec 10. 7 small families (plain
+GTR/LG; mixtures MIX{GTR+FO,GTR+FO}, GTR+F4, MIX{HKY+FO,GTR+FO}, LG+F2,
+LG+C10 -mwopt) x 4 rate-heterogeneity variants, 40 taxa, arms old-default
+/ new-gate. -j defaults to 50% of the cores.
 
 In the --thorough, --mini and --sizegate tiers every simulated dataset also gets a
 `truth` row: the log-likelihood of the simulation model itself on the true
@@ -235,7 +231,7 @@ sizegate_family(DATASETS, "hetmix",
 sizegate_family(DATASETS, "lgf2", (lambda s: random_profile_mix("LG", 2, s)), "LG+F2", 40, 1500)
 sizegate_family(DATASETS, "c10w", "LG+C10", "LG+C10", 40, 1500, extra="-mwopt")
 
-SIZEGATE_ARMS = ["old-default", "new-gate", "new-force"]
+SIZEGATE_ARMS = ["old-default", "new-gate"]
 
 ARMS = {
     "old-default": ("", "quick"),
@@ -249,11 +245,8 @@ ARMS = {
     "new-cascade":    ("--analytical-gradients --ag-stats --ag-cascade on", "thorough"),
     "new-noem":       ("--analytical-gradients --ag-stats --ag-em-axes none", "thorough"),   # "none": no W/R/F letters -> no EM step
     "new-cold-multi": ("--analytical-gradients --ag-stats --ag-start cold --ag-multistart -1", "thorough"),
-    # sizegate tier: does the ndim>=50 EM/cascade gate matter below 50 parameters?
-    # new-gate is today's actual default behaviour; new-force bypasses the gate
-    # (--ag-force is otherwise a no-op, see docs/analytical-gradients-design.md sec 10)
-    "new-gate":  ("--analytical-gradients --ag-stats", "sizegate"),
-    "new-force": ("--analytical-gradients --ag-stats --ag-force", "sizegate"),
+    # sizegate tier (historical, see module docstring); new-force dropped, now a duplicate
+    "new-gate": ("--analytical-gradients --ag-stats", "sizegate"),
 }
 THOROUGH_ARMS = ["old-default", "new-warm", "new-cascade", "new-cold", "new-multi", "new-noem", "new-cold-multi"]
 MINI_ARMS = THOROUGH_ARMS   # same set; the point of this tier is small enough data that old-default finishes

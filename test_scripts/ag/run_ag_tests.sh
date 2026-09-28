@@ -241,7 +241,7 @@ run_recovery() {   # simulated two-profile mixture: weights and profiles must be
         P2="0.02/0.02/0.02/0.02/0.02/0.02/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.05/0.1/0.18"
         echo "(((A:0.08,B:0.12):0.05,(C:0.1,D:0.07):0.06):0.04,((E:0.09,F:0.11):0.05,(G:0.06,H:0.13):0.07):0.03);" > t.nwk
         "$BIN" --alisim sim -t t.nwk -m "MIX{LG+F{$P1}:1:0.3,LG+F{$P2}:1:0.7}+G4{0.8}" --length 1500 -seed 11 -redo -quiet > alisim.stdout 2>&1 || { echo "  alisim failed"; exit 1; }
-        "$BIN" -s sim.phy -m "MIX{LG+FO,LG+FO}+G4" -te t.nwk -nt 1 -seed $SEED --prefix on -redo --analytical-gradients --ag-force --ag-stats > on.stdout 2>&1 || { echo "  flag-on run failed"; exit 1; }
+        "$BIN" -s sim.phy -m "MIX{LG+FO,LG+FO}+G4" -te t.nwk -nt 1 -seed $SEED --prefix on -redo --analytical-gradients --ag-stats > on.stdout 2>&1 || { echo "  flag-on run failed"; exit 1; }
         grep "AG stats" on.stdout | head -1
         python3 - "$P1" "$P2" <<'PY' || exit 1
 import sys, re, itertools, math
@@ -291,7 +291,7 @@ run_starts() {   # warm (default), cold and multi-start must reach the same opti
         for v in "warm|--ag-start warm --ag-multistart 0" "cold|--ag-start cold --ag-multistart 0" "multi|--ag-multistart 20"; do
             name="${v%%|*}"; opts="${v#*|}"
             # shellcheck disable=SC2086
-            "$BIN" -s sim.phy -m "MIX{LG+FO,LG+FO}+G4" -te t.nwk -nt 1 -seed $SEED --prefix $name -redo --analytical-gradients --ag-force --ag-stats $opts > $name.stdout 2>&1 || { echo "  $name run failed"; exit 1; }
+            "$BIN" -s sim.phy -m "MIX{LG+FO,LG+FO}+G4" -te t.nwk -nt 1 -seed $SEED --prefix $name -redo --analytical-gradients --ag-stats $opts > $name.stdout 2>&1 || { echo "  $name run failed"; exit 1; }
             grep -E "AG: (cold|multi)" $name.stdout | head -2
             echo "  $name: $(grep -m1 "^Log-likelihood of the tree" $name.iqtree | cut -d" " -f1-5) $(grep "AG stats" $name.stdout | head -1 | grep -o "likelihood_evaluations=[0-9]*")"
         done
@@ -339,7 +339,7 @@ run_udm_start() {   # K>60 warm start: no name warns+jitters; a valid name is us
     local FIX="$HERE/data/synthetic_udm_fixture.nex"   # synthetic, made-up profiles: no third-party data
     (
         cd "$dir" || exit 1
-        local ARGS="-s $EX/aa_example.phy -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-force --ag-abort-after init -redo"
+        local ARGS="-s $EX/aa_example.phy -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-abort-after init -redo"
         # shellcheck disable=SC2086
         "$BIN" $ARGS -m LG+F70 --prefix noname > noname.stdout 2>&1
         grep -q "classes exceed C60; jittering" noname.stdout || { echo "  no-name run did not warn about K>60"; exit 1; }
@@ -375,7 +375,7 @@ logl_of() { grep -m1 "^Log-likelihood of the tree" "$1" | grep -Eo '[-]?[0-9]+\.
 within() { awk -v a="$1" -v b="$2" -v tol="$3" 'BEGIN { d = a - b; if (d < 0) d = -d; exit (d <= tol) ? 0 : 1 }'; }
 
 robust_x_abort_resume() {   # X1: abort after the start-point phase, resume from the checkpoint, same optimum
-    local ARGS="-s $EX/aa_example.phy -m LG+F2+G4 -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-force"
+    local ARGS="-s $EX/aa_example.phy -m LG+F2+G4 -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients"
     # shellcheck disable=SC2086
     "$BIN" $ARGS --prefix full -redo > full.stdout 2>&1 || { echo "  uninterrupted run failed"; return 1; }
     # shellcheck disable=SC2086

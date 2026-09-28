@@ -1872,9 +1872,6 @@ public:
     bool ag_dump_gradient;
     /** (hidden) --ag-selftest: run engine self-tests (X kernel regimes, pack/unpack) and exit */
     bool ag_selftest;
-    /** (hidden) --ag-force: engage the pipeline on any supported model, ignoring size gating */
-    bool ag_force;
-
     //new params added -JD
     /** TRUE if you want to exchange the rate matrix for an optimized GTR matrix */
     bool optimize_linked_gtr;

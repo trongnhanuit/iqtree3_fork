@@ -292,9 +292,10 @@ precision, multi-start, checkpointing of the optimiser's own state.
 
 ## 10. EM axes and cascading precision (version 1.1)
 
-For vectors of at least 50 parameters (or with `--ag-force`) each round of
-section 9 also runs, before the polish, one accept-or-revert M-step per
-axis listed in `--ag-em-axes` (default `W,R,F`):
+Each round of section 9 also runs, before the polish, one accept-or-revert
+M-step per axis listed in `--ag-em-axes` (default `W,R,F`, subject only to
+that option; see the note below on the parameter-count gate this used to
+also require):
 
 * **W** mixture weights: `ModelMixture::optimizeWeights`, the EM of Wang
   et al. (2008) on the class posteriors;
@@ -330,6 +331,30 @@ Floors (section 6): state frequencies at `min_state_freq` and mixture
 weights at 1e-3 as in the default optimiser's bounds, `p_inv` at most the
 fraction of constant sites; an entry held at its floor reports a zero
 gradient in the flat direction.
+
+**The `ndim >= 50` gate (removed).** Through Stage 4 the EM axes and
+cascade only engaged for at least 50 free model parameters; a hidden
+`--ag-force` flag bypassed this for testing. A dedicated `--sizegate`
+benchmark (`test_scripts/ag/bench.py`) tested the gate directly: 7 small
+model families (plain GTR/LG, R axis only; `MIX{GTR+FO,GTR+FO}`,
+`GTR+F4`, `MIX{HKY+FO,GTR+FO}`, `LG+F2`, F/W axes; `LG+C10 -mwopt`, W
+axis only) across 4 rate-heterogeneity variants, 40 taxa, comparing the
+gate's default (EM off) against forcing EM on with the joint polish
+unchanged either way. For R-axis-only and homogeneous-substitution
+mixtures the two were identical to within 0.002 lnL at a 0-14% time cost
+when forced — the gate bought nothing there, consistent with W and F
+being no-ops without a mixture and R already being fully covered by the
+joint gradient polish. But on `LG+F2` one seed showed the gate landing
+500+ log-likelihood units short of the optimum that forcing EM reached
+(a genuinely different, worse fit, not noise); `MIX{HKY+FO,GTR+FO}`
+showed swings of up to +-37 lnL in both directions, suggesting a rougher
+landscape rather than a clean EM benefit there. Since the gate could
+silently hide a large quality loss on exactly the small profile mixtures
+where symmetry-breaking matters, and bought nothing measurable anywhere
+else, both the gate and `--ag-force` were removed rather than kept or
+retuned to a different threshold: the EM axes and cascade now engage for
+every model, subject only to `--ag-em-axes`/`--ag-cascade`. `--ag-force`
+is no longer a recognised option.
 
 ## 11. Start points: warm, cold, multi-start (version 1.1)
 
@@ -434,5 +459,4 @@ two thread counts and three timing repeats.
 | `--ag-stats` | print evaluation counts, EM steps and reverts |
 | `--ag-gradient-check [tol]`, `--ag-gradient-check-every k`, `--ag-gradient-check-strict` | check analytic against numerical gradients during the search |
 | `--ag-gradient-check-only`, `--ag-dump-gradient`, `--ag-selftest` | one-shot checks at the initial point (tests) |
-| `--ag-force` | engage EM axes and start-point work regardless of the size gate |
 | `--ag-abort-after init|round:N` | write the checkpoint and exit at that phase (resume tests) |

@@ -1395,10 +1395,6 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.ag_selftest = true;
                 continue;
             }
-            if (strcmp(argv[cnt], "--ag-force") == 0) {
-                params.ag_force = true;
-                continue;
-            }
             if (strcmp(argv[cnt], "--gtr20-model") == 0 || strcmp(argv[cnt], "--init-exchange") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -7468,7 +7464,6 @@ void Params::setDefault() {
     ag_abort_after = "";
     ag_dump_gradient = false;
     ag_selftest = false;
-    ag_force = false;
 
     // defaults for new options -JD
     optimize_linked_gtr = false;

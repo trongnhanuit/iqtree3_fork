@@ -503,11 +503,13 @@ void RateFree::writeParameters(ostream &out) {
 
 }
 
-double RateFree::optimizeWithEM() {
+double RateFree::optimizeWithEM(bool ag_stop_rule) {
     size_t ptn, c;
     size_t nptn = phylo_tree->aln->getNPattern();
     size_t nmix = ncategory;
     const double MIN_PROP = 1e-4;
+    double delta_max = 0.0;   // ag_stop_rule only
+    int stop_iter = 0;
     
 //    double *lk_ptn = aligned_alloc<double>(nptn);
     double *new_prop = aligned_alloc<double>(nmix);
@@ -556,6 +558,19 @@ double RateFree::optimizeWithEM() {
                 cout << "score: " << score << "  old_score: " << old_score << endl;
             }
             ASSERT(score > old_score-0.1);
+            // --ag-em-stop-axes R: an additional, opt-in early exit once the
+            // per-step likelihood gain falls below ag_em_stop_frac of the largest
+            // gain so far; stops before this step's E/M work runs. No absolute
+            // floor: this is a quick BFGS starting point, not full EM convergence.
+            if (ag_stop_rule) {
+                double delta = score - old_score;
+                stop_iter++;
+                if (stop_iter == 1) delta_max = delta;
+                else {
+                    delta_max = max(delta_max, delta);
+                    if (delta < Params::getInstance().ag_em_stop_frac * delta_max) break;
+                }
+            }
         }
         old_score = score;
         

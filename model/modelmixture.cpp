@@ -4063,7 +4063,7 @@ double ModelMixture::targetFunk(double x[]) {
     
 }
 
-double ModelMixture::optimizeWeights() {
+double ModelMixture::optimizeWeights(bool ag_stop_rule) {
     // first compute _pattern_lh_cat
     phylo_tree->computePatternLhCat(WSL_MIXTURE);
     size_t ptn, c;
@@ -4074,6 +4074,8 @@ double ModelMixture::optimizeWeights() {
     double *ratio_prop = aligned_alloc<double>(nmix);
 
     // EM algorithm loop described in Wang, Li, Susko, and Roger (2008)
+    double prev_logl = 0.0, delta_max = 0.0;   // ag_stop_rule only
+    int stop_iter = 0;
 
     for (int step = 0; step < optimize_steps; step++) {
         // E-step
@@ -4088,6 +4090,7 @@ double ModelMixture::optimizeWeights() {
             }
         }
         memset(new_prop, 0, nmix*sizeof(double));
+        double logl = 0.0;
         for (ptn = 0; ptn < nptn; ptn++) {
             double *this_lk_cat = phylo_tree->_pattern_lh_cat + ptn*nmix;
             double lk_ptn = phylo_tree->ptn_invar[ptn];
@@ -4096,6 +4099,7 @@ double ModelMixture::optimizeWeights() {
                 lk_ptn += this_lk_cat[c];
             }
             ASSERT(lk_ptn != 0.0);
+            if (ag_stop_rule) logl += phylo_tree->ptn_freq[ptn] * log(lk_ptn);
             lk_ptn = phylo_tree->ptn_freq[ptn] / lk_ptn;
             for (c = 0; c < nmix; c++) {
                 new_prop[c] += this_lk_cat[c] * lk_ptn;
@@ -4126,7 +4130,21 @@ double ModelMixture::optimizeWeights() {
 
         }
         */
-        
+        // --ag-em-stop-axes W: an additional, opt-in early exit once the per-step
+        // likelihood gain falls below ag_em_stop_frac of the largest gain so far,
+        // OR'd with the weight-value test above (never replacing it). No absolute
+        // floor: this is a quick BFGS starting point, not full EM convergence.
+        if (ag_stop_rule && step > 0) {
+            double delta = logl - prev_logl;
+            stop_iter++;
+            if (stop_iter == 1) delta_max = delta;
+            else {
+                delta_max = max(delta_max, delta);
+                if (delta < Params::getInstance().ag_em_stop_frac * delta_max) converged = true;
+            }
+        }
+        prev_logl = logl;
+
         if (converged) break;
 
     }

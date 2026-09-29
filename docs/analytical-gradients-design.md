@@ -320,6 +320,26 @@ the family it appears on (many linked profile classes) is the harder,
 more realistic case; `--ag-em-axes F,W,R` recovers the faster order where
 it is known to help.
 
+Each axis's own iteration can additionally stop once its own gain falls
+below a fraction of its largest gain so far, selected per axis via
+`--ag-em-stop-axes <list>` (default `""`, off; e.g. `W,R,F` or just `F`)
+and sized via `--ag-em-stop-frac <fraction>` (default `0.01`, no absolute
+floor). This is deliberately not the joint-polish `stopEarly` rule: the
+point of the EM axes here is a cheap, rough starting point for the joint
+BFGS polish, not a fully-converged answer, so over-optimising one axis
+while the others are still far from correct is wasted work; a purely
+relative threshold (with no `logl_epsilon` floor holding it back) lets the
+axes hand off to BFGS earlier. W and R already loop internally to their
+own, pre-existing convergence test (`ModelMixture::optimizeWeights`'s
+per-weight 1e-4 change, `RateFree::optimizeWithEM`'s per-category
+equivalent); the new test is OR'd into that loop, an addition, never a
+replacement, and is gated by an explicit parameter on each function rather
+than a global check, since `RateFree::optimizeWithEM` is also called by
+the default (non-AG) `-optalg_qmix EM` path and must stay byte-identical
+there. F has no internal loop of its own (one E-step/M-step per call), so
+it is instead wrapped by repeating the whole call (`emProfilesLoop`) under
+the same rule. Off by default; not yet benchmarked against always-on.
+
 Every axis snapshots the state (theta and branch lengths), runs its
 M-step, renormalises through `pack`/`unpack` (floors, mean rate 1,
 `ptn_invar`) and keeps the result only if the production log-likelihood
@@ -478,6 +498,8 @@ two thread counts and three timing repeats.
 | `--ag-warm-select index|weight|sample` | borrow the first K, (default) the K highest-weighted, or K weighted-sampled reference profiles |
 | `--ag-multistart N` | N jittered start candidates, refined by EM; 0 (default) off, -1 automatic |
 | `--ag-em-axes W,R,F` | EM axes per round (weights, rates, profiles); empty disables EM |
+| `--ag-em-stop-axes <list>` | per-axis (subset of W,R,F) relative-gain early exit; default "" (off) |
+| `--ag-em-stop-frac <fraction>` | relative threshold for --ag-em-stop-axes; default 0.01 |
 | `--ag-cascade on|off` | precision cascade (default off) |
 | `--ag-polish final|per-level` | polish at the target level only or at every cascade level (default) |
 | `--ag-optalg BFGS|LBFGSB` | driver of the joint polish |

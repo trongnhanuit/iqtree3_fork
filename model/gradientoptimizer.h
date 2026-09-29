@@ -115,6 +115,9 @@ private:
     double emRates(double cur_lh, double gradient_epsilon);
     /** F: profiles from posterior-weighted site compositions */
     double emProfiles(double cur_lh);
+    /** --ag-em-stop-axes F: repeat emProfiles until a call's own gain falls below
+        ag_em_stop_frac of the largest gain so far, or makes no progress */
+    double emProfilesLoop(double cur_lh);
     /** restore `before` if `after_lh` is below `before_lh`; returns the accepted logL */
     double acceptOrRevert(const BestState &before, double before_lh, double after_lh, const char *axis);
     /** put the model back on the parametrised manifold (floors, mean rate 1, ptn_invar) and return logL */

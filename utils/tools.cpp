@@ -1384,6 +1384,22 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.ag_em_axes = argv[cnt];
                 continue;
             }
+            if (strcmp(argv[cnt], "--ag-em-stop-axes") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-em-stop-axes <axes>, a comma-separated subset of W,R,F";
+                params.ag_em_stop_axes = argv[cnt];
+                continue;
+            }
+            if (strcmp(argv[cnt], "--ag-em-stop-frac") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-em-stop-frac <fraction>";
+                params.ag_em_stop_frac = convert_double(argv[cnt]);
+                if (params.ag_em_stop_frac <= 0.0 || params.ag_em_stop_frac > 1.0)
+                    throw "--ag-em-stop-frac must be in (0, 1]";
+                continue;
+            }
             if (strcmp(argv[cnt], "--ag-stats") == 0) {
                 params.ag_stats = true;
                 continue;
@@ -7470,6 +7486,8 @@ void Params::setDefault() {
     ag_cascade = false;
     ag_polish = "per-level";
     ag_em_axes = "W,R,F";
+    ag_em_stop_axes = "";
+    ag_em_stop_frac = 0.01;
     ag_stats = false;
     ag_abort_after = "";
     ag_dump_gradient = false;

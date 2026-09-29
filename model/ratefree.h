@@ -92,11 +92,14 @@ public:
 	*/
 	virtual double optimizeParameters(double gradient_epsilon);
 
-    /** 
-        optimize rate parameters using EM algorithm 
+    /**
+        optimize rate parameters using EM algorithm
+        @param ag_stop_rule analytical-gradients only: also stop once a step's gain
+               falls below Params::ag_em_stop_frac of the largest gain so far (a
+               quick BFGS starting point, not full EM convergence)
         @return log-likelihood of optimized parameters
     */
-    double optimizeWithEM();
+    double optimizeWithEM(bool ag_stop_rule = false);
 
 	/**
 		return the number of dimensions

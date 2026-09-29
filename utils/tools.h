@@ -1866,6 +1866,13 @@ public:
     string ag_polish;
     /** --ag-em-axes list: order of EM axes per round (subset of W,R,F) */
     string ag_em_axes;
+    /** --ag-em-stop-axes list: subset of W,R,F where the EM step also stops once its
+        own gain falls below ag_em_stop_frac of its largest gain so far (no absolute
+        floor: this is a quick BFGS starting point, not full axis convergence);
+        default "" (off everywhere, only ever applies inside the AG optimiser) */
+    string ag_em_stop_axes;
+    /** --ag-em-stop-frac fraction: relative threshold used by ag_em_stop_axes (default 0.01) */
+    double ag_em_stop_frac;
     /** --ag-stats: print the optimiser's own likelihood/gradient evaluation counts */
     bool ag_stats;
     /** (hidden) --ag-abort-after <level>: dump the checkpoint and exit after a cascade level */

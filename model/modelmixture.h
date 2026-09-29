@@ -202,11 +202,14 @@ public:
 	*/
 	virtual double targetFunk(double x[]);
 
-    /** 
-        optimize mixture weights using EM algorithm 
+    /**
+        optimize mixture weights using EM algorithm
+        @param ag_stop_rule analytical-gradients only: also stop once a step's gain
+               falls below Params::ag_em_stop_frac of the largest gain so far (a
+               quick BFGS starting point, not full EM convergence)
         @return log-likelihood of optimized weights
     */
-    double optimizeWeights();
+    double optimizeWeights(bool ag_stop_rule = false);
 
     /** 
         optimize rate parameters using EM algorithm

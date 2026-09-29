@@ -95,6 +95,7 @@ QUALITY=(
   "q_dna_gtr_i_g4_search|0.1|-s $EX/example.phy -m GTR+F+I+G4"
   "q_aa_lg_f2_g4_te|0.1|-s $EX/aa_example.phy -m LG+F2+G4 -te $HERE/data/aa_example_lg.nwk"
   "q_dna_mix_link_te|0.1|-s $EX/example.phy -m MIX{GTR+FO,GTR+FO}+G4 --link-exchange-rates -te $HERE/data/example_gtr_g.nwk"
+  "q_aa_lg_f2_r2_stoprule|0.1|-s $EX/aa_example.phy -m LG+F2+R2 -te $HERE/data/aa_example_lg.nwk --ag-em-stop-axes W,R,F --ag-em-stop-frac 0.001"
 )
 QUALITY_FULL=(
   "q_aa_lg_f4_r4_search|0.1|-s $WD/turtle_aa.fasta -m LG+F4+R4"

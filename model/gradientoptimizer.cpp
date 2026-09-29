@@ -137,6 +137,11 @@ vector<string> sampleNamesByWeight(const vector<pair<string, double>> &w, size_t
     return names;
 }
 
+// --ag-em-stop-axes: is `ax` (W/R/F) in the configured list?
+bool stopRuleAxis(char ax) {
+    return Params::getInstance().ag_em_stop_axes.find(ax) != string::npos;
+}
+
 double relErr(double a, double n, double gmax) {
     double d = max(max(fabs(a), fabs(n)), 1e-6 * gmax);
     return d > 0 ? fabs(a - n) / d : 0.0;
@@ -682,7 +687,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
                 for (char ax : em_axes_) {
                     if (ax == 'W') cur_lh = emWeights(cur_lh);
                     else if (ax == 'R') cur_lh = emRates(cur_lh, gradient_epsilon);
-                    else if (ax == 'F') cur_lh = emProfiles(cur_lh);
+                    else if (ax == 'F') cur_lh = stopRuleAxis('F') ? emProfilesLoop(cur_lh) : emProfiles(cur_lh);
                 }
             }
             if (target || polish_per_level || !em_enabled_)
@@ -782,7 +787,7 @@ double GradientOptimizer::emWeights(double cur_lh) {
     BestState before;
     snapshot(before, cur_lh);
     tree_->clearAllPartialLH();
-    mix->optimizeWeights();               // EM of Wang et al. (2008) on the mixture weights
+    mix->optimizeWeights(stopRuleAxis('W'));   // EM of Wang et al. (2008) on the mixture weights
     n_lh_ += 2;
     n_em_w_++;
     return acceptOrRevert(before, cur_lh, renormalise(), "W");
@@ -795,7 +800,7 @@ double GradientOptimizer::emRates(double cur_lh, double gradient_epsilon) {
     snapshot(before, cur_lh);
     tree_->clearAllPartialLH();
     RateFree *rf = dynamic_cast<RateFree*>(rate);
-    if (rf) rf->optimizeWithEM();          // rates and proportions, EM with per-category tree scaling
+    if (rf) rf->optimizeWithEM(stopRuleAxis('R'));   // rates and proportions, EM with per-category tree scaling
     else rate->optimizeParameters(gradient_epsilon);   // alpha and/or p_inv by the model's own routine
     n_lh_ += 4;
     n_em_r_++;
@@ -864,6 +869,21 @@ double GradientOptimizer::emProfiles(double cur_lh) {
         if (std::isfinite(lh) && lh >= cur_lh - 1e-9) return lh;
     }
     return acceptOrRevert(before, cur_lh, -HUGE_VAL, "F");
+}
+
+double GradientOptimizer::emProfilesLoop(double cur_lh) {
+    double delta_max = 0.0;
+    const double frac = Params::getInstance().ag_em_stop_frac;
+    for (int it = 1; it <= 100; it++) {
+        double next = emProfiles(cur_lh);
+        double delta = next - cur_lh;
+        cur_lh = next;
+        if (delta <= 1e-9) break;   // no progress: emProfiles reverted or is flat
+        if (it == 1) { delta_max = delta; continue; }   // first real gain: record the baseline, keep going
+        delta_max = max(delta_max, delta);
+        if (delta < frac * delta_max) break;   // no absolute floor: quick BFGS starting point
+    }
+    return cur_lh;
 }
 
 /* ---------------------------------------------------------------------- */

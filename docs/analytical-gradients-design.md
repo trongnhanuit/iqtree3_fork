@@ -290,12 +290,18 @@ disagreement into an error.
 Not in version 1 (later stages): per-axis EM warm start, cascading
 precision, multi-start, checkpointing of the optimiser's own state.
 
-## 10. EM axes and cascading precision (version 1.1)
+## 10. EM warm-up and cascading precision (version 1.1)
 
-Each round of section 9 also runs, before the polish, one accept-or-revert
-M-step per axis listed in `--ag-em-axes` (default `W,R,F`, subject only to
-that option; see the note below on the parameter-count gate this used to
-also require):
+The optimiser is two phases: a cheap EM warm-up (this section), then
+section 9's branch+polish loop unchanged, verbatim, as the real
+optimisation. Phase 1 runs once, before phase 2, and never repeats and
+never polishes: for each level in `--ag-cascade`'s schedule (`{100, 10, 1,
+0.1}` (those above `logl_epsilon`) then `logl_epsilon`, if on; just
+`logl_epsilon` if off, the default), a branch step (Newton, fixed at 2
+iterations -- phase 1 is deliberately cheap throughout, not a ramp, since
+its whole point is a rough starting point, not convergence) and then one
+accept-or-revert M-step per axis listed in `--ag-em-axes` (default
+`W,R,F`, subject only to that option):
 
 * **W** mixture weights: `ModelMixture::optimizeWeights`, the EM of Wang
   et al. (2008) on the class posteriors;
@@ -318,7 +324,10 @@ an optimum 157-191 lnL units better on both seeds, at roughly 2.2-2.6x the
 wall time. `W,R,F` is the default because that failure mode is worse and
 the family it appears on (many linked profile classes) is the harder,
 more realistic case; `--ag-em-axes F,W,R` recovers the faster order where
-it is known to help.
+it is known to help. This benchmark predates the phase-1/phase-2 split
+below (it ran under the old design, where each axis repeated every round
+at the target level); with phase 1 now a single pass by default, axis
+order sensitivity has not been re-measured under the new mechanism.
 
 Each axis's own iteration can additionally stop once its own gain falls
 below a fraction of its largest gain so far, selected per axis via
@@ -336,9 +345,12 @@ equivalent); the new test is OR'd into that loop, an addition, never a
 replacement, and is gated by an explicit parameter on each function rather
 than a global check, since `RateFree::optimizeWithEM` is also called by
 the default (non-AG) `-optalg_qmix EM` path and must stay byte-identical
-there. F has no internal loop of its own (one E-step/M-step per call), so
-it is instead wrapped by repeating the whole call (`emProfilesLoop`) under
-the same rule. Off by default; not yet benchmarked against always-on.
+there. F had no internal loop of its own (one E-step/M-step per call), so
+`emProfilesLoop` now always wraps it in the same kind of default,
+always-on convergence test (max per-entry profile change < 1e-4,
+mirroring W/R), with `--ag-em-stop-axes F` OR'ing in the same earlier,
+relative-gain exit as W/R — consistent across all three axes now. Off by
+default; not yet benchmarked against always-on.
 
 Every axis snapshots the state (theta and branch lengths), runs its
 M-step, renormalises through `pack`/`unpack` (floors, mean rate 1,
@@ -346,19 +358,19 @@ M-step, renormalises through `pack`/`unpack` (floors, mean rate 1,
 did not decrease. The steps use IQ-TREE's own EM code where it exists; the
 F step is the plan's composition heuristic, which the guard makes safe.
 
-With `--ag-cascade on` (default off) the rounds run at decreasing precision
-levels `{100, 10, 1, 0.1}` (those above `logl_epsilon`) and then at
-`logl_epsilon`. At a coarse level a round is the branch step plus the EM
-axes plus, with `--ag-polish per-level` (the default), the polish, and the
-level ends when a round gains less than `eps` or, from the second round on,
-less than 1% of the best round at that level. The target level runs the
-full round of section 9 with the default loop's rule. All levels share the
-`num_param_iterations` cap and the final best-state guard. The cascade is
-off by default because on the LG+F4+R4 benchmark it reached the same
-optimum as the single level (-4982.65 vs -4982.66) in 40 s instead of 30 s,
-and without the per-level polish the EM-only coarse levels steered the
-search to a worse basin (-4988.7); dropping the F axis costs 13-21
-log-likelihood units on that benchmark, so all three axes stay on.
+Phase 1's levels and per-level pass are exactly as described at the top of
+this section; it is never counted against `num_param_iterations` (at most
+5 passes, `{100,10,1,0.1,logl_epsilon}`, whether cascade is on or off).
+Phase 2 then begins at `cur_lh` however phase 1 left it (unchanged if
+`--ag-em-axes ""`) and runs section 9's loop verbatim, including its own
+`num_param_iterations - 2` cap and the final best-state guard, which is
+shared across both phases.
+
+`--ag-cascade` defaults off (a single phase-1 pass at the target
+precision) as the historical default from before the phase-1/phase-2
+split; the coarser passes it adds are now cheap (one pass per level, not
+a repeat-to-convergence loop), so this default has not been re-validated
+under the new mechanism.
 
 Floors (section 6): state frequencies at `min_state_freq` and mixture
 weights at 1e-3 as in the default optimiser's bounds, `p_inv` at most the
@@ -500,8 +512,7 @@ two thread counts and three timing repeats.
 | `--ag-em-axes W,R,F` | EM axes per round (weights, rates, profiles); empty disables EM |
 | `--ag-em-stop-axes <list>` | per-axis (subset of W,R,F) relative-gain early exit; default "" (off) |
 | `--ag-em-stop-frac <fraction>` | relative threshold for --ag-em-stop-axes; default 0.01 |
-| `--ag-cascade on|off` | precision cascade (default off) |
-| `--ag-polish final|per-level` | polish at the target level only or at every cascade level (default) |
+| `--ag-cascade on|off` | phase-1 EM warm-up at coarser precisions first, not just the target (default off) |
 | `--ag-optalg BFGS|LBFGSB` | driver of the joint polish |
 | `--ag-stats` | print evaluation counts, EM steps and reverts |
 | `--ag-gradient-check [tol]`, `--ag-gradient-check-every k`, `--ag-gradient-check-strict` | check analytic against numerical gradients during the search |

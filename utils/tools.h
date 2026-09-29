@@ -1860,10 +1860,9 @@ public:
     string ag_warm_select;
     /** --ag-em-ratios list: profile:weight EM ratios used in multi-start refinement */
     string ag_em_ratios;
-    /** --ag-cascade <on|off>: cascading precision levels 100,10,1,0.1,target */
+    /** --ag-cascade <on|off>: EM warm-up (phase 1) precision levels 100,10,1,0.1,target
+        (off (default): a single warm-up pass at the target precision) */
     bool ag_cascade;
-    /** --ag-polish <final|per-level>: one joint polish at the end (default) or one per level */
-    string ag_polish;
     /** --ag-em-axes list: order of EM axes per round (subset of W,R,F) */
     string ag_em_axes;
     /** --ag-em-stop-axes list: subset of W,R,F where the EM step also stops once its

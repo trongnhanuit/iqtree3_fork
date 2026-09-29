@@ -1368,15 +1368,6 @@ void parseArg(int argc, char *argv[], Params &params) {
                     throw "Invalid option for --ag-cascade: use 'on' or 'off'";
                 continue;
             }
-            if (strcmp(argv[cnt], "--ag-polish") == 0) {
-                cnt++;
-                if (cnt >= argc)
-                    throw "Use --ag-polish <final|per-level>";
-                if (strcmp(argv[cnt], "final") != 0 && strcmp(argv[cnt], "per-level") != 0)
-                    throw "Invalid option for --ag-polish: use 'final' or 'per-level'";
-                params.ag_polish = argv[cnt];
-                continue;
-            }
             if (strcmp(argv[cnt], "--ag-em-axes") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -6189,7 +6180,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --ag-start warm|cold     Warm start from C-series profiles (default) or random" << endl
     << "  --ag-udm-name NAME       Above C60, warm-start from NAME's profiles (via -mdef)" << endl
     << "  --ag-multistart NUM      Multi-start candidates (default: 0 = off; -1 for auto)" << endl
-    << "  --ag-cascade on|off      Cascading precision levels (default: off)" << endl
+    << "  --ag-cascade on|off      Coarser EM warm-up passes before the target (default: off)" << endl
     << "  --ag-optalg BFGS|LBFGSB  Driver for the joint polish (default: BFGS)" << endl
     << "  --ag-gradient-check [T]  Log analytic vs numerical gradients per parameter" << endl
     << "                           (relative tolerance T, default 1e-4)" << endl
@@ -7484,7 +7475,6 @@ void Params::setDefault() {
     ag_warm_select = "weight";
     ag_em_ratios = "1,2,5,10";
     ag_cascade = false;
-    ag_polish = "per-level";
     ag_em_axes = "W,R,F";
     ag_em_stop_axes = "";
     ag_em_stop_frac = 0.01;

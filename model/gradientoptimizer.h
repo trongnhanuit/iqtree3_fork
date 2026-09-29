@@ -115,8 +115,10 @@ private:
     double emRates(double cur_lh, double gradient_epsilon);
     /** F: profiles from posterior-weighted site compositions */
     double emProfiles(double cur_lh);
-    /** --ag-em-stop-axes F: repeat emProfiles until a call's own gain falls below
-        ag_em_stop_frac of the largest gain so far, or makes no progress */
+    /** repeat emProfiles until the profiles stop changing (fabs(old-new)<1e-4 per
+        entry, mirroring ModelMixture::optimizeWeights/RateFree::optimizeWithEM);
+        --ag-em-stop-axes F adds an earlier, OR'd exit once a call's own gain
+        falls below ag_em_stop_frac of the largest gain so far */
     double emProfilesLoop(double cur_lh);
     /** restore `before` if `after_lh` is below `before_lh`; returns the accepted logL */
     double acceptOrRevert(const BestState &before, double before_lh, double after_lh, const char *axis);

@@ -21,7 +21,8 @@ the recovered weights and profiles against the truth after matching the
 classes.
 
 Usage:
-  bench.py <iqtree_binary> <out_dir> [--quick | --full | --thorough | --mini | --sizegate] [--big] [-j N]
+  bench.py <iqtree_binary> <out_dir> [--quick | --full | --thorough | --mini | --sizegate | --emorder | --stopfrac]
+           [--old-binary PATH] [--big] [-j N]
            [--threads 1,8] [--repeats N] [--seeds 101,102] [--only name,name] [--dry-run]
 
 --thorough: LG+F10, GTR20+F12 and GTR20+C60 (linked exchangeabilities, with
@@ -57,7 +58,17 @@ exchangeabilities are random log-normal rates (random_gtr_mix), not a fixed
 matrix, alongside the usual random Dirichlet profiles/weights. -j defaults
 to 50% of the cores.
 
-In the --thorough, --mini, --sizegate and --emorder tiers every simulated dataset also gets a
+--stopfrac: does --ag-em-stop-axes (and its --ag-em-stop-frac threshold) help?
+3 families -- simplest DNA (GTR+F4+I+G4), simple mixture (LG+F4+R4), complex
+mixture (GTR20+F8+I+R4) -- all 40 taxa, random profiles/weights (and, for the
+GTR/GTR20 families, random exchangeabilities via random_gtr_mix), two seeds.
+Arms: new-default / new-stop1 (--ag-em-stop-axes W,R,F) / new-stop01 (same,
+--ag-em-stop-frac 0.001), all on <iqtree_binary>, plus old-branch on
+--old-binary PATH (a separately built binary, e.g. the analytical_gradients
+branch tip, predating --ag-em-stop-axes/the phase-1/phase-2 optimiser split
+entirely). -j defaults to 50% of the cores.
+
+In the --thorough, --mini, --sizegate, --emorder and --stopfrac tiers every simulated dataset also gets a
 `truth` row: the log-likelihood of the simulation model itself on the true
 tree with fixed branch lengths (-blfix), i.e. no optimisation at all. It is
 a reference for the lnL columns, not an optimiser arm (no speed-up, excluded
@@ -261,6 +272,12 @@ DATASETS["em_gtr_f4_ir4"] = dict(sim=(lambda s: random_gtr_mix(DNA_FREQ_CENTER, 
 DATASETS["em_mix2dna_ig"] = dict(sim=(lambda s: random_gtr_mix(DNA_FREQ_CENTER, 5, 2, s) + IG, 24, 2000), model="MIX{GTR+FO,GTR+FO}+I+G4", tier="emorder")
 DATASETS["em_gtr20_f8_ir4"] = dict(sim=(lambda s: random_gtr_mix(BASE_FREQ["WAG"], 189, 8, s) + IR4, 28, 2500), model="GTR20+F8+I+R4 --gtr20-model LG", tier="emorder")
 
+# stopfrac tier: does --ag-em-stop-axes help? Same random-profile/weight/rate
+# methodology as emorder, at 40 taxa; simplest DNA through complex mixture.
+DATASETS["sf_gtr_f4_ig"] = dict(sim=(lambda s: random_gtr_mix(DNA_FREQ_CENTER, 5, 4, s) + IG, 40, 2000), model="GTR+F4+I+G4", tier="stopfrac")
+DATASETS["sf_lg_f4_r4"] = dict(sim=(lambda s: random_profile_mix("LG", 4, s) + R4, 40, 2000), model="LG+F4+R4", tier="stopfrac")
+DATASETS["sf_gtr20_f8_ir4"] = dict(sim=(lambda s: random_gtr_mix(BASE_FREQ["WAG"], 189, 8, s) + IR4, 40, 2500), model="GTR20+F8+I+R4 --gtr20-model LG", tier="stopfrac")
+
 SIZEGATE_ARMS = ["old-default", "new-gate"]
 
 ARMS = {
@@ -280,10 +297,18 @@ ARMS = {
     # emorder tier: EM axis order, today's default (F,W,R) vs the original (W,R,F)
     "new-fwr": ("--analytical-gradients --ag-stats", "emorder"),
     "new-wrf": ("--analytical-gradients --ag-stats --ag-em-axes W,R,F", "emorder"),
+    # stopfrac tier: does --ag-em-stop-axes help, and does the fraction matter?
+    # old-branch runs on --old-binary instead of the primary binary (see ARM_BINARY).
+    "new-default": ("--analytical-gradients --ag-stats", "stopfrac"),
+    "new-stop1":   ("--analytical-gradients --ag-stats --ag-em-stop-axes W,R,F", "stopfrac"),
+    "new-stop01":  ("--analytical-gradients --ag-stats --ag-em-stop-axes W,R,F --ag-em-stop-frac 0.001", "stopfrac"),
+    "old-branch":  ("--analytical-gradients --ag-stats", "stopfrac"),
 }
 THOROUGH_ARMS = ["old-default", "new-warm", "new-cascade", "new-cold", "new-multi", "new-noem", "new-cold-multi"]
 MINI_ARMS = THOROUGH_ARMS   # same set; the point of this tier is small enough data that old-default finishes
 EMORDER_ARMS = ["new-fwr", "new-wrf"]
+STOPFRAC_ARMS = ["new-default", "new-stop1", "new-stop01", "old-branch"]
+ARM_BINARY = {"old-branch": "old"}   # arm name -> binary key (default "head" == the primary binary)
 # arms that only change the start of estimated (+FO) profiles; identical to new-warm when the profiles are fixed
 PROFILE_START_ARMS = ("new-cold", "new-multi", "new-cold-multi")
 
@@ -481,6 +506,7 @@ def main(argv):
     binary = os.path.abspath(argv[1])
     out_dir = os.path.abspath(argv[2])
     mode, big, jobs, threads, repeats, seeds, only, dry = "quick", False, 4, [1], 1, [101], None, False
+    old_binary = None
     i = 3
     while i < len(argv):
         a = argv[i]
@@ -490,6 +516,8 @@ def main(argv):
         elif a == "--mini": mode, seeds, jobs = "mini", [101, 102], max(1, min(14, int((os.cpu_count() or 4) * 0.25)))
         elif a == "--sizegate": mode, seeds, jobs = "sizegate", [101, 102], max(1, min(28, int((os.cpu_count() or 4) * 0.5)))
         elif a == "--emorder": mode, seeds, jobs = "emorder", [101, 102], max(1, min(10, int((os.cpu_count() or 4) * 0.5)))
+        elif a == "--stopfrac": mode, seeds, jobs = "stopfrac", [101, 102], max(1, min(10, int((os.cpu_count() or 4) * 0.5)))
+        elif a == "--old-binary": i += 1; old_binary = os.path.abspath(argv[i])
         elif a == "--big": big = True
         elif a == "--dry-run": dry = True
         elif a == "-j": i += 1; jobs = int(argv[i])
@@ -500,6 +528,8 @@ def main(argv):
         else:
             print("unknown argument", a); return 2
         i += 1
+    if mode == "stopfrac" and old_binary is None and any(ARM_BINARY.get(n) == "old" for n in STOPFRAC_ARMS):
+        print("--stopfrac needs --old-binary <path> (the old-branch reference arm)"); return 2
     os.makedirs(out_dir, exist_ok=True)
     tiers = {"quick"} if mode == "quick" else {"quick", "full"} if mode == "full" else {mode}
     if big:
@@ -509,6 +539,8 @@ def main(argv):
         arms = {n: ARMS[n][0] for n in (THOROUGH_ARMS if mode == "thorough" else MINI_ARMS)}
     elif mode == "sizegate":
         arms = {n: ARMS[n][0] for n in SIZEGATE_ARMS}
+    elif mode == "stopfrac":
+        arms = {n: ARMS[n][0] for n in STOPFRAC_ARMS}
     else:
         arms = {n: a for n, (a, t) in ARMS.items() if t in tiers}
 
@@ -550,7 +582,7 @@ def main(argv):
         modes = ["te"] if tree else []
         if not tree or mode == "full":
             modes.append("search")
-        if tree and truth is not None and mode in ("thorough", "mini", "sizegate", "emorder"):
+        if tree and truth is not None and mode in ("thorough", "mini", "sizegate", "emorder", "stopfrac"):
             for thr in threads:
                 tasks.append((name, seed, "te", thr, "truth", 0, aln, tree, truth, sim_model(d, seed), "-blfix"))
         for tmode in modes:
@@ -581,7 +613,7 @@ def main(argv):
               "tree_length", "lh_evals", "grad_evals", "rmse_weights", "rmse_profiles", "command"]
     with open(results_path, "w") as f:
         f.write("\t".join(header) + "\n")
-    manifest = {"binary": binary, "mode": mode, "repeats": repeats, "seeds": seeds, "threads": threads,
+    manifest = {"binary": binary, "old_binary": old_binary, "mode": mode, "repeats": repeats, "seeds": seeds, "threads": threads,
                 "host": socket.gethostname(), "datasets": sorted(datasets), "arms": sorted(arms), "runs": len(tasks),
                 "git": subprocess.run(["git", "-C", ROOT, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip() or "?"}
     with open(os.path.join(out_dir, "manifest.json"), "w") as f:
@@ -592,7 +624,8 @@ def main(argv):
         name, seed, tmode, thr, arm, rep, aln, tree, truth, model, extra = task
         rdir = os.path.join(out_dir, "runs", "%s_s%d_%s_t%d_%s_r%d" % (name, seed, tmode, thr, arm, rep))
         os.makedirs(rdir, exist_ok=True)
-        cmd = [binary, "-s", aln, "-m"] + model.split() + ["-nt", str(thr), "-seed", str(1 + rep), "--prefix", "run", "-redo", "-lk", "FMA"]
+        run_binary = old_binary if ARM_BINARY.get(arm) == "old" else binary
+        cmd = [run_binary, "-s", aln, "-m"] + model.split() + ["-nt", str(thr), "-seed", str(1 + rep), "--prefix", "run", "-redo", "-lk", "FMA"]
         if tmode == "te":
             cmd += ["-te", tree]
         cmd += extra.split()

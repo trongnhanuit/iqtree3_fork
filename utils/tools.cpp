@@ -7476,8 +7476,8 @@ void Params::setDefault() {
     ag_em_ratios = "1,2,5,10";
     ag_cascade = false;
     ag_em_axes = "W,R,F";
-    ag_em_stop_axes = "";
-    ag_em_stop_frac = 0.01;
+    ag_em_stop_axes = "W,R,F";
+    ag_em_stop_frac = 0.001;
     ag_stats = false;
     ag_abort_after = "";
     ag_dump_gradient = false;

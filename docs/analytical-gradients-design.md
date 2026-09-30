@@ -331,9 +331,10 @@ order sensitivity has not been re-measured under the new mechanism.
 
 Each axis's own iteration can additionally stop once its own gain falls
 below a fraction of its largest gain so far, selected per axis via
-`--ag-em-stop-axes <list>` (default `""`, off; e.g. `W,R,F` or just `F`)
-and sized via `--ag-em-stop-frac <fraction>` (default `0.01`, no absolute
-floor). This is deliberately not the joint-polish `stopEarly` rule: the
+`--ag-em-stop-axes <list>` (default `W,R,F`; e.g. just `F` to narrow it, or
+`""` to disable) and sized via `--ag-em-stop-frac <fraction>` (default
+`0.001`, no absolute floor). This is deliberately not the joint-polish
+`stopEarly` rule: the
 point of the EM axes here is a cheap, rough starting point for the joint
 BFGS polish, not a fully-converged answer, so over-optimising one axis
 while the others are still far from correct is wasted work; a purely
@@ -349,8 +350,17 @@ there. F had no internal loop of its own (one E-step/M-step per call), so
 `emProfilesLoop` now always wraps it in the same kind of default,
 always-on convergence test (max per-entry profile change < 1e-4,
 mirroring W/R), with `--ag-em-stop-axes F` OR'ing in the same earlier,
-relative-gain exit as W/R — consistent across all three axes now. Off by
-default; not yet benchmarked against always-on.
+relative-gain exit as W/R — consistent across all three axes now. A
+dedicated `--stopfrac` benchmark (`test_scripts/ag/bench.py`) compared
+default (off), 0.01 and 0.001 on 3 randomised families (simplest DNA
+GTR+F4+I+G4, simple LG+F4+R4, complex GTR20+F8+I+R4, 40 taxa, 2 seeds):
+0.001 never meaningfully underperformed the axes being off, and was
+sometimes clearly better; 0.01 produced the single best and single fastest
+results in the whole benchmark but also two real regressions (up to 542
+lnL units) on two different families/seeds -- a real, seed-dependent
+failure mode, not noise. `W,R,F` at `0.001` is the default as the safer
+choice; `0.01` remains available as a higher-variance, occasionally
+faster opt-in.
 
 Every axis snapshots the state (theta and branch lengths), runs its
 M-step, renormalises through `pack`/`unpack` (floors, mean rate 1,
@@ -510,8 +520,8 @@ two thread counts and three timing repeats.
 | `--ag-warm-select index|weight|sample` | borrow the first K, (default) the K highest-weighted, or K weighted-sampled reference profiles |
 | `--ag-multistart N` | N jittered start candidates, refined by EM; 0 (default) off, -1 automatic |
 | `--ag-em-axes W,R,F` | EM axes per round (weights, rates, profiles); empty disables EM |
-| `--ag-em-stop-axes <list>` | per-axis (subset of W,R,F) relative-gain early exit; default "" (off) |
-| `--ag-em-stop-frac <fraction>` | relative threshold for --ag-em-stop-axes; default 0.01 |
+| `--ag-em-stop-axes <list>` | per-axis (subset of W,R,F) relative-gain early exit; default W,R,F |
+| `--ag-em-stop-frac <fraction>` | relative threshold for --ag-em-stop-axes; default 0.001 |
 | `--ag-cascade on|off` | phase-1 EM warm-up at coarser precisions first, not just the target (default off) |
 | `--ag-optalg BFGS|LBFGSB` | driver of the joint polish |
 | `--ag-stats` | print evaluation counts, EM steps and reverts |

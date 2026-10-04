@@ -1228,7 +1228,8 @@ void Optimization::lbfgsb(int n, int m, double *x, double *l, double *u, int *nb
 				cerr << "L-BFGS-B needs finite values of 'fn'" << endl;
 				exit(1);
 			}
-			
+			if (strncmp(task, "FG_START", 8) == 0)
+				f_prev_x = f;   // f(x0): stopEarly()'s first delta must be finite, not HUGE_VAL
 		} else if (strncmp(task, "NEW_X", 5) == 0) {
 			iter++;
 			if(trace == 1 && (iter % nREPORT == 0)) {

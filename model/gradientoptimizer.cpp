@@ -637,8 +637,10 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
 
     // NOTE(design 11): start-point work runs once per ModelFactory, on the
     // main (write_info) optimisation only: ModelFinder candidates, NNI refits
-    // and +I+G restarts keep their current parameters
-    const bool first = write_info && !factory_->ag_init_done;
+    // and +I+G restarts keep their current parameters, and so does the final
+    // optimisation (ag_skip_em) even if it resumes a checkpoint that never set
+    // ag_init_done
+    const bool first = write_info && !factory_->ag_init_done && !factory_->ag_skip_em;
     if (first && params.ag_start == "cold") coldStart(write_info);
     else breakSymmetry(write_info);
     if (first) multiStart(write_info, gradient_epsilon);

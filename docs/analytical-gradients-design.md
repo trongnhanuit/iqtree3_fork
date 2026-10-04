@@ -425,8 +425,10 @@ is; it is never checkpointed, and `--ag-stats` reports `em_levels=0` there.
 ## 11. Start points: warm, cold, multi-start (version 1.1)
 
 Start-point work happens once per `ModelFactory`, on the main
-optimisation only (the one that prints progress); ModelFinder candidates,
-NNI refits and +I+G restarts keep their current parameters.
+optimisation only (the one that prints progress), never on the final one
+above (even if it happens to be first to print, e.g. resuming a checkpoint
+whose `ag_init_done` was never set); ModelFinder candidates, NNI refits
+and +I+G restarts keep their current parameters.
 
 * **warm** (default): the parameters as IQ-TREE initialised them, with
   identical `+FO` profiles made distinct (section 9). Above C60, the

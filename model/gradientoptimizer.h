@@ -138,6 +138,7 @@ private:
     long n_lh_ = 0, n_grad_ = 0, n_fd_fallback_ = 0, n_bfgs_iter_ = 0;
     long n_em_w_ = 0, n_em_r_ = 0, n_em_f_ = 0, n_em_revert_ = 0;
     bool em_enabled_ = false;
+    bool no_one_percent_stop_ = false;   // --ag-no-one-percent-stop
     long n_multistart_ = 0;
     std::string em_axes_;
     bool warned_fallback_ = false;

@@ -1848,6 +1848,11 @@ public:
     bool ag_gradient_check_strict;
     /** --ag-optalg <BFGS|LBFGSB>: driver for the joint polish (default BFGS) */
     string ag_optalg;
+    /** --ag-no-one-percent-stop: in the joint polish, stop once a step gains less
+        than logl_epsilon only, dropping the extra "and less than 1% of the
+        largest step so far" condition (default off: the 1% condition stays on,
+        since dropping it can silently lose several logL on mixture models) */
+    bool ag_no_one_percent_stop;
     /** --ag-multistart N: number of multi-start candidates (-1 = auto, 0 = off) */
     int ag_multistart;
     /** --ag-multistart-budget N: refinement budget in likelihood-evaluation equivalents */

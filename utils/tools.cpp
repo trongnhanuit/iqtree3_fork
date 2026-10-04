@@ -1306,6 +1306,10 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.ag_optalg = argv[cnt];
                 continue;
             }
+            if (strcmp(argv[cnt], "--ag-no-one-percent-stop") == 0) {
+                params.ag_no_one_percent_stop = true;
+                continue;
+            }
             if (strcmp(argv[cnt], "--ag-multistart") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -7468,6 +7472,7 @@ void Params::setDefault() {
     ag_gradient_check_only = false;
     ag_gradient_check_strict = false;
     ag_optalg = "BFGS";
+    ag_no_one_percent_stop = false;
     ag_multistart = 0;
     ag_multistart_budget = 500;
     ag_start = "warm";

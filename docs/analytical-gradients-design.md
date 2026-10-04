@@ -262,7 +262,10 @@ One `optimize()` call runs, for round `k = 1, 2, ...` up to the
    retained updates instead). The bounds are numerical fences only, and
    `restartParameters` never randomises. Inside one minimisation the
    `stopEarly` hook ends the search once a step gains less than 1% of the
-   largest step so far *and* less than `logl_epsilon`;
+   largest step so far *and* less than `logl_epsilon` (`--ag-no-one-percent-stop`
+   drops the first condition, stopping on `logl_epsilon` alone -- faster, but a
+   benchmark found it can silently lose several logL on mixture models, so it
+   stays off by default);
 
 and stops when a round improves the log-likelihood by less than
 `logl_epsilon`, exactly the acceptance rule of the default loop. It ends
@@ -524,6 +527,7 @@ two thread counts and three timing repeats.
 | `--ag-em-stop-frac <fraction>` | relative threshold for --ag-em-stop-axes; default 0.001 |
 | `--ag-cascade on|off` | phase-1 EM warm-up at coarser precisions first, not just the target (default off) |
 | `--ag-optalg BFGS|LBFGSB` | driver of the joint polish |
+| `--ag-no-one-percent-stop` | joint polish stops on `logl_epsilon` alone, dropping the 1%-of-largest-step condition (default off: the 1% condition stays on) |
 | `--ag-stats` | print evaluation counts, EM steps and reverts |
 | `--ag-gradient-check [tol]`, `--ag-gradient-check-every k`, `--ag-gradient-check-strict` | check analytic against numerical gradients during the search |
 | `--ag-gradient-check-only`, `--ag-dump-gradient`, `--ag-selftest` | one-shot checks at the initial point (tests) |

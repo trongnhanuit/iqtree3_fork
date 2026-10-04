@@ -229,6 +229,7 @@ GradientOptimizer::GradientOptimizer(ModelFactory *factory)
     map_.reset(new ModelParamMap(factory, tree_));
     engine_.reset(new PhyloGradient(tree_));
     engine_->setNeedQ(map_->needQ());
+    no_one_percent_stop_ = Params::getInstance().ag_no_one_percent_stop;
 }
 
 GradientOptimizer::~GradientOptimizer() {
@@ -294,13 +295,14 @@ double GradientOptimizer::derivativeFunk(double x[], double dfx[]) {
 }
 
 bool GradientOptimizer::stopEarly(int iter, double f_prev, double f_new) {
-    // NOTE(design 6.4): stop when a step gains less than 1% of the largest
-    // step so far AND less than the absolute floor (the floor is mandatory:
-    // a slow ridge must not be abandoned while steps still exceed logl_epsilon)
+    // NOTE(design 9): stop once a gain is < logl_epsilon, and (default) also
+    // < 1% of the largest gain so far -- that second condition is what keeps
+    // a slow ridge from being abandoned early; --ag-no-one-percent-stop drops it
     double delta = f_prev - f_new;
     if (iter == 1) { delta_max_ = delta; stop_iter_ = 1; return false; }
     delta_max_ = max(delta_max_, delta);
     stop_iter_ = iter;
+    if (no_one_percent_stop_) return delta < logl_epsilon_;
     return delta < min(0.01 * delta_max_, logl_epsilon_);
 }
 

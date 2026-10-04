@@ -52,6 +52,11 @@ public:
     virtual void setCheckpoint(Checkpoint *checkpoint);
 
     /**
+        set the analytical-gradients EM-skip flag here and on every partition's own factory
+    */
+    virtual void setAgSkipEM(bool skip);
+
+    /**
         start structure for checkpointing
     */
     virtual void startCheckpoint();

@@ -3893,7 +3893,13 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
             string tree;
             Params::getInstance().fixStableSplits = false;
             Params::getInstance().tabu = false;
-            tree = iqtree->optimizeModelParameters(true);
+            {
+                // --analytical-gradients: topology is fixed and every preceding
+                // in-search reopt already ran EM warm-up on this same tree, so
+                // skip the redundant EM pass here (design 10)
+                AgSkipEmScope ag_skip_em(iqtree->getModelFactory(), true);
+                tree = iqtree->optimizeModelParameters(true);
+            }
             iqtree->addTreeToCandidateSet(tree, iqtree->getCurScore(), false, MPIHelper::getInstance().getProcessID());
             iqtree->getCheckpoint()->putBool("finishedModelFinal", true);
             iqtree->saveCheckpoint();

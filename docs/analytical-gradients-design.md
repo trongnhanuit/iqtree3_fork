@@ -414,6 +414,14 @@ retuned to a different threshold: the EM axes and cascade now engage for
 every model, subject only to `--ag-em-axes`/`--ag-cascade`. `--ag-force`
 is no longer a recognised option.
 
+Phase 1 is skipped at the final, post-search model optimisation
+("FINALIZING TREE SEARCH"): the topology is fixed by then and every
+preceding in-search reopt already ran a full phase 1 on this same best
+tree, so a further warm-up is redundant. That one call site sets
+`ModelFactory::ag_skip_em` through an RAII `AgSkipEmScope`, propagated to
+every partition's own factory under `-Q`/`-S` the same way `setCheckpoint`
+is; it is never checkpointed, and `--ag-stats` reports `em_levels=0` there.
+
 ## 11. Start points: warm, cold, multi-start (version 1.1)
 
 Start-point work happens once per `ModelFactory`, on the main

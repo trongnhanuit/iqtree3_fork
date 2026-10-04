@@ -175,6 +175,13 @@ void PartitionModel::setCheckpoint(Checkpoint *checkpoint) {
 		(*it)->getModelFactory()->setCheckpoint(checkpoint);
 }
 
+void PartitionModel::setAgSkipEM(bool skip) {
+    ModelFactory::setAgSkipEM(skip);
+    PhyloSuperTree *tree = (PhyloSuperTree*)site_rate->getTree();
+    for (PhyloSuperTree::iterator it = tree->begin(); it != tree->end(); it++)
+        (*it)->getModelFactory()->setAgSkipEM(skip);
+}
+
 void PartitionModel::startCheckpoint() {
     checkpoint->startStruct("PartitionModel");
 }

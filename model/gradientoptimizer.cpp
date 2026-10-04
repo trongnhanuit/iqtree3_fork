@@ -661,7 +661,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     // this to a single pass at the target precision; on adds coarser
     // passes first.
     em_axes_ = params.ag_em_axes;
-    em_enabled_ = !em_axes_.empty();
+    em_enabled_ = !em_axes_.empty() && !factory_->ag_skip_em;
     vector<double> levels;
     if (params.ag_cascade) {
         const double coarse[] = { 100.0, 10.0, 1.0, 0.1 };

@@ -239,6 +239,11 @@ public:
 	bool ag_warned = false;
 	/** --analytical-gradients: start-point work (cold start, multi-start) done once per factory */
 	bool ag_init_done = false;
+	/** --analytical-gradients: skip the EM warm-up for the next optimizeParameters() call
+	    on this factory (set only around the final, post-search optimisation, via AgSkipEmScope) */
+	bool ag_skip_em = false;
+	/** set ag_skip_em here and on every partition's own factory (PartitionModel override) */
+	virtual void setAgSkipEM(bool skip) { ag_skip_em = skip; }
 
 	/**
 		TRUE to store transition matrix into this hash table for computation efficiency
@@ -348,7 +353,21 @@ protected:
 
     vector<double> optimizeGammaInvWithInitValue(int fixed_len, double logl_epsilon, double gradient_epsilon,
                                        double initPInv, double initAlpha, DoubleVector &lenvec, Checkpoint *model_ckp);
-    
+
+};
+
+/** --analytical-gradients: set ag_skip_em for one optimizeParameters() call, restore it on exit */
+class AgSkipEmScope {
+public:
+    AgSkipEmScope(ModelFactory *factory, bool skip) : factory_(factory), saved_(factory->ag_skip_em) {
+        factory_->setAgSkipEM(skip);
+    }
+    ~AgSkipEmScope() { factory_->setAgSkipEM(saved_); }
+    AgSkipEmScope(const AgSkipEmScope &) = delete;
+    AgSkipEmScope &operator=(const AgSkipEmScope &) = delete;
+private:
+    ModelFactory *factory_;
+    bool saved_;
 };
 
 #endif

@@ -334,121 +334,24 @@ void PhyloGradient::accumulateEdge(PhyloNeighbor *nei, const Side &child, const 
     const Alignment *aln = tree->aln;
     const double t_edge = nei->length;
 
+    EdgeCtx ctx;
+    ctx.child = &child; ctx.parent = &parent; ctx.root_edge = root_edge; ctx.t_edge = t_edge;
+    ctx.aln = aln; ctx.tip_lh = tip_lh; ctx.ptn_freq = ptn_freq; ctx.ptn_invar = ptn_invar;
+    ctx.evec = evec; ctx.nblocks = nblocks; ctx.any_q = any_q;
+    ctx.dt_chunk = dt_chunk.data();
+    ctx.drate_chunk = drate_chunk.data();
+    ctx.dclass_chunk = root_edge ? dclass_chunk.data() : nullptr;
+    ctx.inv_state_chunk = root_edge ? inv_state_chunk.data() : nullptr;
+    ctx.inv_total_chunk = root_edge ? inv_total_chunk.data() : nullptr;
+    ctx.root_chunk = root_edge ? root_chunk.data() : nullptr;
+    ctx.Achunk = any_q ? A.data() : nullptr;
+    ctx.chunk_bad = chunk_bad.data();
+
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(tree->num_threads)
 #endif
-    for (int ch = 0; ch < nchunks; ch++) {
-        size_t b_lo = (nblocks * ch) / nchunks, b_hi = (nblocks * (ch + 1)) / nchunks;
-        double sum_dt = 0.0;
-        double *drate = &drate_chunk[(size_t)ch * ncat];
-        double *dclass = root_edge ? &dclass_chunk[(size_t)ch * ncat_mix] : nullptr;
-        double *inv_state = root_edge ? &inv_state_chunk[(size_t)ch * S] : nullptr;
-        double *rootc = root_edge ? &root_chunk[(size_t)ch * nmix * S] : nullptr;
-        double *Ach = any_q ? &A[(size_t)ch * ncat_mix * SS] : nullptr;
-        vector<double> a_c(ncat_mix), b_c(ncat_mix), wf(ncat_mix);
-        vector<const double*> xc_ptr(ncat_mix), xp_ptr(ncat_mix);
-        vector<size_t> sc_ptr(ncat_mix), sp_ptr(ncat_mix);
-        vector<unsigned> sc(ncat_mix);
-        vector<double> o_state(S), q_state(S);
-        for (size_t ptn = b_lo * V; ptn < min(b_hi * V, orig_nptn); ptn++) {
-            size_t base = (ptn / V) * V * block, lane = ptn % V;
-            int st_child = child.leaf_id >= 0 ? (*aln)[ptn][child.leaf_id] : -1;
-            int st_parent = parent.leaf_id >= 0 ? (*aln)[ptn][parent.leaf_id] : -1;
-            unsigned min_scale = 0;
-            for (size_t c = 0; c < ncat_mix; c++) {
-                size_t m = class_mix[c];
-                const double *xc, *xp;
-                size_t stride_c = V, stride_p = V;
-                if (st_child >= 0) { xc = tip_lh + st_child * tip_block + m * S; stride_c = 1; }
-                else xc = child.lh + base + c * S * V + lane;
-                if (st_parent >= 0) { xp = tip_lh + st_parent * tip_block + m * S; stride_p = 1; }
-                else xp = parent.lh + base + c * S * V + lane;
-                xc_ptr[c] = xc; xp_ptr[c] = xp; sc_ptr[c] = stride_c; sp_ptr[c] = stride_p;
-                const double *vc = &val[c * S], *lc = &lval[c * S];
-                double a = 0.0, b = 0.0;
-                for (size_t i = 0; i < S; i++) {
-                    double prod = xc[i * stride_c] * xp[i * stride_p];
-                    a += prod * vc[i];
-                    b += prod * lc[i];
-                }
-                a_c[c] = a; b_c[c] = b;
-                unsigned s = 0;
-                if (safe) {
-                    if (child.scale) s += child.scale[ptn * ncat_mix + c];
-                    if (parent.scale) s += parent.scale[ptn * ncat_mix + c];
-                }
-                sc[c] = s;
-                if (c == 0 || s < min_scale) min_scale = s;
-            }
-            // class-relative scaling as in the kernel (design 5.3); the common
-            // per-pattern factor cancels in dL/L
-            double L = 0.0, dL = 0.0;
-            for (size_t c = 0; c < ncat_mix; c++) {
-                double f = 1.0;
-                if (safe) {
-                    if (sc[c] == min_scale + 1) f = SCALING_THRESHOLD;
-                    else if (sc[c] > min_scale + 1) f = 0.0;
-                }
-                wf[c] = class_weight[c] * f;
-                L += wf[c] * a_c[c];
-                dL += wf[c] * class_rate[c] * b_c[c];
-            }
-            L = fabs(L) + ptn_invar[ptn];
-            if (L <= 0.0 || !std::isfinite(L)) { chunk_bad[ch] = 1; continue; }
-            const double g = ptn_freq[ptn] / L;
-            sum_dt += g * dL;
-            for (size_t c = 0; c < ncat_mix; c++)
-                drate[class_cat[c]] += g * wf[c] * t_edge * b_c[c];
-
-            if (root_edge) {
-                // class sums for weights/proportions; invariant-site sums
-                for (size_t c = 0; c < ncat_mix; c++)
-                    dclass[c] += g * (wf[c] / max(class_weight[c], 1e-300)) * a_c[c];
-                if (p_invar > 0.0 && (inv_mask[ptn] || inv_gaponly[ptn])) {
-                    inv_total_chunk[ch] += g * ptn_invar[ptn] / p_invar;
-                    for (size_t x = 0; x < S; x++)
-                        if (inv_mask[ptn] & ((uint64_t)1 << x)) inv_state[x] += g * p_invar;
-                }
-                // root-frequency term: (U o~)_k (U (val o p~))_k per class, state space.
-                // Only feeds F-axis gradients (ModelParamMap::naturalFromQ), which
-                // require need_q; fixed-profile (need_q=false) components never
-                // consume this, so skip the O(S^2) work for them (design 5.3/9).
-                for (size_t c = 0; c < ncat_mix; c++) {
-                    size_t m = class_mix[c];
-                    if (wf[c] == 0.0 || !need_q[m]) continue;
-                    const double *U = evec + m * evec_stride;
-                    const double *xc = xc_ptr[c], *xp = xp_ptr[c];
-                    const double *vc = &val[c * S];
-                    for (size_t x = 0; x < S; x++) {
-                        double o = 0.0, q = 0.0;
-                        const double *Ux = U + x * S;
-                        for (size_t i = 0; i < S; i++) {
-                            o += Ux[i] * xp[i * sp_ptr[c]];
-                            q += Ux[i] * vc[i] * xc[i * sc_ptr[c]];
-                        }
-                        rootc[m * S + x] += g * wf[c] * o * q;
-                    }
-                }
-            }
-            // rank-one accumulation for dlogL/dQ (row = outside/parent side, column = child side)
-            if (any_q) {
-                for (size_t c = 0; c < ncat_mix; c++) {
-                    if (!need_q[class_mix[c]] || wf[c] == 0.0) continue;
-                    double coef = g * wf[c];
-                    const double *xc = xc_ptr[c], *xp = xp_ptr[c];
-                    double *Acc = Ach + c * SS;
-                    for (size_t j = 0; j < S; j++) {
-                        double oj = coef * xp[j * sp_ptr[c]];
-                        if (oj == 0.0) continue;
-                        double *row = Acc + j * S;
-                        for (size_t k = 0; k < S; k++)
-                            row[k] += oj * xc[k * sc_ptr[c]];
-                    }
-                }
-            }
-        }
-        dt_chunk[ch] = sum_dt;
-    }
+    for (int ch = 0; ch < nchunks; ch++)
+        accumulateChunk(ctx, ch);
 
     // fixed-order reductions
     double total = 0.0;
@@ -486,6 +389,132 @@ void PhyloGradient::accumulateEdge(PhyloNeighbor *nei, const Side &child, const 
         res.dlogl_dt.resize(max((size_t)id + 1, res.dlogl_dt.size()), 0.0);
     res.dlogl_dt[id] = total;
     res.num_edges++;
+}
+
+/* ---------------------------------------------------------------------- */
+/* A3: the per-OpenMP-chunk accumulation body, extracted verbatim from     */
+/* accumulateEdge (no behavior change); A4 adds SIMD implementations of    */
+/* the same contract, dispatched by a function pointer set in cacheDimensions */
+/* ---------------------------------------------------------------------- */
+
+void PhyloGradient::accumulateChunk(const EdgeCtx &ctx, int ch) {
+    const size_t V = vsize, S = nstates, SS = S * S;
+    const Side &child = *ctx.child;
+    const Side &parent = *ctx.parent;
+    const bool root_edge = ctx.root_edge;
+    const double t_edge = ctx.t_edge;
+    const Alignment *aln = ctx.aln;
+    const double *tip_lh = ctx.tip_lh, *ptn_freq = ctx.ptn_freq, *ptn_invar = ctx.ptn_invar, *evec = ctx.evec;
+
+    size_t b_lo = (ctx.nblocks * ch) / nchunks, b_hi = (ctx.nblocks * (ch + 1)) / nchunks;
+    double sum_dt = 0.0;
+    double *drate = &ctx.drate_chunk[(size_t)ch * ncat];
+    double *dclass = root_edge ? &ctx.dclass_chunk[(size_t)ch * ncat_mix] : nullptr;
+    double *inv_state = root_edge ? &ctx.inv_state_chunk[(size_t)ch * S] : nullptr;
+    double *rootc = root_edge ? &ctx.root_chunk[(size_t)ch * nmix * S] : nullptr;
+    double *Ach = ctx.any_q ? &ctx.Achunk[(size_t)ch * ncat_mix * SS] : nullptr;
+    vector<double> a_c(ncat_mix), b_c(ncat_mix), wf(ncat_mix);
+    vector<const double*> xc_ptr(ncat_mix), xp_ptr(ncat_mix);
+    vector<size_t> sc_ptr(ncat_mix), sp_ptr(ncat_mix);
+    vector<unsigned> sc(ncat_mix);
+    for (size_t ptn = b_lo * V; ptn < min(b_hi * V, orig_nptn); ptn++) {
+        size_t base = (ptn / V) * V * block, lane = ptn % V;
+        int st_child = child.leaf_id >= 0 ? (*aln)[ptn][child.leaf_id] : -1;
+        int st_parent = parent.leaf_id >= 0 ? (*aln)[ptn][parent.leaf_id] : -1;
+        unsigned min_scale = 0;
+        for (size_t c = 0; c < ncat_mix; c++) {
+            size_t m = class_mix[c];
+            const double *xc, *xp;
+            size_t stride_c = V, stride_p = V;
+            if (st_child >= 0) { xc = tip_lh + st_child * tip_block + m * S; stride_c = 1; }
+            else xc = child.lh + base + c * S * V + lane;
+            if (st_parent >= 0) { xp = tip_lh + st_parent * tip_block + m * S; stride_p = 1; }
+            else xp = parent.lh + base + c * S * V + lane;
+            xc_ptr[c] = xc; xp_ptr[c] = xp; sc_ptr[c] = stride_c; sp_ptr[c] = stride_p;
+            const double *vc = &val[c * S], *lc = &lval[c * S];
+            double a = 0.0, b = 0.0;
+            for (size_t i = 0; i < S; i++) {
+                double prod = xc[i * stride_c] * xp[i * stride_p];
+                a += prod * vc[i];
+                b += prod * lc[i];
+            }
+            a_c[c] = a; b_c[c] = b;
+            unsigned s = 0;
+            if (safe) {
+                if (child.scale) s += child.scale[ptn * ncat_mix + c];
+                if (parent.scale) s += parent.scale[ptn * ncat_mix + c];
+            }
+            sc[c] = s;
+            if (c == 0 || s < min_scale) min_scale = s;
+        }
+        // class-relative scaling as in the kernel (design 5.3); the common
+        // per-pattern factor cancels in dL/L
+        double L = 0.0, dL = 0.0;
+        for (size_t c = 0; c < ncat_mix; c++) {
+            double f = 1.0;
+            if (safe) {
+                if (sc[c] == min_scale + 1) f = SCALING_THRESHOLD;
+                else if (sc[c] > min_scale + 1) f = 0.0;
+            }
+            wf[c] = class_weight[c] * f;
+            L += wf[c] * a_c[c];
+            dL += wf[c] * class_rate[c] * b_c[c];
+        }
+        L = fabs(L) + ptn_invar[ptn];
+        if (L <= 0.0 || !std::isfinite(L)) { ctx.chunk_bad[ch] = 1; continue; }
+        const double g = ptn_freq[ptn] / L;
+        sum_dt += g * dL;
+        for (size_t c = 0; c < ncat_mix; c++)
+            drate[class_cat[c]] += g * wf[c] * t_edge * b_c[c];
+
+        if (root_edge) {
+            // class sums for weights/proportions; invariant-site sums
+            for (size_t c = 0; c < ncat_mix; c++)
+                dclass[c] += g * (wf[c] / max(class_weight[c], 1e-300)) * a_c[c];
+            if (p_invar > 0.0 && (inv_mask[ptn] || inv_gaponly[ptn])) {
+                ctx.inv_total_chunk[ch] += g * ptn_invar[ptn] / p_invar;
+                for (size_t x = 0; x < S; x++)
+                    if (inv_mask[ptn] & ((uint64_t)1 << x)) inv_state[x] += g * p_invar;
+            }
+            // root-frequency term: (U o~)_k (U (val o p~))_k per class, state space.
+            // Only feeds F-axis gradients (ModelParamMap::naturalFromQ), which
+            // require need_q; fixed-profile (need_q=false) components never
+            // consume this, so skip the O(S^2) work for them (design 5.3/9).
+            for (size_t c = 0; c < ncat_mix; c++) {
+                size_t m = class_mix[c];
+                if (wf[c] == 0.0 || !need_q[m]) continue;
+                const double *U = evec + m * evec_stride;
+                const double *xc = xc_ptr[c], *xp = xp_ptr[c];
+                const double *vc = &val[c * S];
+                for (size_t x = 0; x < S; x++) {
+                    double o = 0.0, q = 0.0;
+                    const double *Ux = U + x * S;
+                    for (size_t i = 0; i < S; i++) {
+                        o += Ux[i] * xp[i * sp_ptr[c]];
+                        q += Ux[i] * vc[i] * xc[i * sc_ptr[c]];
+                    }
+                    rootc[m * S + x] += g * wf[c] * o * q;
+                }
+            }
+        }
+        // rank-one accumulation for dlogL/dQ (row = outside/parent side, column = child side)
+        if (ctx.any_q) {
+            for (size_t c = 0; c < ncat_mix; c++) {
+                if (!need_q[class_mix[c]] || wf[c] == 0.0) continue;
+                double coef = g * wf[c];
+                const double *xc = xc_ptr[c], *xp = xp_ptr[c];
+                double *Acc = Ach + c * SS;
+                for (size_t j = 0; j < S; j++) {
+                    double oj = coef * xp[j * sp_ptr[c]];
+                    if (oj == 0.0) continue;
+                    double *row = Acc + j * S;
+                    for (size_t k = 0; k < S; k++)
+                        row[k] += oj * xc[k * sc_ptr[c]];
+                }
+            }
+        }
+    }
+    ctx.dt_chunk[ch] = sum_dt;
 }
 
 // D_m = U^-T G_m U^T with U = eigenvectors (row = state, column = eigen index)

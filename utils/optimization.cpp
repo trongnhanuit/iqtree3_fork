@@ -803,9 +803,20 @@ void Optimization::dfpmin(double p[], int n, double lower[], double upper[]
     pnew=new_vector(1,n);
     xi=new_vector(1,n);
     fp = derivativeFunk(p,g);
+    // Shanno-Phua initial scaling (design 9): h0=1.0 leaves every existing
+    // caller's arithmetic bit-identical (x*1.0 == x); only an AG call starting
+    // from identity (no caller-supplied Hessian) picks a different h0.
+    double h0 = 1.0;
+    bool shanno_phua_pending = (dfpmin_scaled && !hessian);
+    if (shanno_phua_pending) {
+        double gn = 0.0;
+        for (i=1;i<=n;i++) gn += g[i]*g[i];
+        gn = sqrt(gn);
+        if (std::isfinite(gn) && gn > 1.0) h0 = 1.0/gn;
+    }
     for (i=1;i<=n;++i)
     {
-        xi[i] = -g[i];
+        xi[i] = -h0*g[i];
         sum += p[i]*p[i];
     }
     if (hessian) {
@@ -820,7 +831,7 @@ void Optimization::dfpmin(double p[], int n, double lower[], double upper[]
             for (j=1;j<=n;j++) {
                 hessin[i][j]=0.0;
             }
-            hessin[i][i]=1.0;
+            hessin[i][i]=h0;
         }
     }
 	//checkBound(p, xi, lower, upper, n);
@@ -881,12 +892,25 @@ void Optimization::dfpmin(double p[], int n, double lower[], double upper[]
 		}
 		// NR3's squared test loses the sign of fac (~dg.xi), so it can accept a
 		// negative-curvature update and leave hessin indefinite; the gated form
-		// rejects fac<=0 directly, exactly matching the old test for fac>0.
+		// rejects fac<=0 directly. fae<=0 can't happen for an exactly-PD hessin,
+		// but is a cheap guard against future drift (design 9).
 		bool curvature_ok = dfpmin_scaled
-			? (fac > sqrt(EPS*sumdg*sumxi))
+			? (fac > sqrt(EPS*sumdg*sumxi) && fae > 0.0)
 			: (fac*fac > EPS*sumdg*sumxi);
 		if (curvature_ok)
 		{
+			if (shanno_phua_pending) {
+				// first accepted update: rescale the whole approximation (not just
+				// hessin) to the curvature actually measured, not the h0 guess
+				// (design 9); equivalent to hessin = (fac/sumdg)*I regardless of h0
+				double gam = fac/sumdg/h0;
+				for (i=1;i<=n;i++) {
+					for (j=1;j<=n;j++) hessin[i][j] *= gam;
+					hdg[i] *= gam;
+				}
+				fae *= gam;
+				shanno_phua_pending = false;
+			}
 			fac=1.0/fac;
 			fad=1.0/fae;
             for (i=1;i<=n;i++) {

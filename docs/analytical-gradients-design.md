@@ -290,6 +290,19 @@ central differences at every `k`-th gradient evaluation
 `<prefix>.gradcheck.tsv`, and `--ag-gradient-check-strict` turns a
 disagreement into an error.
 
+`dfpmin`'s shared BFGS core has two fixes gated behind `Optimization::dfpmin_scaled`
+(set by `GradientOptimizer`'s constructor only, so every other caller is
+unaffected): Numerical Recipes' curvature test `fac^2 > EPS*sumdg*sumxi` loses
+the sign of `fac` (~`dg.xi`) and can accept an update reached by bound-clamping
+with `fac <= 0`, leaving `hessin` indefinite; the gated form checks `fac > 0`
+directly. The initial Hessian is also Shanno-Phua scaled: `h0 = min(1, 1/|g|)`
+scales the first step and `hessin = h0*I`; at the first accepted update, `hessin`,
+`hdg` and `fae` are rescaled together by `gam = fac/sumdg/h0`, which is
+equivalent to `hessin = (fac/sumdg)*I` regardless of `h0`. On the hardest
+mixture case tested (`GTR20+F10+R8`, 402 parameters) this turns a search that
+hits the 98-round cap without converging into one that converges in ~20 rounds,
+with fewer likelihood evaluations and a better final log-likelihood.
+
 Not in version 1 (later stages): per-axis EM warm start, cascading
 precision, multi-start, checkpointing of the optimiser's own state.
 
@@ -523,7 +536,28 @@ weights and profiles after matching the classes to the truth.
 three datasets with three arms at one thread; `--full` adds the rest with
 two thread counts and three timing repeats.
 
-## 14. Command-line summary
+## 14. SIMD accumulation (`accumulateChunkSSE`)
+
+The per-chunk loop that produces `dlogL/dt`, `dlogL/drate` (section 3), `A_c`
+(section 4) and the root-frequency/class/invariant-site sums (section 5) has a
+second implementation, dispatched from `cacheDimensions` when the kernel's
+`vsize == 2` (SSE2/NEON): two patterns are packed per `Vec2d` lane and
+processed together, reading child/parent partials (and gathered tip rows) in
+the kernel's own interleaved layout. `dlogL/dt`, `dlogL/drate`, `dlogL/dclass`
+and the invariant-site sums are added one real lane at a time in the same
+pattern-ascending order as the scalar path, so they match it bit-for-bit; only
+`A_c` and the root-frequency term reduce across lanes with `blend2d`, which
+reorders the sum and so differs from the scalar path by floating-point
+rounding only (under 1e-9 relative, the gradient check's own tolerance). A
+pattern pair with a non-finite likelihood invalidates the whole gradient (as
+the scalar path already does per-pattern), so it does not matter that the
+whole pair, not just the bad lane, is skipped. `AG_SCALAR_ACCUM=1` forces the
+scalar path regardless of `vsize`, for testing. On an AVX/FMA/AVX512 machine
+the kernel's own `vsize` is 4 or 8, so `accumulateChunkSSE` never dispatches
+there unless the run also forces `-lk SSE` (the kernel's own vector width,
+unrelated to `AG_SCALAR_ACCUM`); `test_scripts/ag/simd_check.sh` passes it.
+
+## 15. Command-line summary
 
 | Option | Meaning |
 |---|---|

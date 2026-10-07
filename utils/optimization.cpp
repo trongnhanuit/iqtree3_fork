@@ -879,7 +879,13 @@ void Optimization::dfpmin(double p[], int n, double lower[], double upper[]
 			sumdg += SQR(dg[i]);
 			sumxi += SQR(xi[i]);
 		}
-		if (fac*fac > EPS*sumdg*sumxi)
+		// NR3's squared test loses the sign of fac (~dg.xi), so it can accept a
+		// negative-curvature update and leave hessin indefinite; the gated form
+		// rejects fac<=0 directly, exactly matching the old test for fac>0.
+		bool curvature_ok = dfpmin_scaled
+			? (fac > sqrt(EPS*sumdg*sumxi))
+			: (fac*fac > EPS*sumdg*sumxi);
+		if (curvature_ok)
 		{
 			fac=1.0/fac;
 			fad=1.0/fae;

@@ -176,6 +176,16 @@ public:
 	virtual bool stopEarly(int iter, double f_prev, double f_new) { return false; }
 
 	/**
+		dfpmin()'s BFGS Hessian-update variant: false (default) is today's exact
+		Numerical Recipes code, for every existing caller. The analytical-gradient
+		optimiser sets this true on its own object only (never a global/Params
+		flag: -Q partitions run concurrent GradientOptimizer/Optimization objects).
+		true fixes a real bug (the squared curvature test can accept a
+		negative-curvature update) and scales the initial Hessian (Shanno-Phua).
+	*/
+	bool dfpmin_scaled = false;
+
+	/**
 		multi dimensional optimization by BFGS method
 		@param guess the initial starting point
 		@param ndim number of dimension

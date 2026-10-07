@@ -230,6 +230,7 @@ GradientOptimizer::GradientOptimizer(ModelFactory *factory)
     engine_.reset(new PhyloGradient(tree_));
     engine_->setNeedQ(map_->needQ());
     no_one_percent_stop_ = Params::getInstance().ag_no_one_percent_stop;
+    dfpmin_scaled = true;   // this object's dfpmin calls only (Optimization::dfpmin_scaled, design 9)
 }
 
 GradientOptimizer::~GradientOptimizer() {

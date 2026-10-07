@@ -72,6 +72,10 @@ CMDS=(
   "ex_te_blfix|-s $EX/example.phy -m GTR+FO+G4 -te $HERE/data/example_gtr_g.nwk -blfix -nt 1 -seed $SEED"
   "ex_part_Q|-s $EX/example.phy -Q $EX/example.nex -m GTR+G -nt 1 -seed $SEED"
   "ex_part_p|-s $EX/example.phy -p $EX/example.nex -m GTR+G -nt 1 -seed $SEED"
+  # B0: non-AG dfpmin callers the Phase B gate must leave untouched (added
+  # before the gated fixes land, so this is a real before/after safety net)
+  "ex_codon_gy|-s $EX/example.phy -st CODON -m GY -te $HERE/data/example_gtr_g.nwk -nt 1 -seed $SEED"
+  "ex_mixlen_bfgs|-s $EX/example.phy -m GTR+FO+H4 -optlen BFGS -te $HERE/data/example_gtr_g.nwk -nt 1 -seed $SEED"
 )
 if [ "$FULL" = "1" ]; then CMDS+=(
   "aa_lg_f4_r4|-s $EX/aa_example.phy -m LG+F4+R4 -nt 1 -seed $SEED"

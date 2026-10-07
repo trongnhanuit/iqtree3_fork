@@ -163,15 +163,19 @@ void PhyloGradient::cacheInvariantStates() {
 /* ---------------------------------------------------------------------- */
 
 double PhyloGradient::xKernel(double lam_j, double lam_k, double tau) {
+    return xFromExp(lam_j, lam_k, tau, exp(lam_j * tau), exp(lam_k * tau));
+}
+
+double PhyloGradient::xFromExp(double lam_j, double lam_k, double tau, double ej, double ek) {
     double d = lam_j - lam_k;
     // expm1(tau d)/d is accurate for ANY non-zero d, so the diagonal formula is
     // only needed when the gap is exactly zero (or would underflow); a wider
     // window here would cost relative accuracy tau*|d|/2 (design doc 5.3)
     if (fabs(d) < 1e-200)
-        return tau * exp(lam_j * tau);
+        return tau * ej;
     if (fabs(d * tau) < 0.1)
-        return exp(lam_k * tau) * expm1(tau * d) / d;    // algebraically exact, no cancellation
-    return (exp(lam_j * tau) - exp(lam_k * tau)) / d;
+        return ek * expm1(tau * d) / d;    // algebraically exact, no cancellation
+    return (ej - ek) / d;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -314,7 +318,7 @@ void PhyloGradient::accumulateEdge(PhyloNeighbor *nei, const Side &child, const 
             double *X = &xker[c * SS];
             for (size_t j = 0; j < S; j++)
                 for (size_t k = 0; k < S; k++)
-                    X[j * S + k] = xKernel(ev[j], ev[k], tau);
+                    X[j * S + k] = xFromExp(ev[j], ev[k], tau, vc[j], vc[k]);
         }
     }
 

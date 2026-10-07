@@ -100,6 +100,9 @@ public:
     static double xKernel(double lam_j, double lam_k, double tau);
 
 private:
+    /** X(lam_j,lam_k,tau) from exponentials the caller already has (A1: no redundant exp/expm1 setup) */
+    static double xFromExp(double lam_j, double lam_k, double tau, double ej, double ek);
+
     /** one side of an edge: an eigen-space partial (with scale counts) or a leaf */
     struct Side {
         const double *lh = nullptr;   // partial in eigen coordinates, kernel layout

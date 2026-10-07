@@ -409,10 +409,13 @@ void PhyloGradient::accumulateEdge(PhyloNeighbor *nei, const Side &child, const 
                     for (size_t x = 0; x < S; x++)
                         if (inv_mask[ptn] & ((uint64_t)1 << x)) inv_state[x] += g * p_invar;
                 }
-                // root-frequency term: (U o~)_k (U (val o p~))_k per class, state space
+                // root-frequency term: (U o~)_k (U (val o p~))_k per class, state space.
+                // Only feeds F-axis gradients (ModelParamMap::naturalFromQ), which
+                // require need_q; fixed-profile (need_q=false) components never
+                // consume this, so skip the O(S^2) work for them (design 5.3/9).
                 for (size_t c = 0; c < ncat_mix; c++) {
-                    if (wf[c] == 0.0) continue;
                     size_t m = class_mix[c];
+                    if (wf[c] == 0.0 || !need_q[m]) continue;
                     const double *U = evec + m * evec_stride;
                     const double *xc = xc_ptr[c], *xp = xp_ptr[c];
                     const double *vc = &val[c * S];

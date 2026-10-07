@@ -56,7 +56,8 @@ public:
         std::vector<double> dlogl_dclass;
         /** per rate category r: dlogL/d(rate_r) summed over edges and components */
         std::vector<double> dlogl_drate;
-        /** per component m, per state k: root-frequency term sum_ptn (freq/L) sum_r w f (U o~)_k (U e^{L tau} p~)_k */
+        /** per component m, per state k: root-frequency term sum_ptn (freq/L) sum_r w f (U o~)_k (U e^{L tau} p~)_k;
+            left at 0 for components with need_q=false (A2: the only consumer needs Q) */
         std::vector<std::vector<double>> root_term;
         /** per state x: sum over constant patterns containing x of (freq/L) * p_inv */
         std::vector<double> inv_state_sum;

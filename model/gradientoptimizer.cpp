@@ -1118,8 +1118,12 @@ int GradientOptimizer::gradientCheckOnly(ModelFactory *factory, PhyloTree *tree)
     double q_rel = any_q ? fabs(q_id - sum_t_dt) / max(max(fabs(q_id), fabs(sum_t_dt)), 1e-6 * max(gmax, 1.0)) : 0.0;
     double root_lhs = 0.0, root_rhs = 0.0;
     {
+        // the identity holds per component; restrict both sides to the engine's
+        // effective need_q (all-true when there's no map), since root_term is
+        // zero for need_q=false components (A2: they never consume it anyway)
         vector<double> pi(nst);
         for (int m = 0; m < nmix; m++) {
+            if (have_map && !map.needQ()[m]) continue;
             model->getStateFrequency(pi.data(), m);
             for (int k = 0; k < nst; k++) root_lhs += pi[k] * res.root_term[m][k];
             for (int r = 0; r < ncat; r++)

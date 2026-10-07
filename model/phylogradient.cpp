@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cstdlib>
+#include <vectorclass/vectorclass.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -47,6 +48,8 @@ PhyloGradient::PhyloGradient(PhyloTree *t) : tree(t) {
     // test hook (design 12): throw at the k-th edge of the outside pass to
     // prove that the RAII guard leaves the tree reusable
     if (const char *e = getenv("AG_TEST_FAULT_EDGE")) fault_edge_ = atoi(e);
+    // test hook: force the scalar accumulation to compare it with the SIMD one
+    if (const char *e = getenv("AG_SCALAR_ACCUM")) force_scalar_accum = atoi(e) != 0;
 }
 
 PhyloGradient::~PhyloGradient() {
@@ -126,13 +129,22 @@ void PhyloGradient::cacheDimensions() {
     xker.assign(any_q ? ncat_mix * ss : 0, 0.0);
     A.assign(any_q ? (size_t)nchunks * ncat_mix * ss : 0, 0.0);
     cacheInvariantStates();
+    chunk_fn = (vsize == 2 && !force_scalar_accum) ? &PhyloGradient::accumulateChunkSSE
+                                                   : &PhyloGradient::accumulateChunk;
+    static bool logged = false;
+    if (Params::getInstance().ag_stats && !logged) {
+        logged = true;
+        cout << "AG accumulation: " << (chunk_fn == &PhyloGradient::accumulateChunkSSE ? "SSE2" : "scalar")
+             << " (vsize=" << vsize << ")" << endl;
+    }
 }
 
 // Mirror of PhyloTree::computePtnInvar: which states an invariant pattern's
 // term p_inv * sum_x pi_bar_x runs over (DNA IUPAC and protein B/Z/J ambiguity).
 void PhyloGradient::cacheInvariantStates() {
-    inv_mask.assign(orig_nptn, 0);
-    inv_gaponly.assign(orig_nptn, 0);
+    // padded length: SIMD lanes past orig_nptn index these as zeros
+    inv_mask.assign(nptn, 0);
+    inv_gaponly.assign(nptn, 0);
     if (p_invar <= 0.0) return;
     const Alignment *aln = tree->aln;
     const int unknown = aln->STATE_UNKNOWN;
@@ -351,7 +363,7 @@ void PhyloGradient::accumulateEdge(PhyloNeighbor *nei, const Side &child, const 
 #pragma omp parallel for schedule(static) num_threads(tree->num_threads)
 #endif
     for (int ch = 0; ch < nchunks; ch++)
-        accumulateChunk(ctx, ch);
+        (this->*chunk_fn)(ctx, ch);
 
     // fixed-order reductions
     double total = 0.0;
@@ -392,9 +404,7 @@ void PhyloGradient::accumulateEdge(PhyloNeighbor *nei, const Side &child, const 
 }
 
 /* ---------------------------------------------------------------------- */
-/* A3: the per-OpenMP-chunk accumulation body, extracted verbatim from     */
-/* accumulateEdge (no behavior change); A4 adds SIMD implementations of    */
-/* the same contract, dispatched by a function pointer set in cacheDimensions */
+/* per-OpenMP-chunk accumulation, dispatched by chunk_fn (cacheDimensions) */
 /* ---------------------------------------------------------------------- */
 
 void PhyloGradient::accumulateChunk(const EdgeCtx &ctx, int ch) {
@@ -510,6 +520,202 @@ void PhyloGradient::accumulateChunk(const EdgeCtx &ctx, int ch) {
                     double *row = Acc + j * S;
                     for (size_t k = 0; k < S; k++)
                         row[k] += oj * xc[k * sc_ptr[c]];
+                }
+            }
+        }
+    }
+    ctx.dt_chunk[ch] = sum_dt;
+}
+
+// Two patterns per Vec2d. Operands are read in the internal-partial layout,
+// element (state i, lane l) at [i*2 + l]: straight from the partial when both
+// lanes are real, else from a copy with the padded lane zeroed; tip rows are
+// gathered per lane into the same layout. Per-pattern scalars (L, g, class
+// sums) are done per real lane in the scalar order, so they match
+// accumulateChunk bit for bit; only the rank-one and root-frequency sums
+// are reordered (lane pairs summed first).
+void PhyloGradient::accumulateChunkSSE(const EdgeCtx &ctx, int ch) {
+    ASSERT(Vec2d::size() == 2 && vsize == 2);
+    const size_t V = 2, S = nstates, SS = S * S, S2 = S * V;
+    const Side &child = *ctx.child;
+    const Side &parent = *ctx.parent;
+    const bool root_edge = ctx.root_edge;
+    const double t_edge = ctx.t_edge;
+    const Alignment *aln = ctx.aln;
+    const double *tip_lh = ctx.tip_lh, *ptn_freq = ctx.ptn_freq, *ptn_invar = ctx.ptn_invar, *evec = ctx.evec;
+
+    size_t b_lo = (ctx.nblocks * ch) / nchunks, b_hi = (ctx.nblocks * (ch + 1)) / nchunks;
+    double sum_dt = 0.0;
+    double *drate = &ctx.drate_chunk[(size_t)ch * ncat];
+    double *dclass = root_edge ? &ctx.dclass_chunk[(size_t)ch * ncat_mix] : nullptr;
+    double *inv_state = root_edge ? &ctx.inv_state_chunk[(size_t)ch * S] : nullptr;
+    double *rootc = root_edge ? &ctx.root_chunk[(size_t)ch * nmix * S] : nullptr;
+    double *Ach = ctx.any_q ? &ctx.Achunk[(size_t)ch * ncat_mix * SS] : nullptr;
+    // per class c, per lane l: [c*2 + l]
+    vector<double> a_c(ncat_mix * V), b_c(ncat_mix * V), wf(ncat_mix * V);
+    vector<unsigned> sc(ncat_mix * V);
+    vector<const double*> xc_ptr(ncat_mix), xp_ptr(ncat_mix);
+    // interleaved operand copies: tips per component, padded partials per class
+    vector<double> tip_c(child.leaf_id >= 0 ? nmix * S2 : 0), tip_p(parent.leaf_id >= 0 ? nmix * S2 : 0);
+    vector<double> pad_c, pad_p;
+    const int unknown = aln->STATE_UNKNOWN;
+
+    auto gatherTip = [&](int leaf_id, size_t p0, size_t nreal, double *dst) {
+        for (size_t l = 0; l < V; l++) {
+            int st = l < nreal ? (int)(*aln)[p0 + l][leaf_id] : unknown;   // never index a padded pattern
+            for (size_t m = 0; m < nmix; m++) {
+                const double *row = tip_lh + (size_t)st * tip_block + m * S;
+                double *d = dst + m * S2 + l;
+                for (size_t i = 0; i < S; i++) d[i * V] = l < nreal ? row[i] : 0.0;
+            }
+        }
+    };
+    // copy lane 0 of a partial, zero lane 1 (garbage in a padded lane must not reach a lane sum)
+    auto maskPartial = [&](const double *src, double *dst) {
+        for (size_t i = 0; i < S; i++) { dst[i * V] = src[i * V]; dst[i * V + 1] = 0.0; }
+    };
+
+    for (size_t b = b_lo; b < b_hi; b++) {
+        const size_t p0 = b * V;
+        const size_t nreal = min(V, orig_nptn - p0);   // 1 only in the last block of the alignment
+        const size_t base = b * V * block;
+        if (child.leaf_id >= 0) gatherTip(child.leaf_id, p0, nreal, tip_c.data());
+        if (parent.leaf_id >= 0) gatherTip(parent.leaf_id, p0, nreal, tip_p.data());
+        if (nreal < V) {
+            if (child.leaf_id < 0) pad_c.resize(ncat_mix * S2);
+            if (parent.leaf_id < 0) pad_p.resize(ncat_mix * S2);
+        }
+
+        unsigned min_scale[2] = {0, 0};
+        for (size_t c = 0; c < ncat_mix; c++) {
+            size_t m = class_mix[c];
+            const double *xc, *xp;
+            if (child.leaf_id >= 0) xc = &tip_c[m * S2];
+            else if (nreal < V) { maskPartial(child.lh + base + c * S2, &pad_c[c * S2]); xc = &pad_c[c * S2]; }
+            else xc = child.lh + base + c * S2;
+            if (parent.leaf_id >= 0) xp = &tip_p[m * S2];
+            else if (nreal < V) { maskPartial(parent.lh + base + c * S2, &pad_p[c * S2]); xp = &pad_p[c * S2]; }
+            else xp = parent.lh + base + c * S2;
+            xc_ptr[c] = xc; xp_ptr[c] = xp;
+            const double *vc = &val[c * S], *lc = &lval[c * S];
+            Vec2d a(0.0), bv(0.0), x, y;
+            for (size_t i = 0; i < S; i++) {
+                x.load(xc + i * V);
+                y.load(xp + i * V);
+                Vec2d prod = x * y;
+                a += prod * vc[i];
+                bv += prod * lc[i];
+            }
+            a.store(&a_c[c * V]);
+            bv.store(&b_c[c * V]);
+            for (size_t l = 0; l < nreal; l++) {
+                unsigned s = 0;
+                if (safe) {
+                    if (child.scale) s += child.scale[(p0 + l) * ncat_mix + c];
+                    if (parent.scale) s += parent.scale[(p0 + l) * ncat_mix + c];
+                }
+                sc[c * V + l] = s;
+                if (c == 0 || s < min_scale[l]) min_scale[l] = s;
+            }
+        }
+
+        // per real lane, exactly the scalar order; a padded lane keeps g = wf = 0
+        double L[2] = {1.0, 1.0}, dL[2] = {0.0, 0.0}, g[2] = {0.0, 0.0};
+        bool bad = false;
+        for (size_t l = 0; l < V; l++) {
+            if (l >= nreal) {
+                for (size_t c = 0; c < ncat_mix; c++) wf[c * V + l] = 0.0;
+                continue;
+            }
+            double Ll = 0.0, dLl = 0.0;
+            for (size_t c = 0; c < ncat_mix; c++) {
+                double f = 1.0;
+                if (safe) {
+                    if (sc[c * V + l] == min_scale[l] + 1) f = SCALING_THRESHOLD;
+                    else if (sc[c * V + l] > min_scale[l] + 1) f = 0.0;
+                }
+                double w = class_weight[c] * f;
+                wf[c * V + l] = w;
+                Ll += w * a_c[c * V + l];
+                dLl += w * class_rate[c] * b_c[c * V + l];
+            }
+            Ll = fabs(Ll) + ptn_invar[p0 + l];
+            if (Ll <= 0.0 || !std::isfinite(Ll)) bad = true;
+            L[l] = Ll; dL[l] = dLl;
+        }
+        // a bad real lane invalidates the whole gradient (chunk_bad -> res.valid = false);
+        // skip the pair so its non-finite operands never reach a lane sum
+        if (bad) { ctx.chunk_bad[ch] = 1; continue; }
+
+        for (size_t l = 0; l < nreal; l++) {
+            const size_t ptn = p0 + l;
+            const double gl = ptn_freq[ptn] / L[l];
+            g[l] = gl;
+            sum_dt += gl * dL[l];
+            for (size_t c = 0; c < ncat_mix; c++)
+                drate[class_cat[c]] += gl * wf[c * V + l] * t_edge * b_c[c * V + l];
+            if (root_edge) {
+                for (size_t c = 0; c < ncat_mix; c++)
+                    dclass[c] += gl * (wf[c * V + l] / max(class_weight[c], 1e-300)) * a_c[c * V + l];
+                if (p_invar > 0.0 && (inv_mask[ptn] || inv_gaponly[ptn])) {
+                    ctx.inv_total_chunk[ch] += gl * ptn_invar[ptn] / p_invar;
+                    for (size_t x = 0; x < S; x++)
+                        if (inv_mask[ptn] & ((uint64_t)1 << x)) inv_state[x] += gl * p_invar;
+                }
+            }
+        }
+
+        if (root_edge) {
+            // root-frequency term, see accumulateChunk; lanes added in order
+            for (size_t c = 0; c < ncat_mix; c++) {
+                size_t m = class_mix[c];
+                if (!need_q[m] || (wf[c * V] == 0.0 && wf[c * V + 1] == 0.0)) continue;
+                const double *U = evec + m * evec_stride;
+                const double *xc = xc_ptr[c], *xp = xp_ptr[c];
+                const double *vc = &val[c * S];
+                Vec2d coef(g[0] * wf[c * V], g[1] * wf[c * V + 1]), x, y;
+                double t[2];
+                for (size_t xs = 0; xs < S; xs++) {
+                    Vec2d o(0.0), q(0.0);
+                    const double *Ux = U + xs * S;
+                    for (size_t i = 0; i < S; i++) {
+                        y.load(xp + i * V);
+                        x.load(xc + i * V);
+                        o += Ux[i] * y;
+                        q += (Ux[i] * vc[i]) * x;
+                    }
+                    (coef * o * q).store(t);
+                    for (size_t l = 0; l < nreal; l++)
+                        if (wf[c * V + l] != 0.0) rootc[m * S + xs] += t[l];
+                }
+            }
+        }
+        // rank-one accumulation for dlogL/dQ: Acc[j][k] += sum_l coef_l xp[j,l] xc[k,l];
+        // two k at a time, the lane sums transposed with blend2d (padded lane is 0)
+        if (ctx.any_q) {
+            for (size_t c = 0; c < ncat_mix; c++) {
+                if (!need_q[class_mix[c]] || (wf[c * V] == 0.0 && wf[c * V + 1] == 0.0)) continue;
+                Vec2d coef(g[0] * wf[c * V], g[1] * wf[c * V + 1]);
+                const double *xc = xc_ptr[c], *xp = xp_ptr[c];
+                double *Acc = Ach + c * SS;
+                Vec2d y, x0, x1, r;
+                for (size_t j = 0; j < S; j++) {
+                    y.load(xp + j * V);
+                    Vec2d oj = coef * y;
+                    double *row = Acc + j * S;
+                    size_t k = 0;
+                    for (; k + 1 < S; k += 2) {
+                        x0.load(xc + k * V);
+                        x1.load(xc + (k + 1) * V);
+                        Vec2d v0 = oj * x0, v1 = oj * x1;
+                        r.load(row + k);
+                        r += blend2d<0, 2>(v0, v1) + blend2d<1, 3>(v0, v1);
+                        r.store(row + k);
+                    }
+                    if (k < S) {
+                        x0.load(xc + k * V);
+                        row[k] += horizontal_add(oj * x0);
+                    }
                 }
             }
         }

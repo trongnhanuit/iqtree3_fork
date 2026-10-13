@@ -69,8 +69,9 @@ def prep_one(path, tree_dir):
     newick = None
     if tree_dir:
         cand = [f for f in os.listdir(tree_dir) if f.split(".")[0] == base.split(".")[0]]
-        if cand:
-            t = parse_newick(open(os.path.join(tree_dir, cand[0])).read())
+        text = open(os.path.join(tree_dir, cand[0])).read().strip() if cand else ""
+        if text:    # an empty tree file counts as missing (a tree is then built)
+            t = parse_newick(text)
             for leaf in _leaf_nodes(t):
                 leaf.name = clean_name(leaf.name)
             t = prune(t, set(names))

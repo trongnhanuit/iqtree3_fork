@@ -1144,9 +1144,10 @@ int GradientOptimizer::gradientCheckOnly(ModelFactory *factory, PhyloTree *tree)
         ofstream out((prefix + ".aggrad.tsv").c_str());
         out << setprecision(17);
         out << "#logl\t" << res.logl << '\n';
-        out << "#tree\t";
-        tree->printTree(out, WT_BR_LEN);
-        out << '\n';
+        // printTree leaves its stream fixed-point at 10 digits; keep that off `out`
+        ostringstream tree_str;
+        tree->printTree(tree_str, WT_BR_LEN);
+        out << "#tree\t" << tree_str.str() << '\n';
         // model parameters, enough for an external oracle to rebuild Q per component
         out << "#seqtype\t" << (tree->aln->seq_type == SEQ_DNA ? "DNA" : tree->aln->seq_type == SEQ_PROTEIN ? "AA" : "OTHER") << '\n';
         out << "#nstates\t" << nst << '\n';

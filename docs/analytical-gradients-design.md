@@ -576,3 +576,59 @@ unrelated to `AG_SCALAR_ACCUM`); `test_scripts/ag/simd_check.sh` passes it.
 | `--ag-gradient-check [tol]`, `--ag-gradient-check-every k`, `--ag-gradient-check-strict` | check analytic against numerical gradients during the search |
 | `--ag-gradient-check-only`, `--ag-dump-gradient`, `--ag-selftest` | one-shot checks at the initial point (tests) |
 | `--ag-abort-after init|round:N` | write the checkpoint and exit at that phase (resume tests) |
+| `--ag-dump-em` | write `PREFIX.agem.tsv`, the per-class EM sufficient statistics at the final parameters (`-te` only; section 16) |
+
+## 16. EM sufficient statistics (`--ag-dump-em`)
+
+Used by the C10 re-estimation pipeline (map-reduce EM over many alignments). Each
+alignment is one IQ-TREE run with a fixed topology and fixed shared mixture (π, w and
+the FMIX rate fields), optimising only branch lengths and α. After the final
+optimisation, one `PhyloGradient::compute()` with `need_q` on for every class gives the
+statistics a pooled M-step needs.
+
+**Fisher identity.** With every entry of `Q_m` independent, D = ∂lnL/∂Q_m is the
+posterior expectation of the complete-data score of a CTMC path:
+
+- E[N_ab] = Q_ab D_ab (a≠b): expected a→b substitutions;
+- E[T_a] = D_aa: expected time in a, in rate-scaled branch-length units (summed over rate
+  categories, since τ = r·t);
+- E[root = k] = π_k · root_term[m][k], at the engine's root `root_dad`;
+- class mass ω_c ∂lnL/∂ω_c, the posterior site count of class c = (m, r).
+
+Q is taken as UΛU⁻¹ from the eigen buffers, so it is exactly the generator the kernel
+exponentiated, including the per-class scaling by `total_num_subst`. The counts depend
+on where the tree is rooted (only N_ab + N_ba and T_a do not), which is harmless for EM:
+one rooting is one valid augmentation. `#root_side` records it.
+
+**File** (tab-separated, 17 significant digits, ends with `#END`):
+
+| Line | Content |
+|---|---|
+| `#format agem 1` | version |
+| `#logl`, `#logl_init` | final lnL; lnL before any optimisation in this run (`mlInitial`) |
+| `#nsite`, `#nstates`, `#nmix`, `#ncat`, `#alpha`, `#cat_rates`, `#cat_props`, `#root_side` | run constants |
+| `#class m weight w tns t` | echo of the class weight and rescaled rate field |
+| `#freq m` | echo of π_m (S values) |
+| `#mass m` | posterior mass per rate category (ncat values) |
+| `#root m` | E[root = b] (S values) |
+| `#subin m` | Σ_{a≠b} E[N_ab]: expected substitutions into b (S values) |
+| `#dwell m` | E[T_a] (S values) |
+| `#tree` | final tree with branch lengths (last, so the stream's number format stays intact) |
+
+For a fixed exchangeability matrix these 64 numbers per class (20 states, 4 categories)
+are sufficient for the π, w and per-class-rate M-steps; the full S×S counts are not
+written. `#logl_init` makes the round-to-round EM inequality checkable for free.
+
+**Guards** (each `outError`s): the engine's `supports()` without the free-parameter
+check, +I (the invariant term is outside D), removed identical sequences (use
+`-keep-ident`), no fixed topology (`-te`), a checkpoint restore (`mlInitial` unset),
+and `-b`/`--runs`/partitions/PLL/SPR/aLRT pruning (the hook would run more than once or
+on a pruned tree). The hook runs once, on the master, after `printMiscInfo`; it
+recomputes the likelihood at the end, so all other outputs are unchanged.
+
+**Tests** (`run_ag_tests.sh --suite agem`): `oracle_em.py` rebuilds each class's Q from
+the dump (F81/POISSON components, rate fields ≠ 1), checks the lnL, recomputes mass and
+root counts by pruning and subin/dwell by central differences of an explicit-Q
+likelihood, checks Σmass = nsite and Σroot = mass, and must fail on a perturbed
+value; summed `-wspm` posteriors equal the mass; C10Opt's optimised weights equal
+mass/nsite; the flag leaves every other output identical; +I and `-b` are rejected.

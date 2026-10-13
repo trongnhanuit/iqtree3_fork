@@ -3,7 +3,8 @@
 Driver of the C10 re-estimation EM (design doc section 16).
 
   em.py train  RUNDIR --data DATA --bin IQTREE [--option warm|cold|weights] [-j 24]
-               [--chains N] [--halving 30:6,60:3|none] [--max-rounds 300] [--seed 1] [--dry-run]
+               [--chains N] [--halving 30:6,60:3|none] [--max-rounds 300] [--seed 1]
+               [--stop-nats X] [--dry-run]
   em.py status RUNDIR
   em.py score  OUT --data DATA --list LIST --bin IQTREE [-j 24] (--mdef FILE -m NAME | -m MODEL)
 
@@ -199,8 +200,8 @@ def projected(gains):
     return lam, gains[-1] * lc / (1.0 - lc)
 
 
-def converged(summ):
-    limit = max(1.0, STOP_REMAIN * summ[-1]["nsite"])
+def converged(summ, stop_nats=None):
+    limit = stop_nats if stop_nats else max(1.0, STOP_REMAIN * summ[-1]["nsite"])
     objs = [s["obj"] for s in summ]
     gains = [objs[i] - objs[i - 1] for i in range(1, len(objs))]
     ok = 0
@@ -443,7 +444,7 @@ def train(args):
             st = reduce_chain(c, r, [x[0] for _, x in mine], data)
             if st:
                 c.set_status(st)
-            elif converged(c.summaries()):
+            elif converged(c.summaries(), args.stop_nats):
                 c.set_status("converged")
             elif r + 1 >= args.max_rounds:
                 c.set_status("not converged")
@@ -529,6 +530,7 @@ def main():
     t.add_argument("--max-rounds", type=int, default=300)
     t.add_argument("--seed", type=int, default=1)
     t.add_argument("--K", type=int, default=10)
+    t.add_argument("--stop-nats", type=float, help="absolute projected-gain stop (simulations: 1)")
     t.add_argument("--dry-run", action="store_true")
     s = sub.add_parser("status")
     s.add_argument("rundir")

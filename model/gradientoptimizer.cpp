@@ -35,7 +35,7 @@ size_t getNextModelPos(string &s, size_t curr_pos);
 /* capability check                                                        */
 /* ---------------------------------------------------------------------- */
 
-bool GradientOptimizer::supports(ModelFactory *factory, std::string &why) {
+bool GradientOptimizer::supports(ModelFactory *factory, std::string &why, bool need_free) {
     ModelSubst *model = factory->model;
     RateHeterogeneity *rate = factory->site_rate;
     PhyloTree *tree = rate->getTree();
@@ -52,10 +52,10 @@ bool GradientOptimizer::supports(ModelFactory *factory, std::string &why) {
     if (!factory->unobserved_ptns.empty()) { why = "ascertainment-bias correction (+ASC)"; return false; }
     if (Params::getInstance().lh_mem_save == LM_MEM_SAVE) { why = "memory-saving mode (-mem)"; return false; }
     if (MPIHelper::getInstance().getNumProcesses() > 1) { why = "MPI with more than one process"; return false; }
-    if (model->getNDim() + rate->getNDim() == 0) { why = "no free model parameters"; return false; }
+    if (need_free && model->getNDim() + rate->getNDim() == 0) { why = "no free model parameters"; return false; }
     ModelParamMap map(factory, tree);
     if (!map.unsupported().empty()) { why = map.unsupported(); return false; }
-    if (map.ndim() == 0) { why = "no free model parameters"; return false; }
+    if (need_free && map.ndim() == 0) { why = "no free model parameters"; return false; }
     return true;
 }
 

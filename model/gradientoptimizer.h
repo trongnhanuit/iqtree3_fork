@@ -35,9 +35,10 @@ public:
      * Decide whether the analytic pipeline handles this model/tree configuration.
      * Has no lasting side effects. When it returns false, `why` holds a one-line
      * reason that the caller prints once as a NOTE before falling back to the
-     * default optimiser.
+     * default optimiser. need_free=false accepts models with no free parameters
+     * (the engine alone, as --ag-dump-em uses it).
      */
-    static bool supports(ModelFactory *factory, std::string &why);
+    static bool supports(ModelFactory *factory, std::string &why, bool need_free = true);
 
     /**
      * Replacement for the alternating loop of ModelFactory::optimizeParameters

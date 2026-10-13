@@ -632,3 +632,33 @@ root counts by pruning and subin/dwell by central differences of an explicit-Q
 likelihood, checks Σmass = nsite and Σroot = mass, and must fail on a perturbed
 value; summed `-wspm` posteriors equal the mass; C10Opt's optimised weights equal
 mass/nsite; the flag leaves every other output identical; +I and `-b` are rejected.
+
+### 16.1 Pipeline scripts (`test_scripts/ag/c10em/`)
+
+```
+prep_data.py --aln-dir ALN --tree-dir TREES --out data --holdout 0.10        # once
+em.py train runs_warm --data data --bin iqtree3 --option warm  -j 96         # rerun to resume
+em.py train runs_cold --data data --bin iqtree3 --option cold  -j 96
+em.py train runs_w    --data data --bin iqtree3 --option weights -j 96       # baseline C10pf-w
+em.py score OUT --data data --list heldout.txt --bin iqtree3 --mdef runs_cold/best.nex -m EMC
+evaluate.py compare OUT/scores.tsv BASE/scores.tsv;  evaluate.py match A.nex B.nex
+```
+
+- **Model.** POISSON+G4+FMIX in paper semantics: rate field ρ_k = φ(π_k) = 1 − Σπ_k²,
+  so every class has the same event rate u = 1/Σ_j w_j φ_j per unit branch length.
+- **M-step** (`mstep.py`, u fixed, Dirichlet priors ε = ε_w = 0.1):
+  π_b = (n_b + ε)/(μ + h_b) with n_b = Σ(root_b + subin_b), h_b = u Σ_{a≠b} dwell_a and μ the
+  unique root of Σπ = 1 (bisection); w_k = (M_k + ε_w)/(N + Kε_w). Trees are multiplied by
+  c = Σw′φ(π′)/Σwφ(π), which keeps u·t fixed, so Σ`#logl_init`(r+1) + log-prior ≥ Σ`#logl`(r) +
+  log-prior; the driver stops a chain if this drops by more than 0.01.
+- **Rounds.** All chains of an arm run in lockstep on one pool of single-threaded jobs
+  (longest first). A round is complete when the next `model.nex` exists (written last).
+  A chain stops after 3 consecutive rounds with median gain ratio < 0.995 and projected
+  remaining gain < 4e-4 nats per site (100 nats on HSSP), or at the round cap.
+- **Arms.**
+  - `warm`: C10pf plus 2 jittered copies.
+  - `cold`: 6 k-means++ (KL) and 6 Dirichlet starts, no C-series information, halved to 6
+    at round 30 and to 3 at round 60 by projected final value (one per basin).
+  - `weights`: C10pf with only the weights re-estimated.
+- **Preflight.** One pass at C10pf over all alignments writes `data/exclude.txt` before any
+  chain starts; a job that fails twice later stops its chain.

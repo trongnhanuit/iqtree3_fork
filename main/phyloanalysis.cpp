@@ -58,6 +58,7 @@
 #include "model/partitionmodel.h"
 #include "model/modelmixture.h"
 #include "model/modelfactory.h"
+#include "model/gradientoptimizer.h"
 //#include "guidedbootstrap.h"
 #include "model/modelset.h"
 #include "utils/timeutil.h"
@@ -3951,6 +3952,8 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         iqtree->logl_variance = iqtree->computeLogLVariance();
     }
     printMiscInfo(params, *iqtree, pattern_lh);
+    if (params.ag_dump_em)
+        GradientOptimizer::writeEmStats(iqtree->getModelFactory(), iqtree);
 
     if (params.alisim_fundi_taxon_set.size() > 0 && !params.alisim_active) {
         cout << "Optimizing FunDi model..." << endl;

@@ -1227,3 +1227,106 @@ int GradientOptimizer::gradientCheckOnly(ModelFactory *factory, PhyloTree *tree)
     cout.flags(saved_flags);
     return (st.n_fail == 0 && ok && edge_ok && id_ok && rc_self == 0) ? 0 : 1;
 }
+
+/* ---------------------------------------------------------------------- */
+/* --ag-dump-em: EM sufficient statistics (design 16)                      */
+/* ---------------------------------------------------------------------- */
+
+void GradientOptimizer::writeEmStats(ModelFactory *factory, PhyloTree *tree) {
+    Params &params = Params::getInstance();
+    ModelSubst *model = tree->getModel();
+    RateHeterogeneity *rate = tree->getRate();
+    string why;
+    if (!supports(factory, why, false))
+        outError("--ag-dump-em: unsupported model or tree (" + why + ")");
+    if (rate->getPInvar() > 0.0)
+        outError("--ag-dump-em: +I is not supported");
+    if (!tree->removed_seqs.empty())
+        outError("--ag-dump-em: identical sequences were removed; use -keep-ident");
+    if (params.min_iterations != 0 || (!params.user_file && params.intree_str.empty()))
+        outError("--ag-dump-em needs a fixed topology (-te)");
+    if (params.num_bootstrap_samples > 0 || params.num_runs > 1 || params.partition_file || params.pll ||
+        params.tree_spr || (params.aLRT_threshold <= 100 && (params.aLRT_replicates || params.localbp_replicates)))
+        outError("--ag-dump-em does not support -b/-bo/-j, --runs, partitions, PLL, SPR or aLRT pruning");
+    // mlInitial is only set by an optimisation run in this process, not by a checkpoint restore
+    if (tree->mlCheck != 1)
+        outError("--ag-dump-em: model parameters were not optimised in this run (use -redo)");
+
+    const int S = tree->aln->num_states, nmix = model->getNMixtures(), ncat = rate->getNRate();
+    PhyloGradient engine(tree);
+    engine.setNeedQ(vector<bool>(nmix, true));   // every class, fixed profiles included
+    PhyloGradient::Result res;
+    if (!engine.compute(res))
+        outError("--ag-dump-em: non-finite values in the gradient pass");
+    if (res.max_edge_logl_diff > 1e-6 * max(1.0, fabs(res.logl)))
+        outError("--ag-dump-em: per-edge log-likelihood check failed");
+
+    string prefix = params.out_prefix ? string(params.out_prefix) : string("iqtree");
+    string fname = prefix + ".agem.tsv";
+    ofstream out(fname.c_str());
+    out << setprecision(17);
+    out << "#format\tagem\t1\n";
+    out << "#logl\t" << res.logl << '\n';
+    out << "#logl_init\t" << tree->mlInitial << '\n';
+    out << "#nsite\t" << tree->aln->getNSite() << '\n';
+    out << "#nstates\t" << S << '\n';
+    out << "#nmix\t" << nmix << '\n';
+    out << "#ncat\t" << ncat << '\n';
+    out << "#alpha\t" << rate->getGammaShape() << '\n';
+    out << "#cat_rates";
+    for (int r = 0; r < ncat; r++) out << '\t' << rate->getRate(r);
+    out << "\n#cat_props";
+    for (int r = 0; r < ncat; r++) out << '\t' << rate->getProp(r);
+    out << "\n#root_side\t" << sideLabel(res.root_dad, res.root_node) << '\n';
+
+    const size_t vstride = get_safe_upper_limit(S), mstride = vstride * S;
+    const double *eval = model->getEigenvalues(), *U = model->getEigenvectors(), *Uinv = model->getInverseEigenvectors();
+    vector<double> pi(S), Q(S * S);
+    for (int m = 0; m < nmix; m++) {
+        // Q = U Lambda U^-1 is exactly the generator the kernel exponentiated
+        const double *u = U + m * mstride, *v = Uinv + m * mstride, *lam = eval + m * vstride;
+        for (int a = 0; a < S; a++)
+            for (int b = 0; b < S; b++) {
+                double q = 0.0, id = 0.0;
+                for (int k = 0; k < S; k++) {
+                    q += u[a * S + k] * lam[k] * v[k * S + b];
+                    id += u[a * S + k] * v[k * S + b];
+                }
+                if (fabs(id - (a == b ? 1.0 : 0.0)) > 1e-8)
+                    outError("--ag-dump-em: eigendecomposition residual check failed");
+                Q[a * S + b] = q;
+            }
+        const vector<double> &D = res.dlogl_dQ[m];
+        model->getStateFrequency(pi.data(), m);
+        ModelMarkov *comp = dynamic_cast<ModelMarkov*>(model->isMixture() ? model->getMixtureClass(m) : model);
+        double w = model->isMixture() ? model->getMixtureWeight(m) : 1.0;
+        out << "#class\t" << m << "\tweight\t" << w << "\ttns\t" << (comp ? comp->total_num_subst : NAN) << '\n';
+        out << "#freq\t" << m;
+        for (int b = 0; b < S; b++) out << '\t' << pi[b];
+        // posterior class mass per rate category: omega_c dlogL/domega_c
+        out << "\n#mass\t" << m;
+        for (int r = 0; r < ncat; r++) out << '\t' << rate->getProp(r) * w * res.dlogl_dclass[m * ncat + r];
+        // E[root = b], E[substitutions into b] = sum_{a!=b} Q_ab D_ab, E[time in a] = D_aa
+        out << "\n#root\t" << m;
+        for (int b = 0; b < S; b++) out << '\t' << pi[b] * res.root_term[m][b];
+        out << "\n#subin\t" << m;
+        for (int b = 0; b < S; b++) {
+            double s = 0.0;
+            for (int a = 0; a < S; a++) if (a != b) s += Q[a * S + b] * D[a * S + b];
+            out << '\t' << s;
+        }
+        out << "\n#dwell\t" << m;
+        for (int a = 0; a < S; a++) out << '\t' << D[a * S + a];
+        out << '\n';
+    }
+    ostringstream tree_str;
+    tree->printTree(tree_str, WT_BR_LEN);
+    out << "#tree\t" << tree_str.str() << '\n';
+    out << "#END\n";
+    out.close();
+    if (out.fail())
+        outError("--ag-dump-em: could not write " + fname);
+    // compute() overwrote the pattern likelihoods; leave the tree consistent
+    tree->clearAllPartialLH();
+    tree->computeLikelihood();
+}

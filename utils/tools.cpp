@@ -1415,6 +1415,10 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.ag_selftest = true;
                 continue;
             }
+            if (strcmp(argv[cnt], "--ag-dump-em") == 0) {
+                params.ag_dump_em = true;
+                continue;
+            }
             if (strcmp(argv[cnt], "--gtr20-model") == 0 || strcmp(argv[cnt], "--init-exchange") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -6189,6 +6193,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --ag-gradient-check [T]  Log analytic vs numerical gradients per parameter" << endl
     << "                           (relative tolerance T, default 1e-4)" << endl
     << "  --ag-stats               Report likelihood and gradient evaluation counts" << endl
+    << "  --ag-dump-em             Write per-class EM statistics to PREFIX.agem.tsv (-te only)" << endl
     << "                           (details: docs/analytical-gradients-design.md)" << endl
 
     << endl << "RATE HETEROGENEITY AMONG SITES:" << endl
@@ -7487,6 +7492,7 @@ void Params::setDefault() {
     ag_abort_after = "";
     ag_dump_gradient = false;
     ag_selftest = false;
+    ag_dump_em = false;
 
     // defaults for new options -JD
     optimize_linked_gtr = false;

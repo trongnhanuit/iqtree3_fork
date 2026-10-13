@@ -1885,6 +1885,8 @@ public:
     bool ag_dump_gradient;
     /** (hidden) --ag-selftest: run engine self-tests (X kernel regimes, pack/unpack) and exit */
     bool ag_selftest;
+    /** --ag-dump-em: write <prefix>.agem.tsv, the per-class EM sufficient statistics at the final parameters */
+    bool ag_dump_em;
     //new params added -JD
     /** TRUE if you want to exchange the rate matrix for an optimized GTR matrix */
     bool optimize_linked_gtr;

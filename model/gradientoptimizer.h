@@ -78,6 +78,13 @@ public:
      */
     static int gradientCheckOnly(ModelFactory *factory, PhyloTree *tree);
 
+    /**
+     * --ag-dump-em: write <prefix>.agem.tsv, the per-class EM sufficient
+     * statistics at the current (final) parameters, for pooling across
+     * alignments (design 16). Calls outError if the run is unsupported.
+     */
+    static void writeEmStats(ModelFactory *factory, PhyloTree *tree);
+
     // ---- Optimization interface (minimised function is -logL over theta) ----
     virtual int getNDim();
     virtual double targetFunk(double x[]);

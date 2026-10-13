@@ -2,7 +2,7 @@
 # Test driver for the --analytical-gradients work.
 #
 # Usage:
-#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|all] [-j N] [--full]
+#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|agem|threads|quality|robust|all] [-j N] [--full]
 #
 # Suites:
 #   gradcheck  --ag-gradient-check-only on a fixed set of models; PASS = exit 0
@@ -44,7 +44,7 @@ for ((k=0; k<${#argv[@]}; k++)); do
     esac
 done
 if [ -z "$BIN" ] || [ ! -x "$BIN" ]; then
-    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|all] [-j N] [--full]" >&2
+    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|agem|threads|quality|robust|all] [-j N] [--full]" >&2
     exit 2
 fi
 if [ "$MAXJOBS" -le 0 ]; then
@@ -87,6 +87,12 @@ ORACLE=(
   "o_dna_hky_i_g4|HKY{2.5}+F{0.35,0.15,0.2,0.3}+I{0.2}+G4{0.5}|(A:0.05,B:0.3,(C:0.1,D:0.25):0.15);|HKY+F+I+G4"
   "o_aa_lg_g4|LG+G4{0.8}|(A:0.2,(B:0.1,C:0.3):0.1,D:0.15);|LG+G4"
   "o_dna_5tax_r3|GTR{1,2,1,1,3}+F{0.25,0.25,0.25,0.25}+R3{0.3,0.2,0.4,0.8,0.3,2.0}|((A:0.1,B:0.2):0.05,(C:0.15,D:0.05):0.1,E:0.3);|GTR+F+R3"
+)
+
+# ---- agem cases (--ag-dump-em): "<id>|<seqtype>|<model in data/agem_models.nex>|<newick>" ----
+AGEM=(
+  "e_dna_fmix2_g4|DNA|EMDNA|((A:0.1,B:0.2):0.05,(C:0.15,D:0.05):0.1,E:0.3);"
+  "e_aa_fmix2_g4|AA|EMAA|((A:0.2,B:0.1):0.1,(C:0.3,D:0.15):0.05,E:0.25);"
 )
 
 # ---- quality cases: "<id>|<tolerance>|<iqtree arguments>" (run with the flag off and on) ----
@@ -156,6 +162,87 @@ run_oracle() {   # id alisim_model newick iqtree_model
     sed -i.bak "1i\\
 == $id (exit $rc)" "$REP/$id.txt" 2>/dev/null || { (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"; }
     rm -f "$REP/$id.txt.bak"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
+run_agem() {   # id seqtype model newick: simulate, dump, oracle_em (+ self-test), -wspm mass cross-check
+    local id="$1" stype="$2" model="$3" nwk="$4" dir="$OUT_DIR/$1" rc=0
+    local mdef="$HERE/data/agem_models.nex"
+    mkdir -p "$dir"
+    (
+        cd "$dir" || exit 1
+        echo "$nwk" > tree.nwk
+        "$BIN" --alisim sim -t tree.nwk -mdef "$mdef" -m "$model" --seqtype "$stype" --length 300 -seed 7 -redo -quiet > alisim.stdout 2>&1 || { echo "  alisim failed"; exit 1; }
+        "$BIN" -s sim.phy -te tree.nwk -mdef "$mdef" -m "$model" -nt 1 -seed $SEED -keep-ident -wspm --prefix "$id" -redo --ag-dump-em > "$id.stdout" 2>&1 || { echo "  iqtree failed"; tail -3 "$id.stdout"; exit 1; }
+        python3 "$HERE/oracle_em.py" sim.phy "$id.agem.tsv" --tol 1e-6 > oracle.txt 2>&1 || { echo "  oracle_em FAILED:"; tail -4 oracle.txt; exit 1; }
+        tail -2 oracle.txt
+        python3 "$HERE/oracle_em.py" sim.phy "$id.agem.tsv" --selftest > selftest.txt 2>&1 || { echo "  oracle_em self-test did not detect a perturbed statistic"; exit 1; }
+        echo "  oracle_em self-test: perturbed statistic detected"
+        python3 - "$id" <<'PY' || exit 1
+import sys
+pre = sys.argv[1]
+mass = {}
+for l in open(pre + ".agem.tsv"):
+    if l.startswith("#mass\t"):
+        v = l.rstrip("\n").split("\t")
+        mass[int(v[1])] = sum(float(x) for x in v[2:])
+rows = [l.split() for l in open(pre + ".siteprob")][1:]
+worst = max(abs(sum(float(r[1 + m]) for r in rows) - mass[m]) / mass[m] for m in mass)
+print("  -wspm posteriors vs dumped class mass: max rel diff %.2e -> %s" % (worst, "PASS" if worst <= 1e-4 else "FAIL"))
+raise SystemExit(0 if worst <= 1e-4 else 1)
+PY
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
+    [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
+}
+
+run_agem_misc() {   # C10Opt weight fixed point, flag on/off identity, rejections
+    local id="e_misc" dir="$OUT_DIR/e_misc" rc=0
+    mkdir -p "$dir"
+    (
+        cd "$dir" || exit 1
+        fail=0
+        A="-s $EX/aa_example.phy -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED -keep-ident -redo"
+        # IQ-TREE's own weight EM converges to w = mass/nsite (stopping rule |dw| < 1e-4)
+        # shellcheck disable=SC2086
+        "$BIN" $A -m C10Opt --prefix opt --ag-dump-em > opt.stdout 2>&1 || { echo "  C10Opt run failed"; exit 1; }
+        python3 - <<'PY' || fail=1
+w, mass, nsite = {}, {}, 0.0
+for l in open("opt.agem.tsv"):
+    v = l.rstrip("\n").split("\t")
+    if v[0] == "#class": w[int(v[1])] = float(v[3])
+    elif v[0] == "#mass": mass[int(v[1])] = sum(float(x) for x in v[2:])
+    elif v[0] == "#nsite": nsite = float(v[1])
+worst = max(abs(mass[m] / nsite - w[m]) for m in w)
+print("  C10Opt weights vs mass/nsite: max abs diff %.2e -> %s" % (worst, "PASS" if worst <= 2e-3 else "FAIL"))
+raise SystemExit(0 if worst <= 2e-3 else 1)
+PY
+        # the flag must not change any other output
+        for d in off on; do
+            mkdir -p "$d"
+            flag=""; [ "$d" = "on" ] && flag="--ag-dump-em"
+            # shellcheck disable=SC2086
+            ( cd "$d" && "$BIN" $A -m C10 --prefix c10 $flag > c10.stdout 2>&1 ) || { echo "  C10 run ($d) failed"; fail=1; }
+        done
+        same=1
+        cmp -s off/c10.treefile on/c10.treefile || same=0
+        for f in iqtree log; do
+            diff <(sed -f "$HERE/filter_volatile.sed" "off/c10.$f") <(sed -f "$HERE/filter_volatile.sed" "on/c10.$f") > /dev/null || same=0
+        done
+        echo "  flag on vs off: other outputs identical -> $([ $same = 1 ] && echo PASS || echo FAIL)"
+        [ $same = 1 ] || fail=1
+        # unsupported runs fail cleanly
+        # shellcheck disable=SC2086
+        "$BIN" $A -m C10+I --prefix rej_i --ag-dump-em > rej_i.stdout 2>&1 && { echo "  +I accepted"; fail=1; }
+        grep -q "+I is not supported" rej_i.stdout && echo "  +I rejected: PASS" || { echo "  +I rejection message missing"; fail=1; }
+        # shellcheck disable=SC2086
+        "$BIN" $A -m C10 -b 2 --prefix rej_b --ag-dump-em > rej_b.stdout 2>&1 && { echo "  -b accepted"; fail=1; }
+        grep -q "does not support" rej_b.stdout && echo "  -b rejected: PASS" || { echo "  -b rejection message missing"; fail=1; }
+        exit $fail
+    ) > "$REP/$id.txt" 2>&1
+    rc=$?
+    (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
@@ -525,6 +612,13 @@ if [ "$SUITE" = "oracle" ] || [ "$SUITE" = "all" ]; then
         IFS='|' read -r id amodel nwk imodel <<< "$e"
         ORDER+=("$id"); throttle; run_oracle "$id" "$amodel" "$nwk" "$imodel" &
     done
+fi
+if [ "$SUITE" = "agem" ] || [ "$SUITE" = "all" ]; then
+    for e in "${AGEM[@]}"; do
+        IFS='|' read -r id stype model nwk <<< "$e"
+        ORDER+=("$id"); throttle; run_agem "$id" "$stype" "$model" "$nwk" &
+    done
+    ORDER+=("e_misc"); throttle; run_agem_misc &
 fi
 if [ "$SUITE" = "threads" ] || [ "$SUITE" = "all" ]; then
     ORDER+=("t_threads"); throttle; run_threads &

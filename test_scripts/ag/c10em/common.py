@@ -83,7 +83,9 @@ class Node:
 
 
 def parse_newick(s):
-    s = s.strip().rstrip(";")
+    s = s.strip()
+    if ";" in s:
+        s = s[:s.index(";")]    # first tree only (some PhyML files have trailing junk)
     pos = 0
 
     def node():

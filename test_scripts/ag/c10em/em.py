@@ -7,6 +7,7 @@ Driver of the C10 re-estimation EM (design doc section 16).
                [--stop-nats X] [--dry-run]
   em.py status RUNDIR
   em.py score  OUT --data DATA --list LIST --bin IQTREE [-j 24] (--mdef FILE -m NAME | -m MODEL)
+               [--search] [--opt-weights] [--wsl]
 
 train runs one arm in RUNDIR:
   warm     3 chains from the published C10 (paper rates) and 2 jittered copies
@@ -19,8 +20,10 @@ order and applies mstep.py. All chains run in lockstep on one shared pool of
 single-threaded jobs. Rerun the same command to resume. Results:
 RUNDIR/best.nex, RUNDIR/finalists/*.nex, RUNDIR/summary.tsv.
 
-score fits a fixed model to every alignment of LIST on its DATA tree
-(branch lengths and alpha only) and writes OUT/scores.tsv.
+score fits a model to every alignment of LIST and writes OUT/scores.tsv:
+on its DATA tree (branch lengths and alpha), or with --search on a tree
+IQ-TREE searches for that model; --opt-weights also re-optimises the
+mixture weights (otherwise they stay as given).
 """
 import os
 import sys
@@ -476,17 +479,31 @@ def score(args):
     os.makedirs(args.out, exist_ok=True)
     binary = os.path.abspath(args.bin)
 
+    if args.wsl:
+        os.makedirs(os.path.join(args.out, "sitelh"), exist_ok=True)
+
     def one(i):
         d = os.path.join(args.out, "runs", i)
         os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, "in.tree"), "w") as f:
-            f.write(data.tree(i) + "\n")
-        cmd = [binary, "-s", data.aln(i), "-te", os.path.join(d, "in.tree"), "-m", args.m, "-seed", "1",
+        cmd = [binary, "-s", data.aln(i), "-m", args.m, "-seed", "1",
                "-keep-ident", "-nt", "1", "-quiet", "-redo", "-pre", os.path.join(d, "s")]
+        if not args.search:     # fixed topology: the DATA tree; otherwise IQ-TREE's own tree search
+            with open(os.path.join(d, "in.tree"), "w") as f:
+                f.write(data.tree(i) + "\n")
+            cmd += ["-te", os.path.join(d, "in.tree")]
         if args.mdef:
             cmd += ["-mdef", os.path.abspath(args.mdef)]
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=JOB_TIMEOUT,
-                       env=dict(os.environ, OMP_NUM_THREADS="1"))
+        if args.opt_weights:    # re-optimise the mixture weights on this alignment
+            cmd += ["-mwopt"]
+        if args.wsl:
+            cmd += ["-wsl"]
+        try:
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=args.timeout,
+                           env=dict(os.environ, OMP_NUM_THREADS="1"))
+        except subprocess.TimeoutExpired:
+            pass
+        if args.wsl and os.path.exists(os.path.join(d, "s.sitelh")):
+            shutil.copy(os.path.join(d, "s.sitelh"), os.path.join(args.out, "sitelh", i + ".sitelh"))
         lnl = alpha = None
         try:
             for l in open(os.path.join(d, "s.iqtree")):
@@ -511,6 +528,9 @@ def score(args):
         f.write("id\tnsite\tlogl\talpha\n")
         for i, lnl, a in res:
             f.write("%s\t%d\t%s\t%s\n" % (i, nsite[i], "" if lnl is None else repr(lnl), "" if a is None else repr(a)))
+    with open(os.path.join(args.out, "score.json"), "w") as f:
+        json.dump(dict(model=args.m, mdef=args.mdef and os.path.abspath(args.mdef), search=args.search,
+                       opt_weights=args.opt_weights, list=data.list_path, binary=binary), f, indent=1)
     shutil.rmtree(os.path.join(args.out, "runs"), ignore_errors=True)
     print("scored %d alignments (%d failed) -> %s" % (len(res), sum(r[1] is None for r in res),
                                                     os.path.join(args.out, "scores.tsv")))
@@ -542,6 +562,10 @@ def main():
     c.add_argument("-j", type=int, default=24)
     c.add_argument("--mdef")
     c.add_argument("-m", required=True)
+    c.add_argument("--search", action="store_true", help="optimise the topology (default: fixed DATA tree)")
+    c.add_argument("--opt-weights", action="store_true", help="re-optimise mixture weights per alignment (-mwopt)")
+    c.add_argument("--wsl", action="store_true", help="keep site log-likelihoods in OUT/sitelh/")
+    c.add_argument("--timeout", type=int, default=4 * 3600)
     args = ap.parse_args()
     {"train": train, "status": status, "score": score}[args.cmd](args)
 

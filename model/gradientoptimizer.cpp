@@ -12,6 +12,7 @@
 #include "tree/phylotree.h"
 #include "phylogradient.h"
 #include "modelparammap.h"
+#include "agtrace.h"
 #include "utils/tools.h"
 #include "utils/MPIHelper.h"
 #include <cmath>
@@ -655,6 +656,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
         for (size_t i = 0; i < th.size(); i++) if (th[i] != entry.theta[i]) moved = true;
         if (moved) { n_lh_++; cur_lh = tree_->computeLikelihood(); }
     }
+    AG_TRACE(round(tree_, "start", 0, cur_lh));
 
     // NOTE(design 10): phase 1 -- EM warm-up. Cheap and fixed-effort: one
     // branch step + one accept-or-revert M-step per axis, per level, never
@@ -696,6 +698,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
                 if (verbose_mode >= VB_MED) os << " (after " << (getRealTime() - t0) << " wall-clock sec)";
                 say(os.str());
             }
+            AG_TRACE(round(tree_, "em", rounds_, cur_lh));
             abortAfter("round:" + convertIntToString(rounds_));
         }
     }
@@ -735,6 +738,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
             if (verbose_mode >= VB_MED) os << " (after " << (getRealTime() - t0) << " wall-clock sec)";
             say(os.str());
         }
+        AG_TRACE(round(tree_, "polish", rounds_, cur_lh));
         abortAfter("round:" + convertIntToString(rounds_));
         if (delta < logl_epsilon) break;
     }

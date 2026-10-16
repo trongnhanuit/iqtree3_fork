@@ -576,3 +576,20 @@ unrelated to `AG_SCALAR_ACCUM`); `test_scripts/ag/simd_check.sh` passes it.
 | `--ag-gradient-check [tol]`, `--ag-gradient-check-every k`, `--ag-gradient-check-strict` | check analytic against numerical gradients during the search |
 | `--ag-gradient-check-only`, `--ag-dump-gradient`, `--ag-selftest` | one-shot checks at the initial point (tests) |
 | `--ag-abort-after init|round:N` | write the checkpoint and exit at that phase (resume tests) |
+| `--ag-trace` | write the optimisation history to `PREFIX.agtrace.jsonl` (see section 16) |
+
+## 16. Optimisation trace (`--ag-trace`)
+
+`model/agtrace.cpp` writes one JSON object per line: `header` (taxa, model), `call` at the
+end of each `IQTree::optimizeModelParameters` (lnL, tree with branch lengths, model
+parameters), `round` for each GradientOptimizer start/EM/polish round (lnL, parameters),
+`phase` when the tree search starts, `iter` per counted search iteration (lnL, tree), and
+`end`. It only observes: parameters come from getters, trees from strings IQ-TREE already
+built, so outputs are identical with and without the flag. Only the main tree search is
+traced (not ModelFinder); partitioned models are skipped with a warning; without
+`--analytical-gradients` there are no `round` records. On a checkpoint resume the file is
+appended to and the viewer keeps the last copy of each iteration.
+
+View it by opening `test_scripts/ag/viz/visualizer.html` and dropping the file on the page
+(Plotly loads from a CDN). `test_scripts/ag/viz/bake_trace.py TRACE` writes one offline HTML
+file with the trace and a pinned, SHA-256-checked Plotly inlined (downloaded once and cached).

@@ -1395,6 +1395,10 @@ void parseArg(int argc, char *argv[], Params &params) {
                     throw "--ag-em-stop-frac must be in (0, 1]";
                 continue;
             }
+            if (strcmp(argv[cnt], "--ag-trace") == 0) {
+                params.ag_trace = true;
+                continue;
+            }
             if (strcmp(argv[cnt], "--ag-stats") == 0) {
                 params.ag_stats = true;
                 continue;
@@ -6189,6 +6193,8 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --ag-gradient-check [T]  Log analytic vs numerical gradients per parameter" << endl
     << "                           (relative tolerance T, default 1e-4)" << endl
     << "  --ag-stats               Report likelihood and gradient evaluation counts" << endl
+    << "  --ag-trace               Write the optimisation history to PREFIX.agtrace.jsonl" << endl
+    << "                           (view with test_scripts/ag/viz/visualizer.html)" << endl
     << "                           (details: docs/analytical-gradients-design.md)" << endl
 
     << endl << "RATE HETEROGENEITY AMONG SITES:" << endl
@@ -7484,6 +7490,7 @@ void Params::setDefault() {
     ag_em_stop_axes = "W,R,F";
     ag_em_stop_frac = 0.001;
     ag_stats = false;
+    ag_trace = false;
     ag_abort_after = "";
     ag_dump_gradient = false;
     ag_selftest = false;

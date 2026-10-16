@@ -33,6 +33,7 @@
 #include "utils/tools.h"
 #include "utils/MPIHelper.h"
 #include "utils/pllnni.h"
+#include "model/agtrace.h"
 
 Params *globalParams;
 Alignment *globalAlignment;
@@ -767,6 +768,7 @@ int IQTree::addTreeToCandidateSet(string treeString, double score, bool updateSt
     int pos = candidateTrees.update(treeString, score);
     if (updateStopRule) {
         stop_rule.setCurIt(stop_rule.getCurIt() + 1);
+        AG_TRACE(iteration(this, stop_rule.getCurIt(), score, treeString));
         if (score > curBestScore) {
             if (pos != -1) {
                 stop_rule.addImprovedIteration(stop_rule.getCurIt());
@@ -2357,6 +2359,7 @@ string IQTree::optimizeModelParameters(bool printInfo, double logl_epsilon) {
             computePatternCategories();
     }
     doneComputingDistances(); //DISABLED
+    AG_TRACE(callEnd(this, stop_rule.getCurIt(), curScore, newTree));
     return newTree;
 }
 
@@ -2444,7 +2447,8 @@ string IQTree::optimizeBranches(int maxTraversal) {
 }
 
 double IQTree::doTreeSearch() {
-    
+    AG_TRACE(phase(this, "search"));
+
     if (params->numInitTrees > 1) {
         cout << "--------------------------------------------------------------------" << endl;
         cout << "|             INITIALIZING CANDIDATE TREE SET                      |" << endl;

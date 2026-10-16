@@ -1879,6 +1879,8 @@ public:
     double ag_em_stop_frac;
     /** --ag-stats: print the optimiser's own likelihood/gradient evaluation counts */
     bool ag_stats;
+    /** --ag-trace: write the optimisation history to <prefix>.agtrace.jsonl */
+    bool ag_trace;
     /** (hidden) --ag-abort-after <level>: dump the checkpoint and exit after a cascade level */
     string ag_abort_after;
     /** (hidden) --ag-dump-gradient: write the raw gradient for the external NumPy oracle */

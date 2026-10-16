@@ -68,6 +68,7 @@
 #include <unsupported/Eigen/MatrixFunctions>
 
 #include "utils/mutsel_wrapper.h"
+#include "model/agtrace.h"
 
 using namespace Eigen;
 using Eigen::Map;
@@ -5371,7 +5372,9 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
         startTreeReconstruction(params, tree, *model_info);
         // call main tree reconstruction
         if (params.num_runs == 1) {
+            AgTrace::open(tree);
             runTreeReconstruction(params, tree);
+            AgTrace::close();
         } else {
             runMultipleTreeReconstruction(params, tree->aln, tree);
         }

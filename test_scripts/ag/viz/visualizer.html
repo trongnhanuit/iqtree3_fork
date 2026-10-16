@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AG trace viewer</title>
+<!-- AGVIZ:LIB -->
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<!-- /AGVIZ:LIB -->
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #fafafa; color: #222; }
+  header { padding: 10px 16px; background: #fff; border-bottom: 1px solid #ddd; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; }
+  #info { color: #555; font-size: 13px; }
+  #controls { position: sticky; top: 0; z-index: 5; background: #fff; padding: 8px 16px; border-bottom: 1px solid #ddd; display: flex; gap: 10px; align-items: center; }
+  #slider { flex: 1; }
+  #frameLabel { min-width: 260px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 10px; padding: 10px 16px; }
+  .panel { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 6px; min-width: 0; }
+  .panel.wide { grid-column: 1 / -1; }
+  .panel h2 { font-size: 14px; margin: 2px 4px 4px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .panel h2 button { font-size: 12px; }
+  .plot { height: 300px; }
+  .note { font-size: 12px; color: #777; margin: 0 4px; }
+  #drop { padding: 40px; text-align: center; color: #888; }
+  select { max-width: 340px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AG optimisation trace</h1>
+  <input type="file" id="file">
+  <span id="info">Open or drop a <code>.agtrace.jsonl</code> (or <code>.jsonl.gz</code>) file.</span>
+</header>
+<div id="controls">
+  <button id="prev">◀</button><button id="play">▶ play</button><button id="next">▶</button>
+  <input type="range" id="slider" min="0" max="0" value="0">
+  <span id="frameLabel"></span>
+</div>
+<div id="drop">Drop a trace file anywhere on this page.</div>
+<div id="grid" hidden>
+  <div class="panel"><h2>Log-likelihood <button data-wide>⤢</button></h2><div id="pLnl" class="plot"></div>
+    <p class="note">dots: tree of each iteration; line: best so far; ▲: model-parameter optimisation</p></div>
+  <div class="panel"><h2>Topology: RF distance <select id="rfRef"><option value="start">to start tree</option><option value="final">to final best tree</option></select> <button data-wide>⤢</button></h2><div id="pRf" class="plot"></div>
+    <p class="note">line: best tree so far; dots: tree of each iteration</p></div>
+  <div class="panel"><h2>Tree space (MDS of best trees) <button data-wide>⤢</button></h2><div id="pMds" class="plot"></div>
+    <p class="note" id="mdsNote"></p></div>
+  <div class="panel"><h2>Branch lengths: tree length <button data-wide>⤢</button></h2><div id="pTl" class="plot"></div></div>
+  <div class="panel"><h2>Exchangeabilities (PCA of centred log rates) <button data-wide>⤢</button></h2><div id="pPca" class="plot"></div>
+    <p class="note" id="pcaNote"></p></div>
+  <div class="panel"><h2>State frequencies at this frame <button data-wide>⤢</button></h2><div id="pFreq" class="plot"></div></div>
+  <div class="panel"><h2>Rate heterogeneity <button data-wide>⤢</button></h2><div id="pRhas" class="plot"></div></div>
+  <div class="panel wide"><h2>Inside a model optimisation <select id="callSel"></select> <button data-wide>⤢</button></h2>
+    <div id="pCall" class="plot"></div>
+    <p class="note">one point per optimiser round (start = (re)start of the optimiser, em = EM warm-up, polish = BFGS round); the PCA panel shows this call's path dashed</p></div>
+</div>
+<!-- AGVIZ:DATA -->
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const AA = 'ARNDCQEGHILKMFPSTWYV'.split(''), DNA = 'ACGT'.split('');
+let T = null, frame = 0, timer = null;
+
+// ---------- parsing ----------
+async function readFile(file) {
+  if (file.name.endsWith('.gz')) {
+    const s = file.stream().pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(s).text();
+  }
+  return await file.text();
+}
+
+function build(text) {
+  const recs = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    try { recs.push(JSON.parse(line)); } catch (e) { /* truncated line */ }
+  }
+  const hdr = recs.find(r => r.type === 'header') || {};
+  const pre = [], frames = [], calls = [];
+  let pending = [], rounds = [], params = null, search = false, ended = false;
+  for (const r of recs) {
+    if (r.type === 'round') rounds.push(r);
+    else if (r.type === 'call') {
+      r.rounds = rounds; rounds = []; params = r.params; calls.push(r);
+      (search ? pending : pre).push(r);
+    } else if (r.type === 'phase' && r.name === 'search') search = true;
+    else if (r.type === 'iter') {
+      // after a resume, repeated iterations replace the lost ones
+      while (frames.length && frames[frames.length - 1].it >= r.it) frames.pop();
+      frames.push({ kind: 'iter', it: r.it, label: 'iteration ' + r.it, lnl: r.lnl, tree: r.tree, params, calls: pending });
+      pending = [];
+    } else if (r.type === 'end') ended = true;
+  }
+  if (pre.length) {
+    const c = pre[pre.length - 1];
+    frames.unshift({ kind: 'start', it: 0, label: 'start (after initial model optimisation)', lnl: c.lnl, tree: c.tree, params: c.params, calls: pre });
+  }
+  if (pending.length) {
+    const c = pending[pending.length - 1];
+    frames.push({ kind: 'final', it: Infinity, label: 'final model optimisation', lnl: c.lnl, tree: c.tree, params: c.params, calls: pending });
+  }
+  for (const f of frames) for (const c of f.calls) c.frame = f;
+  const n = (hdr.taxa || []).length;
+  // topology bookkeeping: best tree so far, distinct topologies
+  const topo = new Map();
+  const keyOf = nwk => { const s = splitsOf(nwk, n); const k = [...s].sort().join('|'); if (!topo.has(k)) topo.set(k, { splits: s, id: topo.size }); return topo.get(k); };
+  let best = -Infinity, bestF = null;
+  for (const f of frames) {
+    f.topo = keyOf(f.tree);
+    if (f.lnl > best) { best = f.lnl; bestF = f; }
+    f.best = bestF; f.bestLnl = best;
+    f.tl = treeLength(f.tree);
+  }
+  return { hdr, frames, calls, ended, n };
+}
+
+// unrooted splits of a Newick string whose leaves are taxon ids; key = hex bitset of the side without taxon 0
+function splitsOf(nwk, n) {
+  const W = (n + 31) >> 5, keys = new Set(), full = new Uint32Array(W);
+  for (let t = 0; t < n; t++) full[t >> 5] |= 1 << (t & 31);
+  let i = 0;
+  const add = b => {
+    let cnt = 0;
+    for (const x of b) { let v = x; while (v) { v &= v - 1; cnt++; } }
+    if (cnt < 2 || cnt > n - 2) return;
+    const c = (b[0] & 1) ? b.map((x, k) => ~x & full[k]) : b;
+    keys.add(Array.from(c, x => (x >>> 0).toString(16)).join('.'));
+  };
+  const sub = () => {
+    let b = new Uint32Array(W);
+    if (nwk[i] === '(') {
+      i++;
+      for (;;) { const c = sub(); for (let k = 0; k < W; k++) b[k] |= c[k]; if (nwk[i++] !== ',') break; }
+      while (i < nwk.length && !':,);'.includes(nwk[i])) i++;
+      add(b);
+    } else {
+      const j = i;
+      while (i < nwk.length && !':,);'.includes(nwk[i])) i++;
+      const t = parseInt(nwk.slice(j, i), 10);
+      b[t >> 5] |= 1 << (t & 31);
+    }
+    if (nwk[i] === ':') { i++; while (i < nwk.length && !',);'.includes(nwk[i])) i++; }
+    return b;
+  };
+  sub();
+  return keys;
+}
+const rf = (a, b) => { let s = 0; for (const k of a) if (b.has(k)) s++; return a.size + b.size - 2 * s; };
+const treeLength = nwk => { let s = 0; for (const m of nwk.matchAll(/:([-+0-9.eE]+)/g)) s += +m[1]; return s; };
+
+// top-k eigenvectors of a symmetric operator by power iteration with deflation
+function topEig(apply, d, k) {
+  const out = [];
+  for (let e = 0; e < k; e++) {
+    let v = Array.from({ length: d }, (_, i) => Math.sin(1 + i * (e + 1.7)));
+    let lam = 0;
+    for (let it = 0; it < 300; it++) {
+      let w = apply(v);
+      for (const p of out) { const dot = p.v.reduce((s, x, i) => s + x * w[i], 0); w = w.map((x, i) => x - dot * p.v[i]); }
+      const norm = Math.hypot(...w);
+      if (norm < 1e-300) break;
+      lam = norm; v = w.map(x => x / norm);
+    }
+    const big = v.reduce((m, x, i) => Math.abs(x) > Math.abs(v[m]) ? i : m, 0);
+    if (v[big] < 0) v = v.map(x => -x);  // fixed sign
+    out.push({ v, lam });
+  }
+  return out;
+}
+
+// ---------- rendering ----------
+const layout = (extra = {}) => Object.assign({ margin: { l: 55, r: 15, t: 10, b: 40 }, showlegend: false, hovermode: 'closest' }, extra);
+const cfg = { displaylogo: false, responsive: true };
+const cursor = x => [{ type: 'line', x0: x, x1: x, yref: 'paper', y0: 0, y1: 1, line: { color: '#d33', width: 1.5 } }];
+const xs = () => T.frames.map((_, i) => i);
+const xaxis = () => ({ title: 'frame (0 = start)', zeroline: false });
+
+function drawAll() {
+  const F = T.frames;
+  const hdr = T.hdr;
+  $('info').textContent = `${hdr.model || '?'} · ${T.n} taxa · ${hdr.seq_type || ''} · AG ${hdr.ag ? 'on' : 'off'} · ${F.length} frames, ${T.calls.length} model optimisations${T.ended ? '' : ' · run not finished (no end record)'}`;
+  $('slider').max = F.length - 1;
+  // lnL with model-optimisation markers
+  const callF = F.map((f, i) => [f, i]).filter(([f]) => f.calls.length);
+  Plotly.newPlot('pLnl', [
+    { x: xs(), y: F.map(f => f.lnl), mode: 'markers', marker: { size: 5, color: '#888' }, text: F.map(f => f.label), name: 'iteration' },
+    { x: xs(), y: F.map(f => f.bestLnl), mode: 'lines', line: { color: '#1f77b4', shape: 'hv' }, name: 'best' },
+    { x: callF.map(([, i]) => i), y: callF.map(([f]) => f.calls[f.calls.length - 1].lnl), mode: 'markers', marker: { symbol: 'triangle-up', size: 10, color: '#ff7f0e' },
+      text: callF.map(([f]) => f.calls.map(c => `model opt #${c.call}: lnL ${c.lnl.toFixed(3)}, ${c.rounds.length} rounds`).join('<br>')), hoverinfo: 'text' },
+  ], layout({ xaxis: xaxis(), yaxis: { title: 'lnL' }, shapes: cursor(0) }), cfg);
+  $('pLnl').on('plotly_click', e => setFrame(e.points[0].x));
+  drawRf();
+  drawMds();
+  Plotly.newPlot('pTl', [{ x: xs(), y: F.map(f => f.tl), mode: 'lines+markers', marker: { size: 4 }, line: { shape: 'hv' } }],
+    layout({ xaxis: xaxis(), yaxis: { title: 'tree length' }, shapes: cursor(0) }), cfg);
+  drawRhas();
+  fillCalls();
+  drawPca();
+  setFrame(0);
+}
+
+function drawRf() {
+  const F = T.frames, ref = $('rfRef').value === 'final' ? F[F.length - 1].best.topo : F[0].topo;
+  Plotly.newPlot('pRf', [
+    { x: xs(), y: F.map(f => rf(f.topo.splits, ref.splits)), mode: 'markers', marker: { size: 5, color: '#888' } },
+    { x: xs(), y: F.map(f => rf(f.best.topo.splits, ref.splits)), mode: 'lines', line: { shape: 'hv', color: '#2ca02c' } },
+  ], layout({ xaxis: xaxis(), yaxis: { title: 'Robinson-Foulds distance', rangemode: 'tozero' }, shapes: cursor(frame) }), cfg);
+  $('pRf').on('plotly_click', e => setFrame(e.points[0].x));
+}
+
+function drawMds() {
+  const F = T.frames, seen = [], first = new Map();
+  F.forEach((f, i) => { if (!first.has(f.best.topo)) { first.set(f.best.topo, i); seen.push(f.best.topo); } });
+  const m = seen.length;
+  if (m < 3) { Plotly.purge('pMds'); $('mdsNote').textContent = `only ${m} distinct best tree(s): nothing to map`; T.mds = null; return; }
+  // classical MDS with RF as a squared Euclidean distance: B = -1/2 J D J
+  const D = seen.map(a => seen.map(b => rf(a.splits, b.splits)));
+  const rowM = D.map(r => r.reduce((s, x) => s + x, 0) / m), allM = rowM.reduce((s, x) => s + x, 0) / m;
+  const B = D.map((r, i) => r.map((x, j) => -0.5 * (x - rowM[i] - rowM[j] + allM)));
+  const ev = topEig(v => B.map(r => r.reduce((s, x, j) => s + x * v[j], 0)), m, 2);
+  const tr = B.reduce((s, r, i) => s + r[i], 0);
+  const P = seen.map((_, i) => ev.map(e => e.v[i] * Math.sqrt(Math.max(e.lam, 0))));
+  T.mds = { seen, P, first };
+  $('mdsNote').textContent = `${m} distinct best trees, joined in the order they became best · 2D captures ${(100 * (ev[0].lam + ev[1].lam) / tr).toFixed(0)}% of the RF variance`;
+  Plotly.newPlot('pMds', [
+    { x: P.map(p => p[0]), y: P.map(p => p[1]), mode: 'lines+markers', line: { color: '#bbb' },
+      marker: { size: 9, color: seen.map((_, i) => i), colorscale: 'Viridis' }, text: seen.map(t => `first best at ${F[first.get(t)].label}`), hoverinfo: 'text' },
+    { x: [P[0][0]], y: [P[0][1]], mode: 'markers', marker: { size: 16, color: 'rgba(0,0,0,0)', line: { color: '#d33', width: 2.5 } }, hoverinfo: 'skip' },
+  ], layout({ xaxis: { title: 'MDS 1', zeroline: false }, yaxis: { title: 'MDS 2', zeroline: false } }), cfg);
+  $('pMds').on('plotly_click', e => { if (e.points[0].curveNumber === 0) setFrame(first.get(seen[e.points[0].pointIndex])); });
+}
+
+function drawRhas() {
+  const F = T.frames, tr = [];
+  const alpha = F.map(f => f.params && f.params.alpha), pinv = F.map(f => f.params && f.params.pinv);
+  if (alpha.some(a => a > 0)) tr.push({ x: xs(), y: alpha, name: 'alpha', mode: 'lines', line: { shape: 'hv' } });
+  if (pinv.some(p => p > 0)) tr.push({ x: xs(), y: pinv, name: 'pinv', mode: 'lines', line: { shape: 'hv', dash: 'dot' }, yaxis: 'y2' });
+  const ncat = Math.max(0, ...F.map(f => f.params ? f.params.cat_rates.length : 0));
+  for (let c = 0; c < ncat && ncat > 1; c++)
+    tr.push({ x: xs(), y: F.map(f => f.params ? [...f.params.cat_rates].sort((a, b) => a - b)[c] : null), name: `rate ${c + 1}`, mode: 'lines', line: { shape: 'hv', width: 1 } });
+  Plotly.newPlot('pRhas', tr, layout({ showlegend: true, legend: { orientation: 'h' }, xaxis: xaxis(), yaxis: { title: 'alpha / category rates (sorted)', type: 'log' },
+    yaxis2: { title: 'pinv', overlaying: 'y', side: 'right' }, shapes: cursor(0) }), cfg);
+}
+
+// PCA of centred log exchangeabilities (component 1), fitted on every recorded snapshot
+function drawPca() {
+  const snaps = [];
+  for (const c of T.calls) { for (const r of c.rounds) snaps.push(r.params); snaps.push(c.params); }
+  const vec = p => { const r = p && p.rates[0]; if (!r || !r.length) return null; const l = r.map(x => Math.log(Math.max(x, 1e-12))); const m = l.reduce((s, x) => s + x, 0) / l.length; return l.map(x => x - m); };
+  const X = snaps.map(vec).filter(v => v);
+  const d = X.length ? X[0].length : 0;
+  const mean = Array(d).fill(0);
+  X.forEach(v => v.forEach((x, i) => mean[i] += x / X.length));
+  const Xc = X.map(v => v.map((x, i) => x - mean[i]));
+  const totVar = Xc.reduce((s, v) => s + v.reduce((t, x) => t + x * x, 0), 0);
+  if (d < 2 || totVar < 1e-12) { Plotly.purge('pPca'); $('pcaNote').textContent = 'exchangeabilities did not change (fixed matrix or single free rate)'; T.pca = null; return; }
+  const ev = topEig(v => { const s = Xc.map(x => x.reduce((t, xi, i) => t + xi * v[i], 0)); const w = Array(d).fill(0); Xc.forEach((x, k) => x.forEach((xi, i) => w[i] += xi * s[k])); return w; }, d, 2);
+  const proj = v => { const c = v.map((x, i) => x - mean[i]); return ev.map(e => e.v.reduce((s, x, i) => s + x * c[i], 0)); };
+  T.pca = { vec, proj };
+  $('pcaNote').textContent = `${X.length} snapshots · PC1+PC2 = ${(100 * (ev[0].lam + ev[1].lam) / totVar).toFixed(0)}% of the variance · solid: state at each frame, dashed: selected call's rounds`;
+  const P = T.frames.map(f => f.params ? proj(vec(f.params)) : [null, null]);
+  Plotly.newPlot('pPca', [
+    { x: P.map(p => p[0]), y: P.map(p => p[1]), mode: 'lines+markers', marker: { size: 5 }, line: { color: '#1f77b4' }, text: T.frames.map(f => f.label), hoverinfo: 'text' },
+    { x: [], y: [], mode: 'lines+markers', line: { dash: 'dash', color: '#ff7f0e' }, marker: { size: 4 }, hoverinfo: 'text', text: [] },
+    { x: [P[0][0]], y: [P[0][1]], mode: 'markers', marker: { size: 14, color: 'rgba(0,0,0,0)', line: { color: '#d33', width: 2.5 } }, hoverinfo: 'skip' },
+  ], layout({ xaxis: { title: 'PC1', zeroline: false }, yaxis: { title: 'PC2', zeroline: false, scaleanchor: 'x' } }), cfg);
+  $('pPca').on('plotly_click', e => { if (e.points[0].curveNumber === 0) setFrame(e.points[0].pointIndex); });
+}
+
+function drawFreq() {
+  const p = T.frames[frame].params;
+  if (!p) { Plotly.purge('pFreq'); return; }
+  const lab = T.hdr.seq_type === 'AA' ? AA : T.hdr.seq_type === 'DNA' ? DNA : p.freqs[0].map((_, i) => String(i));
+  if (p.freqs.length === 1)
+    Plotly.react('pFreq', [{ x: lab, y: p.freqs[0], type: 'bar' }], layout({ yaxis: { title: 'frequency' } }), cfg);
+  else
+    Plotly.react('pFreq', [{ z: p.freqs, x: lab, y: p.w.map((w, k) => `class ${k + 1} (w=${w.toFixed(3)})`), type: 'heatmap', colorscale: 'Viridis' }],
+      layout({ margin: { l: 130, r: 10, t: 10, b: 30 } }), cfg);
+}
+
+function fillCalls() {
+  $('callSel').innerHTML = T.calls.map((c, i) => `<option value="${i}">#${c.call} at ${c.frame ? c.frame.label : '?'} · lnL ${c.lnl.toFixed(3)} · ${c.rounds.length} rounds</option>`).join('');
+}
+
+function drawCall() {
+  const c = T.calls[+$('callSel').value];
+  if (!c) return;
+  const R = c.rounds.length ? c.rounds : [{ kind: 'end', round: 0, lnl: c.lnl, params: c.params }];
+  const lab = R.map(r => `${r.kind} ${r.round}`);
+  Plotly.react('pCall', [
+    { x: R.map((_, i) => i), y: R.map(r => r.lnl), mode: 'lines+markers', name: 'lnL', text: lab, marker: { color: R.map(r => r.kind === 'polish' ? '#1f77b4' : r.kind === 'em' ? '#2ca02c' : '#d62728') } },
+    { x: R.map((_, i) => i), y: R.map(r => r.params.tl), mode: 'lines+markers', name: 'tree length', yaxis: 'y2', line: { dash: 'dot', color: '#8c564b' }, text: lab },
+  ], layout({ showlegend: true, legend: { orientation: 'h' }, xaxis: { title: 'round (in order)' }, yaxis: { title: 'lnL' }, yaxis2: { title: 'tree length', overlaying: 'y', side: 'right' } }), cfg);
+  if (T.pca) {
+    const P = R.map(r => T.pca.proj(T.pca.vec(r.params)));
+    Plotly.restyle('pPca', { x: [P.map(p => p[0])], y: [P.map(p => p[1])], text: [lab] }, [1]);
+  }
+}
+
+function setFrame(i) {
+  const F = T.frames;
+  frame = Math.max(0, Math.min(F.length - 1, i | 0));
+  const f = F[frame];
+  $('slider').value = frame;
+  $('frameLabel').textContent = `${frame}: ${f.label} · lnL ${f.lnl.toFixed(3)} · best ${f.bestLnl.toFixed(3)}${f.calls.length ? ' · ▲ model optimised' : ''}`;
+  for (const id of ['pLnl', 'pRf', 'pTl', 'pRhas']) Plotly.relayout(id, { shapes: cursor(frame) });
+  if (T.mds) { const k = T.mds.seen.indexOf(f.best.topo); Plotly.restyle('pMds', { x: [[T.mds.P[k][0]]], y: [[T.mds.P[k][1]]] }, [1]); }
+  if (T.pca && f.params) { const p = T.pca.proj(T.pca.vec(f.params)); Plotly.restyle('pPca', { x: [[p[0]]], y: [[p[1]]] }, [2]); }
+  drawFreq();
+  if (f.calls.length) { $('callSel').value = T.calls.indexOf(f.calls[f.calls.length - 1]); drawCall(); }
+}
+
+// ---------- wiring ----------
+function load(text) {
+  T = build(text);
+  if (!T.frames.length) { $('info').textContent = 'No iterations or model optimisations found in this file.'; return; }
+  $('drop').hidden = true; $('grid').hidden = false;
+  drawAll(); drawCall();
+}
+$('file').onchange = async e => { if (e.target.files[0]) load(await readFile(e.target.files[0])); };
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', async e => { e.preventDefault(); if (e.dataTransfer.files[0]) load(await readFile(e.dataTransfer.files[0])); });
+$('slider').oninput = e => setFrame(+e.target.value);
+$('prev').onclick = () => setFrame(frame - 1);
+$('next').onclick = () => setFrame(frame + 1);
+$('play').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $('play').textContent = '▶ play'; return; }
+  $('play').textContent = '❚❚ pause';
+  timer = setInterval(() => { if (frame >= T.frames.length - 1) $('play').click(); else setFrame(frame + 1); }, 250);
+};
+document.addEventListener('keydown', e => { if (!T || e.target.tagName === 'SELECT') return; if (e.key === 'ArrowLeft') setFrame(frame - 1); if (e.key === 'ArrowRight') setFrame(frame + 1); });
+$('rfRef').onchange = drawRf;
+$('callSel').onchange = drawCall;
+document.querySelectorAll('[data-wide]').forEach(b => b.onclick = () => { b.closest('.panel').classList.toggle('wide'); window.dispatchEvent(new Event('resize')); });
+// baked trace (bake_trace.py): base64 of gzip inside <script id="trace-data">
+const baked = document.getElementById('trace-data');
+if (baked) {
+  const bin = Uint8Array.from(atob(baked.textContent.trim()), ch => ch.charCodeAt(0));
+  new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text().then(load);
+}
+</script>
+</body>
+</html>

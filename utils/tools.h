@@ -3522,6 +3522,16 @@ int init_random(int seed, bool write_info = false, int** rstream = nullptr);
 int finish_random(int *rstream = nullptr);
 
 /**
+ * derive a well-mixed seed for random stream number @p stream_id from @p seed.
+ * SPRNG's LCG only puts the seed into the upper state bits, so streams seeded with
+ * nearby integers (e.g. seed+i) are, draw by draw, shifted copies of each other.
+ * Use this when the k-th draws of different streams must be independent.
+ * For a fixed @p seed, distinct @p stream_id (up to 2^31) always give distinct seeds.
+ * @return a non-negative 31-bit seed
+ */
+int mix_random_seed(int seed, int stream_id);
+
+/**
  * initialize multiple random streams
  * @return the number of streams
  */

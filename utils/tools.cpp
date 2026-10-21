@@ -6575,6 +6575,23 @@ int finish_multi_rstreams()
 
 #endif /* USE_SPRNG */
 
+int mix_random_seed(int seed, int stream_id) {
+    // SplitMix64 finalizer: hash the seed to a 31-bit base
+    uint64_t x = (uint64_t)(uint32_t)seed << 32;
+    x += 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    x ^= (x >> 31);
+    // scramble base+stream_id with a bijection on [0, 2^31) (xorshifts and odd multipliers
+    // mod 2^31 are invertible), so different stream_ids never share a seed
+    const uint32_t mask = 0x7fffffff;
+    uint32_t y = ((uint32_t)x + (uint32_t)stream_id) & mask;
+    y ^= y >> 16; y = (y * 0x7feb352dU) & mask;
+    y ^= y >> 15; y = (y * 0x846ca68bU) & mask;
+    y ^= y >> 16;
+    return (int)y;
+}
+
 /******************/
 
 /* returns a random integer in the range [0; n - 1] */

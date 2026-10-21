@@ -4608,10 +4608,16 @@ void runStandardBootstrap(Params &params, Alignment *alignment, IQTree *tree) {
         // 2015-12-17: initialize random stream for creating bootstrap samples
         // mainly so that checkpointing does not need to save bootstrap samples
         int *saved_randstream = randstream;
-        init_random(params.ran_seed + sample);
+        int boot_seed = params.ran_seed + sample;
+        // Bayesian bootstrap: site i's weight is a function of the i-th draw alone, and the
+        // i-th draws of streams seeded with consecutive integers are strongly correlated
+        // (SPRNG LCG), so consecutive replicates would get correlated weights at the same site.
+        if (params.bootstrap_spec && strncasecmp(params.bootstrap_spec, "BAYES", 5) == 0)
+            boot_seed = mix_random_seed(params.ran_seed, sample);
+        init_random(boot_seed);
 
         Alignment* bootstrap_alignment;
-        cout << "Creating " << RESAMPLE_NAME << " alignment (seed: " << params.ran_seed+sample << ")..." << endl;
+        cout << "Creating " << RESAMPLE_NAME << " alignment (seed: " << boot_seed << ")..." << endl;
 
         if (alignment->isSuperAlignment())
             bootstrap_alignment = new SuperAlignment;

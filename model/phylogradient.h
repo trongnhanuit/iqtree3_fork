@@ -138,7 +138,8 @@ private:
     /** accumulate one edge given both sides and the neighbour carrying its length/id */
     void accumulateEdge(PhyloNeighbor *nei, const Side &child, const Side &parent, bool root_edge, Result &res);
 
-    /** per-edge, per-call context for the per-chunk accumulation (dispatched via chunk_fn) */
+    /** per-edge, per-call context for accumulateChunk (A3: extracted from accumulateEdge,
+        no behavior change; A4 will add a dispatch pointer over multiple implementations) */
     struct EdgeCtx {
         const Side *child, *parent;
         bool root_edge;
@@ -154,11 +155,6 @@ private:
 
     /** the work of one OpenMP chunk: patterns [b_lo*V, min(b_hi*V,orig_nptn)) of edge ctx */
     void accumulateChunk(const EdgeCtx &ctx, int ch);
-    /** same contract for vsize == 2, two patterns per Vec2d (SSE2/NEON) */
-    void accumulateChunkSSE(const EdgeCtx &ctx, int ch);
-    typedef void (PhyloGradient::*ChunkFn)(const EdgeCtx &ctx, int ch);
-    ChunkFn chunk_fn = nullptr;                                  // set in cacheDimensions from vsize
-    bool force_scalar_accum = false;                             // AG_SCALAR_ACCUM=1 (tests only)
 
     /** finish: G_m -> dlogL/dQ_m in the state basis */
     void finishQ(Result &res);
@@ -177,8 +173,8 @@ private:
     std::vector<double> val, lval;                               // per edge scratch: exp(lambda tau), lambda*exp(lambda tau)
     std::vector<double> xker;                                    // per edge scratch: X per class, S*S each
     std::vector<double> A;                                       // per edge scratch: per chunk, per class, S*S
-    std::vector<uint64_t> inv_mask;                              // per padded pattern: states of an invariant pattern (0 = none)
-    std::vector<char> inv_gaponly;                               // per padded pattern: gap-only invariant pattern
+    std::vector<uint64_t> inv_mask;                              // per pattern: states of an invariant pattern (0 = none)
+    std::vector<char> inv_gaponly;                               // per pattern: gap-only invariant pattern
     int nchunks = 1;
 
     int fault_edge_ = -1;                                        // AG_TEST_FAULT_EDGE (tests only)

@@ -536,28 +536,7 @@ weights and profiles after matching the classes to the truth.
 three datasets with three arms at one thread; `--full` adds the rest with
 two thread counts and three timing repeats.
 
-## 14. SIMD accumulation (`accumulateChunkSSE`)
-
-The per-chunk loop that produces `dlogL/dt`, `dlogL/drate` (section 3), `A_c`
-(section 4) and the root-frequency/class/invariant-site sums (section 5) has a
-second implementation, dispatched from `cacheDimensions` when the kernel's
-`vsize == 2` (SSE2/NEON): two patterns are packed per `Vec2d` lane and
-processed together, reading child/parent partials (and gathered tip rows) in
-the kernel's own interleaved layout. `dlogL/dt`, `dlogL/drate`, `dlogL/dclass`
-and the invariant-site sums are added one real lane at a time in the same
-pattern-ascending order as the scalar path, so they match it bit-for-bit; only
-`A_c` and the root-frequency term reduce across lanes with `blend2d`, which
-reorders the sum and so differs from the scalar path by floating-point
-rounding only (under 1e-9 relative, the gradient check's own tolerance). A
-pattern pair with a non-finite likelihood invalidates the whole gradient (as
-the scalar path already does per-pattern), so it does not matter that the
-whole pair, not just the bad lane, is skipped. `AG_SCALAR_ACCUM=1` forces the
-scalar path regardless of `vsize`, for testing. On an AVX/FMA/AVX512 machine
-the kernel's own `vsize` is 4 or 8, so `accumulateChunkSSE` never dispatches
-there unless the run also forces `-lk SSE` (the kernel's own vector width,
-unrelated to `AG_SCALAR_ACCUM`); `test_scripts/ag/simd_check.sh` passes it.
-
-## 15. Command-line summary
+## 14. Command-line summary
 
 | Option | Meaning |
 |---|---|

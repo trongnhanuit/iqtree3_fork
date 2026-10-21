@@ -138,24 +138,6 @@ private:
     /** accumulate one edge given both sides and the neighbour carrying its length/id */
     void accumulateEdge(PhyloNeighbor *nei, const Side &child, const Side &parent, bool root_edge, Result &res);
 
-    /** per-edge, per-call context for accumulateChunk (A3: extracted from accumulateEdge,
-        no behavior change; A4 will add a dispatch pointer over multiple implementations) */
-    struct EdgeCtx {
-        const Side *child, *parent;
-        bool root_edge;
-        double t_edge;
-        const Alignment *aln;
-        const double *tip_lh, *ptn_freq, *ptn_invar, *evec;
-        size_t nblocks;
-        bool any_q;
-        // per-chunk outputs, sized nchunks (or nchunks*stride); chunk_bad is per-chunk
-        double *dt_chunk, *drate_chunk, *dclass_chunk, *inv_state_chunk, *inv_total_chunk, *root_chunk, *Achunk;
-        char *chunk_bad;
-    };
-
-    /** the work of one OpenMP chunk: patterns [b_lo*V, min(b_hi*V,orig_nptn)) of edge ctx */
-    void accumulateChunk(const EdgeCtx &ctx, int ch);
-
     /** finish: G_m -> dlogL/dQ_m in the state basis */
     void finishQ(Result &res);
 

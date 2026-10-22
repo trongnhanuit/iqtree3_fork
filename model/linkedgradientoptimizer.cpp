@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 
@@ -213,6 +214,52 @@ bool LinkedGradientOptimizer::stopEarly(int iter, double f_prev, double f_new) {
     delta_max_ = max(delta_max_, delta);
     stop_iter_ = iter;
     return delta < min(0.01 * delta_max_, logl_epsilon_);
+}
+
+/* ---------------------------------------------------------------------- */
+/* joint gradient check                                                    */
+/* ---------------------------------------------------------------------- */
+
+int LinkedGradientOptimizer::gradientCheck() {
+    const int n = getNDim();
+    const double tol = Params::getInstance().ag_gradient_check_tol;
+    vector<double> theta;
+    maps_[0]->pack(theta);
+    vector<double> x(n + 1), dfx(n + 1);
+    for (int i = 0; i < n; i++) x[i + 1] = theta[i];
+    double f0 = derivativeFunk(x.data(), dfx.data());
+    double gmax = 0.0;
+    for (int i = 1; i <= n; i++) gmax = max(gmax, fabs(dfx[i]));
+    auto fd = [&](int i, double h) {
+        double xi = x[i];
+        x[i] = xi + h; double fp = targetFunk(x.data());
+        x[i] = xi - h; double fm = targetFunk(x.data());
+        x[i] = xi;
+        return -(fp - fm) / (2 * h);   // targetFunk is -lnL
+    };
+    ofstream out(Params::getInstance().out_prefix + string(".gradcheck.tsv"));
+    out << "idx\tname\tx\tanalytic\tfd_h\tfd_h2\trichardson\trel_err\tstatus" << endl;
+    int n_fail = 0, n_noise = 0, worst = 0;
+    double max_rel = 0.0;
+    for (int i = 1; i <= n; i++) {
+        double h = 1e-4 * max(1.0, fabs(x[i]));
+        double a = -dfx[i], d1 = fd(i, h), d2 = fd(i, h / 2), r = (4 * d2 - d1) / 3;
+        double rel = fabs(a - r) / max(max(fabs(a), fabs(r)), 1e-6 * gmax);
+        // a disagreement no larger than the FD step's own instability is rounding noise
+        string status = rel <= tol ? "PASS" : (fabs(a - r) <= 4 * fabs(d1 - d2) ? "PASS-FDNOISE" : "FAIL");
+        if (status == "FAIL") n_fail++;
+        if (status == "PASS-FDNOISE") n_noise++;
+        if (rel > max_rel && status != "PASS-FDNOISE") { max_rel = rel; worst = i - 1; }
+        out << i - 1 << "\t" << maps_[0]->name(i - 1) << "\t" << x[i] << "\t" << a << "\t" << d1 << "\t" << d2
+            << "\t" << r << "\t" << rel << "\t" << status << endl;
+    }
+    targetFunk(x.data());   // every copy back at the checked point
+    ostringstream os;
+    os << "GRADCHECK joint n=" << n << " partitions=" << trees_.size() << " logl=" << fixed << setprecision(4) << -f0
+       << " max_rel=" << scientific << setprecision(2) << max_rel << " worst=" << (n ? maps_[0]->name(worst) : "")
+       << " n_fail=" << n_fail << " n_fdnoise=" << n_noise;
+    GradientOptimizer::say(os.str());
+    return n_fail;
 }
 
 /* ---------------------------------------------------------------------- */

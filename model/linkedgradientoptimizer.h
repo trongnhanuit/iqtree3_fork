@@ -40,6 +40,14 @@ public:
     /** one linked step from the current model; returns the summed log-likelihood */
     double step(bool write_info, double logl_epsilon);
 
+    /**
+     * --ag-gradient-check-only under -S --model-joint: the summed analytic gradient at
+     * the current point against central differences of the summed log-likelihood
+     * (h and h/2, Richardson); writes <prefix>.gradcheck.tsv and one GRADCHECK line.
+     * @return the number of failed parameters
+     */
+    int gradientCheck();
+
     virtual int getNDim();
     virtual double targetFunk(double x[]);
     virtual double derivativeFunk(double x[], double dfx[]);

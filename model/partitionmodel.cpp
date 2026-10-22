@@ -776,10 +776,18 @@ double PartitionModel::optimizeLinkedModel(bool write_info, double gradient_epsi
     // --analytical-gradients (mixture_maker): the summed analytic gradient replaces finite
     // differences; this returns before the code below, whose getVariables() would undo it
     Params &params = Params::getInstance();
-    if (params.analytical_gradients && params.partition_type != BRLEN_SCALE && params.partition_type != BRLEN_FIX) {
+    if ((params.analytical_gradients || params.ag_gradient_check_only) &&
+        params.partition_type != BRLEN_SCALE && params.partition_type != BRLEN_FIX) {
         LinkedGradientOptimizer *&opt = linked_ag[model->getName()];
         if (!opt) opt = new LinkedGradientOptimizer((PhyloSuperTree*)site_rate->getTree(), model->getName());
         string why = opt->prepare();
+        if (params.ag_gradient_check_only) {
+            // the joint check replaces the per-partition one (skipped for linked models)
+            if (!why.empty()) { cout << "ERROR: joint gradient check not possible: " << why << endl; exit(1); }
+            int n_fail = opt->gradientCheck();
+            cout.flush();
+            exit(n_fail == 0 ? 0 : 1);
+        }
         if (why.empty())
             return opt->step(write_info, 10.0 * params.modelEps);
         if (!linked_ag_warned) {

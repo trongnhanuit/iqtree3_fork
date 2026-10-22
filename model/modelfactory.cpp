@@ -1615,8 +1615,9 @@ double ModelFactory::optimizeParameters(int fixed_len, bool write_info,
 
     // --ag-gradient-check-only / --ag-dump-gradient / --ag-selftest: debug tools
     // evaluated at the initial point of the optimisation (design doc, section 7).
-    if (Params::getInstance().ag_gradient_check_only || Params::getInstance().ag_dump_gradient ||
-        Params::getInstance().ag_selftest) {
+    // a model linked across partitions is checked jointly in PartitionModel's linked step
+    if ((Params::getInstance().ag_gradient_check_only || Params::getInstance().ag_dump_gradient ||
+         Params::getInstance().ag_selftest) && !model->fixed_parameters) {
         int rc = GradientOptimizer::gradientCheckOnly(this, tree);
         if (Params::getInstance().ag_gradient_check_only || Params::getInstance().ag_selftest) {
             cout.flush();

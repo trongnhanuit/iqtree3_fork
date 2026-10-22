@@ -550,7 +550,57 @@ robust_j_start_points() {
     echo "  start points: PASS"
 }
 
-JOINT=(j_linked j_start_points)
+robust_j_gradcheck() {   # summed analytic gradient vs central differences of the summed lnL
+    local spec id args
+    for spec in "fmix2_g4|$JOINT_ARGS" \
+                "fo_r2|-s $WD/turtle_aa.fasta -S $WD/turtle_aa.nex -m LG+R2 --model-joint GTR20+FO -n 0 -nt 1 -seed $SEED"; do
+        id="${spec%%|*}"; args="${spec#*|}"
+        # shellcheck disable=SC2086
+        "$BIN" $args --prefix $id -redo --ag-gradient-check-only > $id.stdout 2>&1
+        local rc=$?
+        echo "  $id: exit $rc, $(grep -m1 "GRADCHECK joint" $id.stdout | cut -c1-150)"
+        [ "$rc" = "0" ] && grep -q "GRADCHECK joint .* n_fail=0" $id.stdout || return 1
+    done
+    echo "  joint gradient check: PASS"
+}
+
+# the linked model of PREFIX.mm.nex without its header comment
+mm_models() { sed -n '/^begin models;/,$p' "$1"; }
+
+robust_j_determinism() {   # 8 partitions: -T 1/4/8 give the same model (each partition tree single-threaded)
+    local t
+    for t in 1 4 8; do
+        "$BIN" -s "$WD/turtle_aa.fasta" -S "$HERE/data/turtle_aa_8.nex" -m LG+G4 --model-joint GTR20+F2 --start-points warm \
+            --loop-model 2 -n 0 -T $t -seed $SEED --prefix t$t -redo --analytical-gradients > t$t.stdout 2>&1 || { echo "  -T $t failed"; return 1; }
+    done
+    cmp -s <(mm_models t1.mm.nex) <(mm_models t4.mm.nex) && cmp -s <(mm_models t1.mm.nex) <(mm_models t8.mm.nex) \
+        || { echo "  the model differs across thread counts"; return 1; }
+    echo "  logl -T1=$(logl_of t1.iqtree) -T4=$(logl_of t4.iqtree) -T8=$(logl_of t8.iqtree); same model: PASS"
+}
+
+robust_j_quality() {   # same FMIX start: the analytic linked step ends no worse than finite differences
+    local spec id args off on
+    for spec in "fmix2|$JOINT_ARGS" "fo|-s $WD/turtle_aa.fasta -S $WD/turtle_aa.nex -m LG+G4 --model-joint GTR20+FO --gtr20-model LG -n 0 -nt 1 -seed $SEED"; do
+        id="${spec%%|*}"; args="${spec#*|}"
+        # shellcheck disable=SC2086
+        "$BIN" $args --prefix ${id}_off -redo > ${id}_off.stdout 2>&1 || { echo "  $id flag-off run failed"; return 1; }
+        # shellcheck disable=SC2086
+        "$BIN" $args --prefix ${id}_on -redo --analytical-gradients > ${id}_on.stdout 2>&1 || { echo "  $id flag-on run failed"; return 1; }
+        off=$(logl_of ${id}_off.iqtree); on=$(logl_of ${id}_on.iqtree)
+        echo "  $id: flag-off $off, flag-on $on"
+        awk -v a="$off" -v b="$on" 'BEGIN { exit (b >= a - 0.1) ? 0 : 1 }' || { echo "  $id: analytic run worse than finite differences"; return 1; }
+    done
+    # round trip: the written model reproduces the training likelihood on the training trees
+    "$BIN" -s "$WD/turtle_aa.fasta" -S "$WD/turtle_aa.nex" -te fmix2_on.treefile -blfix -mdef fmix2_on.mm.nex -m MM2+G4 \
+        -keep-ident -nt 1 -seed $SEED --prefix rt -redo > rt.stdout 2>&1 || { echo "  round-trip run failed: $(grep -m1 ERROR rt.stdout)"; return 1; }
+    local a b; a=$(logl_of fmix2_on.iqtree); b=$(logl_of rt.iqtree)
+    echo "  round trip: training $a, reloaded $b"
+    awk -v a="$a" -v b="$b" 'BEGIN { d = a - b; if (d < 0) d = -d; t = 1e-6 * (a < 0 ? -a : a); if (t < 0.05) t = 0.05; exit (d <= t) ? 0 : 1 }' \
+        || { echo "  the model file does not reproduce the training likelihood"; return 1; }
+    echo "  quality and round trip: PASS"
+}
+
+JOINT=(j_linked j_start_points j_gradcheck j_determinism j_quality)
 
 throttle() { while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$MAXJOBS" ]; do sleep 1; done; }
 

@@ -1,7 +1,7 @@
 /*
  * linkedgradientoptimizer.cpp
  *
- * See linkedgradientoptimizer.h and docs/analytical-gradients-design.md, section 17.
+ * See linkedgradientoptimizer.h and docs/analytical-gradients-design.md, section 15.
  */
 
 #include "linkedgradientoptimizer.h"

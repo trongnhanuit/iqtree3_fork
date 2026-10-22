@@ -7,7 +7,7 @@
  * gradient instead of finite differences. Branch lengths and rate models stay with
  * their partitions (the alternation in PartitionModel::optimizeParameters).
  *
- * Design: docs/analytical-gradients-design.md, section 17.
+ * Design: docs/analytical-gradients-design.md, section 15.
  */
 
 #ifndef LINKEDGRADIENTOPTIMIZER_H

@@ -555,3 +555,85 @@ two thread counts and three timing repeats.
 | `--ag-gradient-check [tol]`, `--ag-gradient-check-every k`, `--ag-gradient-check-strict` | check analytic against numerical gradients during the search |
 | `--ag-gradient-check-only`, `--ag-dump-gradient`, `--ag-selftest` | one-shot checks at the initial point (tests) |
 | `--ag-abort-after init|round:N` | write the checkpoint and exit at that phase (resume tests) |
+| `--start-points warm|cold` | `-S --model-joint GTR20+Fk`: one start for the linked mixture, C-series profiles + LG (warm) or random profiles + POISSON (cold, default) |
+
+## 15. Linked models across partitions (`-S --model-joint`, mixture_maker)
+
+QMaker-style estimation of one model from many alignments: each alignment is a
+partition with its own fixed tree (`-te`), branch lengths and rate model; the
+exchangeability matrix, the K profiles and the weights are shared.
+
+    iqtree3 -S ALN -te trees.treefile -m LG+G4 --model-joint GTR20+F10 \
+            --analytical-gradients [--start-points warm] -T 96 -pre mm10
+    iqtree3 -s new.phy -mdef mm10.mm.nex -m MM10+G4
+
+**Alternation.** `PartitionModel::optimizeParameters` alternates (b) each
+partition's own step (branch lengths, rate model) with (a) the linked step,
+until a round gains less than 10 x `-me`; with the flag and no `--loop-model`
+it allows 20 rounds instead of 10. Each partition holds its own copy of the
+linked model, frozen with `fixParameters(true)`. `ModelMixture` does not pass
+that on to its classes, so `GradientOptimizer::supports()` declines a frozen
+model; step (b) then fits only branch lengths and rate parameters with the
+default optimiser in both arms.
+
+**Start points.** `+Fk` starts every class of a copy at that partition's
+empirical frequencies: identical within a copy (a fixed point of any gradient
+method) and different across copies. `PartitionModel::applyStartPoints` runs
+once before the first round, only while the profiles are identical: warm takes
+the C-series profiles (`breakSymmetry`) with LG exchangeabilities, cold jitters
+the pooled frequencies (`coldProfiles`, seeded by `-seed`) with POISSON. The
+start is set on partition 0 and copied raw (all rate entries, raw frequencies,
+weights) into every copy; an explicit FMIX list or a resumed run is left as is.
+
+**The linked step** (`LinkedGradientOptimizer`, hooked at the top of
+`optimizeLinkedModel`, which returns before its own `getVariables()` could
+undo the result). Before each step `prepare()` checks every partition with
+`supports()`, builds one model-only `ModelParamMap` per partition (S, F, W
+blocks; maps are rebuilt every step because each pins a profile's largest
+state) and stops with an error if the copies differ. BFGS (`dfpmin`, scaled,
+gtol negligible, `stopEarly` at min(1% of the largest gain, 10 x `-me`)) runs
+on the summed log-likelihood with the summed gradient; partitions run in
+parallel, largest first, and are added in a fixed order, so the result does not
+depend on the thread count when each partition tree is single-threaded.
+
+*Floors.* `unpack` holds frequencies at 1e-4 and weights at 1e-3; there the
+direction is flat and a negative gradient is set to zero. That rule must be
+applied to the sum: per partition it would give sum_p max(g_p, 0) instead of
+max(sum_p g_p, 0) and push a floored entry the wrong way. Model-only maps
+therefore return raw gradients and the step applies the rule once, with
+partition 0's flags (identical across copies).
+
+*Bounds.* Exchangeabilities are bounded relative to the pinned last entry
+(pinned x [1e-4, 1e4]); a POISSON start pins it at 10, and the absolute bound
+100 would otherwise cap every other entry at 10x.
+
+*Safety.* A failing analytic gradient (exception, non-finite value or eigen
+residual) uses finite differences for that call; a step that ends lower than it
+started restores the entry state in every copy.
+
+**Per-step line** (`AG joint:`): iterations, logL before and after, the time of
+step (b) since the previous linked step, entries at an upper bound, floored
+entries, fallbacks, and the cost of a likelihood and of a gradient. Reading it:
+iterations at 200 in the last rounds means the 200-iteration cap of each call,
+not convergence (raise `--loop-model`); upper-bound hits mean an exchangeability
+wants more than 1e4 x the pinned entry; a round with a small gain after a fresh
+BFGS start is the convergence signal.
+
+**Output.** After every linked step `<prefix>.mm.nex` holds `MM<K>Q` (PAML lower
+triangle, pinned entry 1, frequencies the weighted mean profile), `frequency
+MM<K>pi1..K` (normalised, by decreasing weight) and `MM<K> =
+MM<K>Q+FMIX{MM<K>pi<k>:rate:weight,...}`, at 17 digits; one class gives `MM1`.
+The matrix belongs with its profiles. Explicit weights are fixed when the file
+is read back.
+
+**Checks.** `--ag-gradient-check-only` under `-S` skips the per-partition check
+for a linked model and compares the summed analytic gradient with central
+differences of the summed log-likelihood (`GRADCHECK joint`). The joint test
+suite (`run_ag_tests.sh --suite joint`) covers the leak, the start points, the
+gradient check, determinism at -T 1/4/8, quality against finite differences
+from the same start, and the round trip of `.mm.nex`.
+
+**Not changed.** Without the flag, `-S --model-joint GTR20+Fk` still starts with
+identical profiles, and its `setVariables`/`getVariables` sync never copies the
+pinned rate or the 20th frequency, so the copies' profiles are not fully linked;
+that path is left as it is.

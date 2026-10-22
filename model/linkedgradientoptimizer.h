@@ -48,6 +48,15 @@ public:
      */
     int gradientCheck();
 
+    /**
+     * Writes the shared model as a NEXUS models block reusable with -mdef: for a
+     * K-class mixture with linked exchangeabilities `model MM<K>Q` (PAML lower
+     * triangle, pinned entry 1, frequencies = weighted mean profile), `frequency
+     * MM<K>pi1..K` (normalised, by decreasing weight) and `model MM<K> =
+     * MM<K>Q+FMIX{...}`; for one class `model MM1`. 17 significant digits.
+     */
+    void writeModelFile(const std::string &file) const;
+
     virtual int getNDim();
     virtual double targetFunk(double x[]);
     virtual double derivativeFunk(double x[], double dfx[]);

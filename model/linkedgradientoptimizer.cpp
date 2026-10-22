@@ -263,6 +263,75 @@ int LinkedGradientOptimizer::gradientCheck() {
 }
 
 /* ---------------------------------------------------------------------- */
+/* model file                                                              */
+/* ---------------------------------------------------------------------- */
+
+void LinkedGradientOptimizer::writeModelFile(const string &file) const {
+    ModelSubst *model = trees_[0]->getModel();
+    const int K = model->getNMixtures(), S = model->num_states;
+    ModelMarkov *c0 = component(model, 0);
+    if (!c0 || !c0->isReversible() || c0->getNumRateEntries() != S * (S - 1) / 2) return;
+    vector<double> rates(c0->getNumRateEntries()), other(rates.size());
+    c0->getRateMatrix(rates.data());
+    for (int k = 1; k < K; k++) {   // one matrix only for linked exchangeabilities
+        component(model, k)->getRateMatrix(other.data());
+        if (other != rates) return;
+    }
+    if (rates.back() > 0.0) { double pin = rates.back(); for (double &r : rates) r /= pin; }
+    vector<vector<double>> pi(K, vector<double>(S));
+    vector<double> w(K), mean(S, 0.0);
+    double wsum = 0.0;
+    for (int k = 0; k < K; k++) {
+        const double *f = component(model, k)->state_freq;
+        double s = 0.0;
+        for (int a = 0; a < S; a++) s += f[a];
+        for (int a = 0; a < S; a++) pi[k][a] = f[a] / s;   // training keeps them unnormalised
+        w[k] = model->getMixtureWeight(k);
+        wsum += w[k];
+    }
+    for (int k = 0; k < K; k++) {
+        w[k] /= wsum;
+        for (int a = 0; a < S; a++) mean[a] += w[k] * pi[k][a];
+    }
+    vector<int> by_weight(K);
+    for (int k = 0; k < K; k++) by_weight[k] = k;
+    stable_sort(by_weight.begin(), by_weight.end(), [&](int a, int b) { return w[a] > w[b]; });
+    // the protein-matrix lookup upper-cases the name, so the matrix name must be upper case
+    const string name = "MM" + convertIntToString(K), qname = K > 1 ? name + "Q" : name;
+    ofstream out(file);
+    out << setprecision(17);
+    out << "#nexus" << endl
+        << "[ mixture_maker: " << (K > 1 ? convertIntToString(K) + " profiles with one" : "one")
+        << " exchangeability matrix, estimated jointly from " << trees_.size() << " alignments. " << endl
+        << "  The matrix belongs with its profiles; it is not a standalone matrix. Exchangeabilities" << endl
+        << "  at the lower bound (1e-4 of the last entry) are not estimable from the data." << endl
+        << "  Use: -mdef " << file << " -m " << name << "+G4 ]" << endl
+        << "begin models;" << endl
+        << "model " << qname << " =" << endl;
+    // PAML lower triangle (row a, columns b < a); the rates are stored as the upper triangle
+    for (int a = 1; a < S; a++) {
+        for (int b = 0; b < a; b++) out << " " << rates[b * S - b * (b + 1) / 2 + (a - b - 1)];
+        out << endl;
+    }
+    for (int a = 0; a < S; a++) out << " " << (K > 1 ? mean[a] : pi[0][a]);
+    out << ";" << endl;
+    if (K > 1) {
+        for (int j = 0; j < K; j++) {
+            out << "frequency " << name << "pi" << j + 1 << " =";
+            for (int a = 0; a < S; a++) out << " " << pi[by_weight[j]][a];
+            out << ";" << endl;
+        }
+        out << "model " << name << " = " << qname << "+FMIX{";
+        for (int j = 0; j < K; j++) {
+            int k = by_weight[j];
+            out << (j ? "," : "") << name << "pi" << j + 1 << ":" << component(model, k)->total_num_subst << ":" << w[k];
+        }
+        out << "};" << endl;
+    }
+    out << "end;" << endl;
+}
+
+/* ---------------------------------------------------------------------- */
 /* one linked step                                                         */
 /* ---------------------------------------------------------------------- */
 
@@ -343,6 +412,7 @@ double LinkedGradientOptimizer::step(bool write_info, double logl_epsilon) {
         GradientOptimizer::say(os.str());
     }
     steps_++;
+    writeModelFile(Params::getInstance().out_prefix + string(".mm.nex"));
     last_end_ = getRealTime();
     return final_lh;
 }

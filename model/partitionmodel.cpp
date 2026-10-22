@@ -26,6 +26,7 @@
 #include "model/modelmarkov.h"
 #include "model/modelmixture.h"
 #include "model/gradientoptimizer.h"
+#include "model/linkedgradientoptimizer.h"
 
 PartitionModel::PartitionModel()
         : ModelFactory()
@@ -771,7 +772,22 @@ double PartitionModel::optimizeLinkedModel(bool write_info, double gradient_epsi
     
     if (verbose_mode >= VB_MAX)
         cout << "Optimizing " << model->name << " model parameters..." << endl;
-    
+
+    // --analytical-gradients (mixture_maker): the summed analytic gradient replaces finite
+    // differences; this returns before the code below, whose getVariables() would undo it
+    Params &params = Params::getInstance();
+    if (params.analytical_gradients && params.partition_type != BRLEN_SCALE && params.partition_type != BRLEN_FIX) {
+        LinkedGradientOptimizer *&opt = linked_ag[model->getName()];
+        if (!opt) opt = new LinkedGradientOptimizer((PhyloSuperTree*)site_rate->getTree(), model->getName());
+        string why = opt->prepare();
+        if (why.empty())
+            return opt->step(write_info, 10.0 * params.modelEps);
+        if (!linked_ag_warned) {
+            outWarning("--analytical-gradients: the linked step of " + model->getName() + " uses finite differences (" + why + ")");
+            linked_ag_warned = true;
+        }
+    }
+
     //if (freq_type == FREQ_ESTIMATE) scaleStateFreq(false);
     
     double *variables = new double[ndim+1]; // used for BFGS numerical recipes
@@ -952,8 +968,12 @@ double PartitionModel::optimizeParameters(int fixed_len, bool write_info, double
     double prev_tree_lh = -DBL_MAX, tree_lh = 0.0;
     int ntrees = tree->size();
     applyStartPoints(write_info);
+    // the analytic linked step: 20 alternation rounds unless --loop-model was given
+    int opt_steps = Params::getInstance().model_opt_steps;
+    if (Params::getInstance().analytical_gradients && !linked_models.empty() && !Params::getInstance().model_opt_steps_given)
+        opt_steps = max(opt_steps, 20);
 
-    for (int step = 0; step < Params::getInstance().model_opt_steps; step++) {
+    for (int step = 0; step < opt_steps; step++) {
         tree_lh = 0.0;
         if (tree->part_order.empty()) tree->computePartitionOrder();
 #ifdef _OPENMP
@@ -1038,6 +1058,8 @@ PartitionModel::~PartitionModel()
 {
     if (partLike != nullptr)
         delete[] partLike;
+    for (auto &it : linked_ag)
+        delete it.second;
 }
 
 bool PartitionModel::isUnstableParameters() {

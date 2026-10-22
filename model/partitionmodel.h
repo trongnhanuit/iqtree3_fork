@@ -24,6 +24,8 @@
 #include "tree/phylosuperhmm.h"
 #include "modelfactory.h"
 
+class LinkedGradientOptimizer;
+
 /**
 Partition model
 
@@ -198,6 +200,9 @@ public:
      */
     unordered_map<string, ModelSubst*> linked_models;
 
+    /** --analytical-gradients: the analytic linked step per linked model (kept across steps) */
+    unordered_map<string, LinkedGradientOptimizer*> linked_ag;
+    bool linked_ag_warned = false;
     
     bool opt_gamma_invar;
     

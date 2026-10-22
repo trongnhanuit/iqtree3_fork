@@ -36,6 +36,7 @@ modelcodonmixture.cpp modelcodonmixture.h
 gradientoptimizer.cpp gradientoptimizer.h
 phylogradient.cpp phylogradient.h
 modelparammap.cpp modelparammap.h
+linkedgradientoptimizer.cpp linkedgradientoptimizer.h
 )
 
 target_link_libraries(model utils)

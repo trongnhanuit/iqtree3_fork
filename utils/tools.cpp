@@ -3072,6 +3072,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                 if (cnt >= argc)
                     throw "Use --loop-model NUM";
                 params.model_opt_steps = convert_int(argv[cnt]);
+                params.model_opt_steps_given = true;
                 continue;
             }
             if (strcmp(argv[cnt], "--nonrev-model") == 0 || strcmp(argv[cnt], "-nonrev-model") == 0) {
@@ -7509,6 +7510,7 @@ void Params::setDefault() {
     optimize_linked_gtr = false;
     gtr20_model = "POISSON";
     gtr20_model_given = false;
+    model_opt_steps_given = false;
     start_points = "cold";
     guess_multiplier = 0.75; // change from 0.5
     // rates_file = false;

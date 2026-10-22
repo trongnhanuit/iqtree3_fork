@@ -7,10 +7,13 @@
 # volatile lines (timestamps, timings, host, binary path).
 #
 # Usage:
-#   test_scripts/ag/identity.sh <ref_binary> <new_binary> [out_dir] [--full] [--expect-flag-differs] [-j N]
+#   test_scripts/ag/identity.sh <ref_binary> <new_binary> [out_dir] [--full] [--expect-flag-differs] [--flag-ref] [-j N]
 #
 # Modes:
 #   A  ref (flag off)  vs new (flag off): strict identity  (always)
+#   A2 ref (flag on)   vs new (flag on):  strict identity, only with --flag-ref
+#      (the reference also supports --analytical-gradients); skipped for the
+#      jt_* cases, whose flagged behaviour this branch changes on purpose
 #   B  new (flag off)  vs new (flag on):  identity until the flag changes
 #      behaviour; pass --expect-flag-differs (from Stage 3 on) to require that
 #      at least one flagged run DOES differ (comparator self-test).
@@ -28,17 +31,19 @@ NEW_BIN="${2:-}"
 OUT_DIR="${3:-identity_out}"
 FULL=0
 EXPECT_FLAG_DIFFERS=0
+FLAG_REF=0
 MAXJOBS=0
 argv=("$@")
 for ((k=0; k<${#argv[@]}; k++)); do
     case "${argv[$k]}" in
         --full) FULL=1 ;;
         --expect-flag-differs) EXPECT_FLAG_DIFFERS=1 ;;
+        --flag-ref) FLAG_REF=1 ;;
         -j) MAXJOBS="${argv[$((k+1))]:-0}" ;;
     esac
 done
 if [ -z "$REF_BIN" ] || [ -z "$NEW_BIN" ] || [ ! -x "$REF_BIN" ] || [ ! -x "$NEW_BIN" ]; then
-    echo "usage: $0 <ref_binary> <new_binary> [out_dir] [--full] [--expect-flag-differs] [-j N]" >&2
+    echo "usage: $0 <ref_binary> <new_binary> [out_dir] [--full] [--expect-flag-differs] [--flag-ref] [-j N]" >&2
     exit 2
 fi
 if [ "$MAXJOBS" -le 0 ]; then
@@ -57,9 +62,9 @@ SEED=73073
 WD="$ROOT/test_scripts/test_data"
 EX="$ROOT/example"
 
-mkdir -p "$OUT_DIR"/ref "$OUT_DIR"/new "$OUT_DIR"/flag "$OUT_DIR"/report
+mkdir -p "$OUT_DIR"/ref "$OUT_DIR"/new "$OUT_DIR"/flag "$OUT_DIR"/refflag "$OUT_DIR"/report
 OUT_DIR=$(cd "$OUT_DIR" && pwd)
-REF_DIR="$OUT_DIR/ref"; NEW_DIR="$OUT_DIR/new"; FLAG_DIR="$OUT_DIR/flag"; REP_DIR="$OUT_DIR/report"
+REF_DIR="$OUT_DIR/ref"; NEW_DIR="$OUT_DIR/new"; FLAG_DIR="$OUT_DIR/flag"; REFFLAG_DIR="$OUT_DIR/refflag"; REP_DIR="$OUT_DIR/report"
 rm -f "$REP_DIR"/*
 
 # Command list: "<id>|<arguments>" (prefix is added per run).
@@ -76,6 +81,9 @@ CMDS=(
   # before the gated fixes land, so this is a real before/after safety net)
   "ex_codon_gy|-s $EX/example.phy -st CODON -m GY -te $HERE/data/example_gtr_g.nwk -nt 1 -seed $SEED"
   "ex_mixlen_bfgs|-s $EX/example.phy -m GTR+FO+H4 -optlen BFGS -te $HERE/data/example_gtr_g.nwk -nt 1 -seed $SEED"
+  # -S (one tree per partition) and the linked profile-mixture step of mixture_maker
+  "ex_part_S|-s $EX/example.phy -S $EX/example.nex -m GTR+G -nt 1 -seed $SEED"
+  "jt_linked_mix|-s $WD/turtle_aa.fasta -S $WD/turtle_aa.nex -m LG+G4 --model-joint GTR20+FMIX{C10pi1,C10pi2} --link-exchange-rates -mfopt --gtr20-model LG -n 0 --loop-model 1 -me 1 -nt 1 -seed $SEED"
 )
 if [ "$FULL" = "1" ]; then CMDS+=(
   "aa_lg_f4_r4|-s $EX/aa_example.phy -m LG+F4+R4 -nt 1 -seed $SEED"
@@ -116,25 +124,33 @@ compare_pair() {   # dirA dirB id -> prints DIFF lines; returns 0 identical, 1 d
     return $rc
 }
 
-# One job = the three runs of one command plus its comparisons. Writes
-# report/<id>.txt and marker files A_FAIL/B_DIFF for the summary.
+# One job = the three (four with --flag-ref) runs of one command plus its
+# comparisons. Writes report/<id>.txt and marker files A_FAIL/B_DIFF.
 job() {
-    local id="$1" args="$2" rep="$REP_DIR/$1.txt"
+    local id="$1" args="$2" rep="$REP_DIR/$1.txt" a2=0
+    [ "$FLAG_REF" = "1" ] && [ "${id#jt_}" = "$id" ] && a2=1
     {
         echo "== $id"
-        # ref and new can run concurrently; the flagged run too.
+        # ref and new can run concurrently; the flagged runs too.
         # shellcheck disable=SC2086
         run_one "$REF_BIN" "$REF_DIR" "$id" $args & local p1=$!
         # shellcheck disable=SC2086
         run_one "$NEW_BIN" "$NEW_DIR" "$id" $args & local p2=$!
         # shellcheck disable=SC2086
         run_one "$NEW_BIN" "$FLAG_DIR" "$id" $args --analytical-gradients & local p3=$!
+        local p4=""
+        # shellcheck disable=SC2086
+        [ "$a2" = "1" ] && { run_one "$REF_BIN" "$REFFLAG_DIR" "$id" $args --analytical-gradients & p4=$!; }
         local ok=1
         wait $p1 || { echo "  ref run failed (see $REF_DIR/$id.stdout)"; ok=0; }
         wait $p2 || { echo "  new run failed (see $NEW_DIR/$id.stdout)"; ok=0; }
         wait $p3 || { echo "  flagged run failed (see $FLAG_DIR/$id.stdout)"; ok=0; }
+        [ -n "$p4" ] && { wait $p4 || { echo "  flagged ref run failed (see $REFFLAG_DIR/$id.stdout)"; ok=0; }; }
         if [ "$ok" = "0" ]; then touch "$REP_DIR/$id.A_FAIL"; exit 0; fi
         if compare_pair "$REF_DIR" "$NEW_DIR" "$id"; then echo "  A: identical"; else echo "  A: FAILED"; touch "$REP_DIR/$id.A_FAIL"; fi
+        if [ "$a2" = "1" ]; then
+            if compare_pair "$REFFLAG_DIR" "$FLAG_DIR" "$id"; then echo "  A2: identical"; else echo "  A2: FAILED"; touch "$REP_DIR/$id.A_FAIL"; fi
+        fi
         if compare_pair "$NEW_DIR" "$FLAG_DIR" "$id" > /dev/null 2>&1; then
             echo "  B: flag on == flag off"
         else
@@ -143,8 +159,9 @@ job() {
     } > "$rep" 2>&1
 }
 
-# Throttle: each job launches 3 single-threaded runs, so allow MAXJOBS/3 jobs.
-SLOTS=$(( MAXJOBS / 3 )); [ "$SLOTS" -lt 1 ] && SLOTS=1
+# Throttle: each job launches 3 (4 with --flag-ref) single-threaded runs.
+RUNS=$(( 3 + FLAG_REF ))
+SLOTS=$(( MAXJOBS / RUNS )); [ "$SLOTS" -lt 1 ] && SLOTS=1
 echo "identity gate: ${#CMDS[@]} commands, up to $SLOTS concurrent (≤ $MAXJOBS processes)"
 running=0
 for entry in "${CMDS[@]}"; do

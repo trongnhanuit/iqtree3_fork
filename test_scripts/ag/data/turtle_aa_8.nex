@@ -1,0 +1,13 @@
+#nexus
+[ turtle_aa.fasta (774 sites) in 8 partitions: enough partitions for -T 1/4/8
+  to run each partition tree on a single thread (determinism test) ]
+begin sets;
+charset p1 = 1-97;
+charset p2 = 98-194;
+charset p3 = 195-291;
+charset p4 = 292-388;
+charset p5 = 389-485;
+charset p6 = 486-582;
+charset p7 = 583-679;
+charset p8 = 680-774;
+end;

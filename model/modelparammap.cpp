@@ -29,8 +29,8 @@ inline double logit(double p) { return log(p / (1.0 - p)); }
 /* construction                                                            */
 /* ---------------------------------------------------------------------- */
 
-ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree)
-    : factory_(factory), tree_(tree), model_(tree->getModel()), rate_(tree->getRate()) {
+ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree, bool model_only)
+    : factory_(factory), tree_(tree), model_(tree->getModel()), rate_(tree->getRate()), model_only_(model_only) {
     nstates_ = model_->num_states;
     nmix_ = model_->getNMixtures();
     ncat_ = rate_->getNRate();
@@ -51,6 +51,16 @@ ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree)
     }
 
     // ---- S blocks --------------------------------------------------------
+    // model_only: bounds relative to the pinned last entry, so a start with a large
+    // pinned value (POISSON: 10, rescaled maximum) does not cap the others at 100
+    auto rateBounds = [&](ModelMarkov *c, double &lo, double &hi) {
+        lo = LOG_RATE_LO; hi = LOG_RATE_HI;
+        if (!model_only_) return;
+        vector<double> e(c->getNumRateEntries());
+        c->getRateMatrix(e.data());
+        if (e.back() > 0.0) { lo = log(e.back() * 1e-4); hi = log(e.back() * 1e4); }
+    };
+    double s_lo, s_hi;
     bool linked = Params::getInstance().optimize_linked_gtr && model_->isMixture() && nmix_ > 1
                   && component(0)->getNDim() > 0 && component(0)->getNParams() > 0;
     if (linked) {
@@ -66,8 +76,9 @@ ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree)
         blk.nvar = c0->getNParams();
         discoverGroups(c0, blk);
         blk.offset = ndim();
+        rateBounds(c0, s_lo, s_hi);
         for (int i = 0; i < blk.nvar; i++)
-            addParam("S[*][" + convertIntToString(i) + "]", LOG_RATE_LO, LOG_RATE_HI);
+            addParam("S[*][" + convertIntToString(i) + "]", s_lo, s_hi);
         sblocks_.push_back(blk);
         for (int m = 0; m < nmix_; m++) need_q_[m] = true;
     } else {
@@ -79,8 +90,9 @@ ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree)
             blk.nvar = c->getNParams();
             discoverGroups(c, blk);
             blk.offset = ndim();
+            rateBounds(c, s_lo, s_hi);
             for (int i = 0; i < blk.nvar; i++)
-                addParam("S[" + convertIntToString(m) + "][" + convertIntToString(i) + "]", LOG_RATE_LO, LOG_RATE_HI);
+                addParam("S[" + convertIntToString(m) + "][" + convertIntToString(i) + "]", s_lo, s_hi);
             sblocks_.push_back(blk);
             need_q_[m] = true;
         }
@@ -122,10 +134,10 @@ ModelParamMap::ModelParamMap(ModelFactory *factory, PhyloTree *tree)
         }
     }
 
-    // ---- R block ---------------------------------------------------------
-    pinv_free_ = !rate_->isFixPInvar();
-    alpha_free_ = rate_->isGammaRate() && !rate_->isFixGammaShape();
-    if (rate_->isFreeRate()) {
+    // ---- R block (absent in model_only mode) ------------------------------
+    pinv_free_ = !model_only_ && !rate_->isFixPInvar();
+    alpha_free_ = !model_only_ && rate_->isGammaRate() && !rate_->isFixGammaShape();
+    if (!model_only_ && rate_->isFreeRate()) {
         int d = rate_->getNDim() - (pinv_free_ ? 1 : 0);
         rates_free_ = d >= ncat_ - 1;
         props_free_ = d >= 2 * ncat_ - 2;
@@ -279,6 +291,7 @@ void ModelParamMap::unpack(const vector<double> &theta) {
         c->setStateFrequency(pi.data());
     }
     // W (floored like MIN_MIXTURE_PROP in the default optimiser)
+    last_w_clamped_ = false;
     if (w_offset_ >= 0) {
         vector<double> w(nmix_);
         double sum = 1.0;
@@ -287,7 +300,10 @@ void ModelParamMap::unpack(const vector<double> &theta) {
         w[nmix_ - 1] = 1.0 / sum;
         bool any = false;
         for (int m = 0; m < nmix_; m++)
-            if (w[m] < weight_floor_) { w[m] = weight_floor_; any = true; if (m < nmix_ - 1) clamped_[w_offset_ + m] = 1; }
+            if (w[m] < weight_floor_) {
+                w[m] = weight_floor_; any = true;
+                if (m < nmix_ - 1) clamped_[w_offset_ + m] = 1; else last_w_clamped_ = true;
+            }
         if (any) {
             sum = 0.0;
             for (int m = 0; m < nmix_; m++) sum += w[m];
@@ -587,7 +603,9 @@ void ModelParamMap::naturalToTheta(vector<double> &g) const {
     }
     if (alpha_free_) g[alpha_offset_] = nat_.dalpha * rate_->getGammaShape();
     if (pinv_free_) { double p = rate_->getPInvar(); g[pinv_offset_] = nat_.dpinv * p * (1.0 - p); }
-    for (int i = 0; i < ndim(); i++) if (clamped_[i] && g[i] < 0.0) g[i] = 0.0;   // flat below the floor
+    // flat below the floor; in model_only mode the caller applies this to the sum over partitions
+    if (!model_only_)
+        for (int i = 0; i < ndim(); i++) if (clamped_[i] && g[i] < 0.0) g[i] = 0.0;
 }
 
 void ModelParamMap::gradient(const PhyloGradient::Result &res, vector<double> &g) {

@@ -45,7 +45,13 @@ class RateHeterogeneity;
 
 class ModelParamMap {
 public:
-    ModelParamMap(ModelFactory *factory, PhyloTree *tree);
+    /**
+     * model_only (the linked step of -S --model-joint): S, F and W blocks only, the
+     * rate model stays with its partition; exchangeability bounds relative to the
+     * pinned last entry; gradient() returns the raw gradient without the floor rule,
+     * which the caller applies once to the sum over partitions (see clamped()).
+     */
+    ModelParamMap(ModelFactory *factory, PhyloTree *tree, bool model_only = false);
 
     /** empty when the model is representable; otherwise a one-line reason */
     const std::string &unsupported() const { return unsupported_; }
@@ -61,6 +67,11 @@ public:
     const std::vector<int> &profileParams() const { return profile_params_; }
     /** number of components with estimated profiles */
     int numProfileClasses() const { return (int)fblocks_.size(); }
+
+    /** theta entries held at a floor by the last unpack() */
+    const std::vector<char> &clamped() const { return clamped_; }
+    /** the last mixture weight (not a theta entry) was held at its floor by the last unpack() */
+    bool lastWeightClamped() const { return last_w_clamped_; }
 
     /** current model -> theta */
     void pack(std::vector<double> &theta) const;
@@ -137,6 +148,7 @@ private:
     // entries held at a floor by the last unpack() (design 6): their theta
     // gradient is reported as zero, the direction being flat there
     std::vector<char> clamped_;
+    bool model_only_ = false, last_w_clamped_ = false;
     std::vector<int> profile_params_;
     double freq_floor_ = 1e-4, weight_floor_ = 1e-3;
 

@@ -18,11 +18,14 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #include <map>
+#include <algorithm>
 #include "partitionmodel.h"
 #include "alignment/superalignment.h"
 #include "alignment/alignmentpairwise.h"
 #include "model/rategamma.h"
 #include "model/modelmarkov.h"
+#include "model/modelmixture.h"
+#include "model/gradientoptimizer.h"
 
 PartitionModel::PartitionModel()
         : ModelFactory()
@@ -887,10 +890,68 @@ bool PartitionModel::isLinkedModel() {
     return Params::getInstance().link_alpha || (linked_models.size()>0);
 }
 
+void PartitionModel::applyStartPoints(bool write_info) {
+    Params &params = Params::getInstance();
+    if (!params.analytical_gradients) return;
+    PhyloSuperTree *stree = (PhyloSuperTree*)site_rate->getTree();
+    for (auto &lm : linked_models) {
+        vector<PhyloTree*> trees;
+        for (auto t : *stree)
+            if (t->getModel()->getName() == lm.first) trees.push_back(t);
+        ModelMixture *mix0 = trees.empty() ? nullptr : dynamic_cast<ModelMixture*>(trees[0]->getModel());
+        if (!mix0) continue;
+        // +Fk: every class of a copy starts at that partition's empirical frequencies;
+        // distinct profiles (an explicit FMIX start, or a resumed run) are kept as they are
+        const int S = mix0->num_states;
+        vector<ModelMarkov*> est;
+        for (size_t m = 0; m < mix0->size(); m++)
+            if (mix0->at(m)->getFreqType() == FREQ_ESTIMATE) est.push_back(mix0->at(m));
+        if (est.size() < 2) continue;
+        bool identical = true;
+        for (size_t m = 1; m < est.size() && identical; m++)
+            identical = equal(est[m]->state_freq, est[m]->state_freq + S, est[0]->state_freq);
+        if (!identical) continue;
+        if (params.start_points == "warm") {
+            GradientOptimizer::breakSymmetry(trees[0], write_info);
+        } else {
+            // pooled frequencies over the partitions sharing this model
+            size_t nall = trees[0]->aln->STATE_UNKNOWN + 1;
+            vector<size_t> sum(nall, 0), cnt(nall);
+            for (auto t : trees) {
+                t->aln->countStates(cnt.data(), 0);
+                for (size_t s = 0; s < nall; s++) sum[s] += cnt[s];
+            }
+            vector<double> emp(S);
+            trees[0]->aln->convertCountToFreq(sum.data(), emp.data());
+            GradientOptimizer::coldProfiles(trees[0], emp.data());
+        }
+        // the same natural parameters in every copy: all rate entries, raw frequencies, weights
+        vector<double> rates(mix0->at(0)->getNumRateEntries());
+        for (size_t j = 1; j < trees.size(); j++) {
+            ModelMixture *mix = dynamic_cast<ModelMixture*>(trees[j]->getModel());
+            for (size_t m = 0; m < mix0->size(); m++) {
+                mix0->at(m)->getRateMatrix(rates.data());
+                mix->at(m)->setRateMatrix(rates.data());
+                mix->at(m)->setStateFrequency(mix0->at(m)->state_freq);
+                mix->setMixtureWeight((int)m, mix0->getMixtureWeight((int)m));
+            }
+        }
+        for (auto t : trees) {
+            t->getModel()->decomposeRateMatrix();
+            if (t->getRate()->getPInvar() > 0.0) t->computePtnInvar();
+            t->clearAllPartialLH();
+        }
+        if (write_info)
+            cout << "Start points (" << params.start_points << ", --start-points): " << est.size()
+                 << " profiles of " << lm.first << " set in all " << trees.size() << " partitions" << endl;
+    }
+}
+
 double PartitionModel::optimizeParameters(int fixed_len, bool write_info, double logl_epsilon, double gradient_epsilon) {
     PhyloSuperTree *tree = (PhyloSuperTree*)site_rate->getTree();
     double prev_tree_lh = -DBL_MAX, tree_lh = 0.0;
     int ntrees = tree->size();
+    applyStartPoints(write_info);
 
     for (int step = 0; step < Params::getInstance().model_opt_steps; step++) {
         tree_lh = 0.0;

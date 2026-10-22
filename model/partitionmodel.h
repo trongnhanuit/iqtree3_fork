@@ -175,6 +175,12 @@ public:
     /** optimize all linked models parameter of over all partitions */
     double optimizeLinkedModels(bool write_info, double gradient_epsilon);
 
+    /**
+     --start-points with --analytical-gradients: give a linked mixture whose profiles are
+     still identical (the +Fk default) one warm or cold start, copied into every partition
+     */
+    void applyStartPoints(bool write_info);
+
     void reportLinkedModel(ostream &out);
 
     /**
@@ -191,6 +197,7 @@ public:
         map of linked models by names.
      */
     unordered_map<string, ModelSubst*> linked_models;
+
     
     bool opt_gamma_invar;
     

@@ -1859,6 +1859,11 @@ public:
     int ag_multistart_budget;
     /** --ag-start <warm|cold>: starting point for estimated profiles */
     string ag_start;
+    /** --start-points <warm|cold>: start of a linked profile mixture under -S --model-joint
+        with --analytical-gradients (warm: C-series profiles + LG; cold: random profiles + POISSON) */
+    string start_points;
+    /** --gtr20-model / --init-exchange was given (otherwise --start-points warm uses LG) */
+    bool gtr20_model_given;
     /** --ag-udm-name NAME: above C60, warm-start from NAME's profiles (via -mdef) instead of jitter */
     string ag_udm_name;
     /** --ag-warm-select <index|weight|sample>: which K reference profiles to borrow for warm-start (default weight) */

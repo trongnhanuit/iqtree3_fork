@@ -532,7 +532,25 @@ robust_j_linked() {   # the run completes, no per-partition AG step, one linked 
     echo "  linked model shared and intact: PASS"
 }
 
-JOINT=(j_linked)
+# --start-points on the +Fk shorthand: one start, distinct profiles, the same in every partition
+JOINT_FK_ARGS="-s $WD/turtle_aa.fasta -S $WD/turtle_aa.nex -m LG+G4 --model-joint GTR20+F2 -n 0 -nt 1 -seed $SEED --loop-model 1 -me 1 --analytical-gradients"
+# per partition, the profiles of the linked model (one "FO{...}" per class) at the start of the joint step
+robust_j_start_points() {
+    local mode n
+    for mode in warm cold; do
+        # shellcheck disable=SC2086
+        "$BIN" $JOINT_FK_ARGS --start-points $mode --prefix $mode -redo > $mode.stdout 2>&1 || { echo "  $mode run failed: $(grep -m1 -E "ERROR|Assertion" $mode.stdout)"; return 1; }
+        grep -q "Start points ($mode, --start-points): 2 profiles of .* set in all 3 partitions" $mode.stdout || { echo "  $mode start not applied"; return 1; }
+        [ "$(linked_strings $mode.best_model.nex | wc -l | tr -d ' ')" = "1" ] || { echo "  $mode: partitions ended with different linked models"; return 1; }
+        n=$(linked_strings $mode.best_model.nex | grep -o "FO{[^}]*}" | sort -u | wc -l | tr -d ' ')
+        [ "$n" = "2" ] || { echo "  $mode: the two profiles are not distinct"; return 1; }
+        echo "  $mode: applied, $(grep -m1 -E "^Optimal log-likelihood" $mode.stdout)"
+    done
+    grep -q "symmetry broken with C10 profiles" warm.stdout || { echo "  warm did not use C10 profiles"; return 1; }
+    echo "  start points: PASS"
+}
+
+JOINT=(j_linked j_start_points)
 
 throttle() { while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$MAXJOBS" ]; do sleep 1; done; }
 

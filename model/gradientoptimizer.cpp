@@ -238,7 +238,7 @@ GradientOptimizer::GradientOptimizer(ModelFactory *factory)
 GradientOptimizer::~GradientOptimizer() {
 }
 
-void GradientOptimizer::say(const string &line) const {
+void GradientOptimizer::say(const string &line) {
 #ifdef _OPENMP
 #pragma omp critical(ag_output)
 #endif
@@ -268,7 +268,7 @@ double GradientOptimizer::derivativeFunk(double x[], double dfx[]) {
     PhyloGradient::Result res;
     bool ok = false;
     try {
-        ok = engine_->compute(res) && eigenResidualOk();
+        ok = engine_->compute(res) && eigenResidualOk(tree_);
     } catch (std::exception &e) {
         // NOTE(design 12): the engine's RAII guard has restored every neighbour;
         // the tree is reusable and this step falls back to finite differences
@@ -309,9 +309,9 @@ bool GradientOptimizer::stopEarly(int iter, double f_prev, double f_new) {
     return delta < min(0.01 * delta_max_, logl_epsilon_);
 }
 
-bool GradientOptimizer::eigenResidualOk() const {
-    ModelSubst *model = tree_->getModel();
-    const size_t S = tree_->aln->num_states, stride = get_safe_upper_limit(S) * S;
+bool GradientOptimizer::eigenResidualOk(PhyloTree *tree) {
+    ModelSubst *model = tree->getModel();
+    const size_t S = tree->aln->num_states, stride = get_safe_upper_limit(S) * S;
     const double *U = model->getEigenvectors(), *Uinv = model->getInverseEigenvectors();
     for (int m = 0; m < model->getNMixtures(); m++) {
         const double *u = U + m * stride, *v = Uinv + m * stride;
@@ -344,12 +344,12 @@ void GradientOptimizer::restore(const BestState &st) {
     tree_->clearAllPartialLH();
 }
 
-void GradientOptimizer::breakSymmetry(bool write_info) {
-    ModelSubst *model = tree_->getModel();
+void GradientOptimizer::breakSymmetry(PhyloTree *tree, bool write_info) {
+    ModelSubst *model = tree->getModel();
     if (!model->isMixture()) return;
     ModelMixture *mix = dynamic_cast<ModelMixture*>(model);
     if (!mix) return;
-    const int S = tree_->aln->num_states;
+    const int S = tree->aln->num_states;
     vector<ModelMarkov*> est;
     for (size_t m = 0; m < mix->size(); m++)
         if (mix->at(m)->getFreqType() == FREQ_ESTIMATE && mix->at(m)->getNDim() > 0) est.push_back(mix->at(m));
@@ -459,8 +459,8 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
         how = "log-normal jitter";
     }
     model->decomposeRateMatrix();
-    if (tree_->getRate()->getPInvar() > 0.0) tree_->computePtnInvar();
-    tree_->clearAllPartialLH();
+    if (tree->getRate()->getPInvar() > 0.0) tree->computePtnInvar();
+    tree->clearAllPartialLH();
     if (write_info || verbose_mode >= VB_MED)
         say("AG: " + convertIntToString((int)est.size()) + " identical starting profiles; symmetry broken with " + how);
 }
@@ -468,13 +468,25 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
 void GradientOptimizer::coldStart(bool write_info) {
     ModelMixture *mix = dynamic_cast<ModelMixture*>(tree_->getModel());
     if (!mix) return;
-    const int S = tree_->aln->num_states;
+    int nest = 0;
+    for (size_t m = 0; m < mix->size(); m++)
+        if (mix->at(m)->getFreqType() == FREQ_ESTIMATE && mix->at(m)->getNDim() > 0) nest++;
+    if (nest == 0) return;
+    vector<double> emp(tree_->aln->num_states);
+    tree_->aln->computeStateFreq(emp.data());
+    coldProfiles(tree_, emp.data());
+    renormalise();
+    if (write_info || verbose_mode >= VB_MED)
+        say("AG: cold start: " + convertIntToString(nest) + " profiles jittered around the empirical frequencies, equal weights");
+}
+
+void GradientOptimizer::coldProfiles(PhyloTree *tree, const double *emp) {
+    ModelMixture *mix = dynamic_cast<ModelMixture*>(tree->getModel());
+    if (!mix) return;
+    const int S = tree->aln->num_states;
     vector<ModelMarkov*> est;
     for (size_t m = 0; m < mix->size(); m++)
         if (mix->at(m)->getFreqType() == FREQ_ESTIMATE && mix->at(m)->getNDim() > 0) est.push_back(mix->at(m));
-    if (est.empty()) return;
-    vector<double> emp(S);
-    tree_->aln->computeStateFreq(emp.data());
     std::mt19937_64 rng((unsigned long long)Params::getInstance().ran_seed + 7919ULL);
     std::normal_distribution<double> normal(0.0, 1.0);
     const double A = 0.9;
@@ -487,9 +499,6 @@ void GradientOptimizer::coldStart(bool write_info) {
     }
     if (!mix->fix_prop)
         for (size_t m = 0; m < mix->size(); m++) mix->setMixtureWeight((int)m, 1.0 / mix->size());
-    renormalise();
-    if (write_info || verbose_mode >= VB_MED)
-        say("AG: cold start: " + convertIntToString((int)est.size()) + " profiles jittered around the empirical frequencies, equal weights");
 }
 
 void GradientOptimizer::multiStart(bool write_info, double gradient_epsilon) {
@@ -645,7 +654,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     // ag_init_done
     const bool first = write_info && !factory_->ag_init_done && !factory_->ag_skip_em;
     if (first && params.ag_start == "cold") coldStart(write_info);
-    else breakSymmetry(write_info);
+    else breakSymmetry(tree_, write_info);
     if (first) multiStart(write_info, gradient_epsilon);
     if (first) factory_->ag_init_done = true;
     if (first) abortAfter("init");

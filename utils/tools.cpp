@@ -1337,6 +1337,15 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.ag_start = argv[cnt];
                 continue;
             }
+            if (strcmp(argv[cnt], "--start-points") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --start-points <warm|cold>";
+                if (strcmp(argv[cnt], "warm") != 0 && strcmp(argv[cnt], "cold") != 0)
+                    throw "Invalid option for --start-points: use 'warm' or 'cold'";
+                params.start_points = argv[cnt];
+                continue;
+            }
             if (strcmp(argv[cnt], "--ag-udm-name") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -1421,6 +1430,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                     throw "Use " + string(argv[cnt-1]) + " <protein model name>";
                 params.gtr20_model = argv[cnt];
                 transform(params.gtr20_model.begin(), params.gtr20_model.end(), params.gtr20_model.begin(), ::toupper);
+                params.gtr20_model_given = true;
                 continue;
             }
             if (strcmp(argv[cnt], "--guess-multiplier") == 0) {
@@ -5754,6 +5764,10 @@ void parseArg(int argc, char *argv[], Params &params) {
         params.analytical_gradients = false;
     }
 
+    // --start-points warm starts the linked exchangeabilities from LG unless a matrix was chosen
+    if (params.start_points == "warm" && !params.gtr20_model_given)
+        params.gtr20_model = "LG";
+
     if (params.use_nn_model && params.modelomatic)
         outError("--modelomatic option does not work with --use-nn-model.");
 
@@ -6182,6 +6196,9 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --analytical-gradients   Exact-gradient EM+BFGS optimisation of model parameters" << endl
     << "                           (reversible models and mixtures; others use the default)" << endl
     << "  --ag-start warm|cold     Warm start from C-series profiles (default) or random" << endl
+    << "  --start-points warm|cold -S --model-joint GTR20+Fk: one start for all partitions," << endl
+    << "                           C-series profiles + LG (warm) or random profiles +" << endl
+    << "                           POISSON (cold, default)" << endl
     << "  --ag-udm-name NAME       Above C60, warm-start from NAME's profiles (via -mdef)" << endl
     << "  --ag-multistart NUM      Multi-start candidates (default: 0 = off; -1 for auto)" << endl
     << "  --ag-cascade on|off      Coarser EM warm-up passes before the target (default: off)" << endl
@@ -7491,6 +7508,8 @@ void Params::setDefault() {
     // defaults for new options -JD
     optimize_linked_gtr = false;
     gtr20_model = "POISSON";
+    gtr20_model_given = false;
+    start_points = "cold";
     guess_multiplier = 0.75; // change from 0.5
     // rates_file = false;
     reset_method = "random"; // change from const

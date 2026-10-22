@@ -43,6 +43,24 @@ public:
     static const char *linkedReason() { return "model linked across partitions"; }
 
     /**
+     * Warm start (design 6.4): identical estimated profiles of `tree`'s mixture get
+     * C-series profiles (or --ag-udm-name's, or a light jitter); no-op when the
+     * profiles already differ. Decomposes the rate matrix and clears the partials.
+     */
+    static void breakSymmetry(PhyloTree *tree, bool write_info);
+    /**
+     * Cold start profiles (design 11): every estimated profile of `tree`'s mixture
+     * becomes emp x exp(0.9 z), z ~ N(0,1) from a private generator seeded by -seed,
+     * renormalised; free mixture weights become equal. Sets values only.
+     */
+    static void coldProfiles(PhyloTree *tree, const double *emp);
+
+    /** per component of `tree`'s model ||U U^-1 - I||_inf < 1e-8 (design 5.5) */
+    static bool eigenResidualOk(PhyloTree *tree);
+    /** one line to cout, serialised across OpenMP threads */
+    static void say(const std::string &line);
+
+    /**
      * Replacement for the alternating loop of ModelFactory::optimizeParameters
      * (design 3.2): per round a branch-length step according to fixed_len,
      * then one joint analytic-gradient BFGS polish of all model parameters;
@@ -96,17 +114,12 @@ private:
     void restore(const BestState &st);
     /** joint BFGS (or L-BFGS-B) over theta from the current model state; returns logL */
     double polish(double gradient_epsilon);
-    /** identical +FO profiles are a fixed point of every gradient method (design 6.4); make them distinct */
-    void breakSymmetry(bool write_info);
     /** --ag-start cold: profiles jittered around the empirical frequencies, equal weights (design 11) */
     void coldStart(bool write_info);
     /** --ag-multistart: score jittered candidates, refine the best few with EM, keep the best (design 11) */
     void multiStart(bool write_info, double gradient_epsilon);
-    /** per component ||U U^-1 - I||_inf < 1e-8 (design 5.5) */
-    bool eigenResidualOk() const;
     /** append gradient-check rows for the current theta/gradient to <prefix>.gradcheck.tsv */
     void gradientCheckStep(const std::vector<double> &theta, const std::vector<double> &g);
-    void say(const std::string &line) const;
     /** --ag-abort-after <phase>: write the checkpoint (never inside an OpenMP region) and exit, for resume tests */
     void abortAfter(const std::string &phase);
 

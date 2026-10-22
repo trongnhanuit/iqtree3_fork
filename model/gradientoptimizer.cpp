@@ -52,6 +52,8 @@ bool GradientOptimizer::supports(ModelFactory *factory, std::string &why) {
     if (!factory->unobserved_ptns.empty()) { why = "ascertainment-bias correction (+ASC)"; return false; }
     if (Params::getInstance().lh_mem_save == LM_MEM_SAVE) { why = "memory-saving mode (-mem)"; return false; }
     if (MPIHelper::getInstance().getNumProcesses() > 1) { why = "MPI with more than one process"; return false; }
+    // only --model-joint fixes a supported model: its parameters belong to the linked step
+    if (model->fixed_parameters) { why = linkedReason(); return false; }
     if (model->getNDim() + rate->getNDim() == 0) { why = "no free model parameters"; return false; }
     ModelParamMap map(factory, tree);
     if (!map.unsupported().empty()) { why = map.unsupported(); return false; }

@@ -1658,7 +1658,8 @@ double ModelFactory::optimizeParameters(int fixed_len, bool write_info,
         cur_lh = ag.optimize(fixed_len, write_info, logl_epsilon, gradient_epsilon, cur_lh);
         i = ag.rounds() + 1;               // "took i-1 rounds" below stays meaningful
     } else {
-    if (Params::getInstance().analytical_gradients && !ag_warned) {
+    // a linked model is expected under --model-joint (one per partition), so no warning
+    if (Params::getInstance().analytical_gradients && !ag_warned && ag_why != GradientOptimizer::linkedReason()) {
         outWarning("--analytical-gradients not applicable (" + ag_why + "); using standard optimizer");
         ag_warned = true;
     }

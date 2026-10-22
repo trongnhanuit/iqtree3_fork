@@ -2,7 +2,7 @@
 # Test driver for the --analytical-gradients work.
 #
 # Usage:
-#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|all] [-j N] [--full]
+#   test_scripts/ag/run_ag_tests.sh <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|joint|all] [-j N] [--full]
 #
 # Suites:
 #   gradcheck  --ag-gradient-check-only on a fixed set of models; PASS = exit 0
@@ -24,6 +24,9 @@
 #              cross-compatibility with the default path, ModelFinder, PMSF's
 #              site-specific pass, +I+G restarts, fault injection, concurrent
 #              partitions at 4 threads
+#   joint      -S --model-joint with a linked profile mixture (mixture_maker): the run
+#              completes, the per-partition step leaves the linked model alone, and
+#              every partition ends with the same linked model
 #
 # Cases run in parallel, at most N processes at a time (default: half the cores).
 # Exit code 0 = all cases passed, 1 = a failure, 2 = usage.
@@ -44,7 +47,7 @@ for ((k=0; k<${#argv[@]}; k++)); do
     esac
 done
 if [ -z "$BIN" ] || [ ! -x "$BIN" ]; then
-    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|all] [-j N] [--full]" >&2
+    echo "usage: $0 <iqtree_binary> [out_dir] [--suite gradcheck|oracle|threads|quality|robust|joint|all] [-j N] [--full]" >&2
     exit 2
 fi
 if [ "$MAXJOBS" -le 0 ]; then
@@ -514,6 +517,23 @@ robust_x_threads_partitions() {   # X5: -Q at 4 threads (partitions enter the ho
 
 ROBUST=(x_abort_resume x_ckp_crosscompat x_modelfinder x_pmsf x_gammai_restart x_fault x_threads_partitions)
 
+# ---- joint suite: -S --model-joint with a linked profile mixture ----
+JOINT_ARGS="-s $WD/turtle_aa.fasta -S $WD/turtle_aa.nex -m LG+G4 --model-joint GTR20+FMIX{C10pi1,C10pi2} --link-exchange-rates -mfopt --gtr20-model LG -n 0 -nt 1 -seed $SEED"
+
+# linked model of each partition in PREFIX.best_model.nex (the MIX{...} part, without its own +G4{alpha})
+linked_strings() { grep -E "^ *MIX\{" "$1" | sed -E 's/\}\+G4\{.*/}/' | sort -u; }
+
+robust_j_linked() {   # the run completes, no per-partition AG step, one linked model across partitions
+    # shellcheck disable=SC2086
+    "$BIN" $JOINT_ARGS --loop-model 1 -me 1 --prefix j -redo --analytical-gradients --ag-stats > j.stdout 2>&1 || { echo "  joint run failed: $(grep -m1 -E "ERROR|Assertion" j.stdout)"; return 1; }
+    [ "$(grep -c "AG stats" j.stdout)" = "0" ] || { echo "  a partition ran its own AG step on the linked model"; return 1; }
+    grep -q "not applicable (model linked" j.stdout && { echo "  per-partition warning not silenced"; return 1; }
+    [ "$(linked_strings j.best_model.nex | wc -l | tr -d ' ')" = "1" ] || { echo "  partitions ended with different linked models"; return 1; }
+    echo "  linked model shared and intact: PASS"
+}
+
+JOINT=(j_linked)
+
 throttle() { while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$MAXJOBS" ]; do sleep 1; done; }
 
 ORDER=()
@@ -542,6 +562,9 @@ if [ "$SUITE" = "quality" ] || [ "$SUITE" = "all" ]; then
 fi
 if [ "$SUITE" = "robust" ] || [ "$SUITE" = "all" ]; then
     for id in "${ROBUST[@]}"; do ORDER+=("$id"); throttle; robust_case "$id" & done
+fi
+if [ "$SUITE" = "joint" ] || [ "$SUITE" = "all" ]; then
+    for id in "${JOINT[@]}"; do ORDER+=("$id"); throttle; robust_case "$id" & done
 fi
 wait
 

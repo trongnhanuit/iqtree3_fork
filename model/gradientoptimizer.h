@@ -39,6 +39,9 @@ public:
      */
     static bool supports(ModelFactory *factory, std::string &why);
 
+    /** the `why` of supports() for a model linked across partitions (--model-joint) */
+    static const char *linkedReason() { return "model linked across partitions"; }
+
     /**
      * Replacement for the alternating loop of ModelFactory::optimizeParameters
      * (design 3.2): per round a branch-length step according to fixed_len,

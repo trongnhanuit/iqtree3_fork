@@ -541,6 +541,7 @@ robust_j_start_points() {
         # shellcheck disable=SC2086
         "$BIN" $JOINT_FK_ARGS --start-points $mode --prefix $mode -redo > $mode.stdout 2>&1 || { echo "  $mode run failed: $(grep -m1 -E "ERROR|Assertion" $mode.stdout)"; return 1; }
         grep -q "Start points ($mode, --start-points): 2 profiles of .* set in all 3 partitions" $mode.stdout || { echo "  $mode start not applied"; return 1; }
+        grep -q "stopped at the round limit (1 round)" $mode.stdout || { echo "  $mode: no warning at the round limit"; return 1; }
         [ "$(linked_strings $mode.best_model.nex | wc -l | tr -d ' ')" = "1" ] || { echo "  $mode: partitions ended with different linked models"; return 1; }
         n=$(linked_strings $mode.best_model.nex | grep -o "FO{[^}]*}" | sort -u | wc -l | tr -d ' ')
         [ "$n" = "2" ] || { echo "  $mode: the two profiles are not distinct"; return 1; }
@@ -586,6 +587,7 @@ robust_j_quality() {   # same FMIX start: the analytic linked step ends no worse
         "$BIN" $args --prefix ${id}_off -redo > ${id}_off.stdout 2>&1 || { echo "  $id flag-off run failed"; return 1; }
         # shellcheck disable=SC2086
         "$BIN" $args --prefix ${id}_on -redo --analytical-gradients > ${id}_on.stdout 2>&1 || { echo "  $id flag-on run failed"; return 1; }
+        ! grep -q "round limit" ${id}_on.stdout || { echo "  $id: round-limit warning on a converged run"; return 1; }
         off=$(logl_of ${id}_off.iqtree); on=$(logl_of ${id}_on.iqtree)
         echo "  $id: flag-off $off, flag-on $on"
         awk -v a="$off" -v b="$on" 'BEGIN { exit (b >= a - 0.1) ? 0 : 1 }' || { echo "  $id: analytic run worse than finite differences"; return 1; }

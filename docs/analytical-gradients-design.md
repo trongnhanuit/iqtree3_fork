@@ -570,7 +570,9 @@ exchangeability matrix, the K profiles and the weights are shared.
 **Alternation.** `PartitionModel::optimizeParameters` alternates (b) each
 partition's own step (branch lengths, rate model) with (a) the linked step,
 until a round gains less than 10 x `-me`; with the flag and no `--loop-model`
-it allows 20 rounds instead of 10. Each partition holds its own copy of the
+it allows 20 rounds instead of 10, and warns (with the last gain and a suggested
+`--loop-model`) when that limit rather than convergence ends the alternation.
+Each partition holds its own copy of the
 linked model, frozen with `fixParameters(true)`. `ModelMixture` does not pass
 that on to its classes, so `GradientOptimizer::supports()` declines a frozen
 model; step (b) then fits only branch lengths and rate parameters with the

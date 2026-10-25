@@ -980,6 +980,8 @@ double PartitionModel::optimizeParameters(int fixed_len, bool write_info, double
     int opt_steps = Params::getInstance().model_opt_steps;
     if (Params::getInstance().analytical_gradients && !linked_models.empty() && !Params::getInstance().model_opt_steps_given)
         opt_steps = max(opt_steps, 20);
+    bool converged = false;
+    double last_gain = 0.0;
 
     for (int step = 0; step < opt_steps; step++) {
         tree_lh = 0.0;
@@ -1038,11 +1040,21 @@ double PartitionModel::optimizeParameters(int fixed_len, bool write_info, double
         if (verbose_mode >= VB_MED || write_info)
             cout << step+1 << ". Log-likelihood: " << tree_lh << endl;
 
-        if (tree_lh-logl_epsilon*10 < prev_tree_lh)
+        if (tree_lh-logl_epsilon*10 < prev_tree_lh) {
+            converged = true;
             break;
+        }
+        if (prev_tree_lh > -DBL_MAX) last_gain = tree_lh - prev_tree_lh;
         prev_tree_lh = tree_lh;
     }
-    
+    // the analytic linked path: say so when the round limit, not convergence, ended the alternation
+    if (Params::getInstance().analytical_gradients && !linked_models.empty() && !converged && write_info)
+        outWarning("The joint estimation stopped at the round limit (" + convertIntToString(opt_steps) +
+                   (opt_steps == 1 ? " round" : " rounds") + ") before converging" +
+                   (last_gain > 0.0 ? "; the last round still gained " + convertDoubleToString(last_gain) +
+                    " (threshold " + convertDoubleToString(logl_epsilon * 10) + ")" : string()) +
+                   ". Rerun with more rounds, e.g. --loop-model " + convertIntToString(2 * opt_steps));
+
     if (verbose_mode >= VB_MED || write_info)
 		cout << "Optimal log-likelihood: " << tree_lh << endl;
     // write linked_models

@@ -12,6 +12,7 @@ import base64
 import gzip
 import hashlib
 import os
+import subprocess
 import sys
 import urllib.request
 
@@ -29,10 +30,11 @@ def library(path):
             print("downloading " + URL, file=sys.stderr)
             try:
                 data = urllib.request.urlopen(URL).read()
-            except Exception as e:  # e.g. CERTIFICATE_VERIFY_FAILED on python.org builds
-                sys.exit("download failed (%s); fetch it with curl -L -o plotly.min.js %s and pass --lib" % (e, URL))
-            with open(path + ".tmp", "wb") as f:
-                f.write(data)
+                with open(path + ".tmp", "wb") as f:
+                    f.write(data)
+            except Exception:  # e.g. CERTIFICATE_VERIFY_FAILED on python.org builds: try curl
+                if subprocess.call(["curl", "-sSfL", "-o", path + ".tmp", URL]) != 0:
+                    sys.exit("download failed; fetch %s yourself and pass it with --lib" % URL)
             os.replace(path + ".tmp", path)
     data = open(path, "rb").read()
     if hashlib.sha256(data).hexdigest() != SHA256:

@@ -569,9 +569,10 @@ exchangeability matrix, the K profiles and the weights are shared.
 
 **Alternation.** `PartitionModel::optimizeParameters` alternates (b) each
 partition's own step (branch lengths, rate model) with (a) the linked step,
-until a round gains less than 10 x `-me`; with the flag and no `--loop-model`
-it allows 20 rounds instead of 10, and warns (with the last gain and a suggested
-`--loop-model`) when that limit rather than convergence ends the alternation.
+until a round gains less than 10 x `-me`; with the flag and no `--loop-model` it
+allows 100 rounds instead of 10. When that limit rather
+than convergence ends the alternation, it warns with the last gain and the
+command that continues the training (see Output).
 Each partition holds its own copy of the
 linked model, frozen with `fixParameters(true)`. `ModelMixture` does not pass
 that on to its classes, so `GradientOptimizer::supports()` declines a frozen
@@ -627,14 +628,19 @@ triangle, pinned entry 1, frequencies the weighted mean profile), `frequency
 MM<K>pi1..K` (normalised, by decreasing weight) and `MM<K> =
 MM<K>Q+FMIX{MM<K>pi<k>:rate:weight,...}`, at 17 digits; one class gives `MM1`.
 The matrix belongs with its profiles. Explicit weights are fixed when the file
-is read back.
+is read back. With an estimated GTR20 the file also holds `MM<K>GTR20 =
+GTR20+FMIX{...}`: the continuation command keeps the user's options and adds
+`-te <prefix>.treefile -mdef <prefix>.mm.nex --model-joint MM<K>GTR20
+--gtr20-model MM<K>Q --link-exchange-rates -mfopt -mwopt`, so exchangeabilities,
+profiles, weights and branch lengths restart from the trained values (the
+checkpoint cannot be used: it marks the model fitting as finished).
 
 **Checks.** `--ag-gradient-check-only` under `-S` skips the per-partition check
 for a linked model and compares the summed analytic gradient with central
 differences of the summed log-likelihood (`GRADCHECK joint`). The joint test
 suite (`run_ag_tests.sh --suite joint`) covers the leak, the start points, the
 gradient check, determinism at -T 1/4/8, quality against finite differences
-from the same start, and the round trip of `.mm.nex`.
+from the same start, the round trip of `.mm.nex` and the continuation command.
 
 **Not changed.** Without the flag, `-S --model-joint GTR20+Fk` still starts with
 identical profiles, and its `setVariables`/`getVariables` sync never copies the

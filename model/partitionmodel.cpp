@@ -976,10 +976,10 @@ double PartitionModel::optimizeParameters(int fixed_len, bool write_info, double
     double prev_tree_lh = -DBL_MAX, tree_lh = 0.0;
     int ntrees = tree->size();
     applyStartPoints(write_info);
-    // the analytic linked step: 20 alternation rounds unless --loop-model was given
+    // the analytic linked step: 100 alternation rounds unless --loop-model was given
     int opt_steps = Params::getInstance().model_opt_steps;
     if (Params::getInstance().analytical_gradients && !linked_models.empty() && !Params::getInstance().model_opt_steps_given)
-        opt_steps = max(opt_steps, 20);
+        opt_steps = max(opt_steps, 100);
     bool converged = false;
     double last_gain = 0.0;
 
@@ -1048,12 +1048,17 @@ double PartitionModel::optimizeParameters(int fixed_len, bool write_info, double
         prev_tree_lh = tree_lh;
     }
     // the analytic linked path: say so when the round limit, not convergence, ended the alternation
-    if (Params::getInstance().analytical_gradients && !linked_models.empty() && !converged && write_info)
+    if (Params::getInstance().analytical_gradients && !linked_models.empty() && !converged && write_info) {
+        string cmd;
+        for (auto &lo : linked_ag)
+            if (lo.second && cmd.empty()) cmd = lo.second->continueCommand(opt_steps);
         outWarning("The joint estimation stopped at the round limit (" + convertIntToString(opt_steps) +
                    (opt_steps == 1 ? " round" : " rounds") + ") before converging" +
                    (last_gain > 0.0 ? "; the last round still gained " + convertDoubleToString(last_gain) +
                     " (threshold " + convertDoubleToString(logl_epsilon * 10) + ")" : string()) +
-                   ". Rerun with more rounds, e.g. --loop-model " + convertIntToString(2 * opt_steps));
+                   (cmd.empty() ? ". Rerun with more rounds, e.g. --loop-model " + convertIntToString(2 * opt_steps)
+                                : ". To continue from the trained model once this run has finished, run:\n  " + cmd));
+    }
     if (write_info)
         for (auto &lo : linked_ag)
             if (lo.second) lo.second->warnRatesAtUpperBound();

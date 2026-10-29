@@ -6200,6 +6200,7 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --start-points warm|cold -S --model-joint GTR20+Fk: one start for all partitions," << endl
     << "                           C-series profiles + LG (warm) or random profiles +" << endl
     << "                           POISSON (cold, default)" << endl
+    << "  --loop-model NUM         Max. rounds of -S --model-joint (default: 100)" << endl
     << "  --ag-udm-name NAME       Above C60, warm-start from NAME's profiles (via -mdef)" << endl
     << "  --ag-multistart NUM      Multi-start candidates (default: 0 = off; -1 for auto)" << endl
     << "  --ag-cascade on|off      Coarser EM warm-up passes before the target (default: off)" << endl

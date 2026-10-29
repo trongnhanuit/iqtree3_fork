@@ -607,7 +607,25 @@ robust_j_quality() {   # same FMIX start: the analytic linked step ends no worse
     echo "  quality and round trip: PASS"
 }
 
-JOINT=(j_linked j_start_points j_gradcheck j_determinism j_quality)
+robust_j_continue() {   # the round-limit warning's command continues from the trained model
+    # shellcheck disable=SC2086
+    "$BIN" $JOINT_FK_ARGS --start-points warm --prefix a -redo > a.stdout 2>&1 || { echo "  first run failed"; return 1; }
+    grep -q "^model MM2GTR20 = GTR20+FMIX{" a.mm.nex || { echo "  a.mm.nex has no MM2GTR20"; return 1; }
+    local cmd; cmd=$(grep -A1 "stopped at the round limit" a.stdout | tail -1 | sed -E "s#^ *iqtree3 #$BIN #")
+    case "$cmd" in "$BIN "*"--model-joint MM2GTR20"*"--loop-model 1 -pre a.cont") ;; *) echo "  no continuation command: $cmd"; return 1 ;; esac
+    eval "$cmd" > a.cont.stdout 2>&1 || { echo "  continuation failed: $(grep -m1 -E "ERROR|Assertion" a.cont.stdout)"; return 1; }
+    ! grep -q "Start points" a.cont.stdout || { echo "  the continuation reset the start"; return 1; }
+    local end start fin
+    end=$(grep -m1 "^Optimal log-likelihood" a.stdout | awk '{print $NF}')
+    start=$(grep -m1 -E "^1\. Log-likelihood" a.cont.stdout | awk '{print $NF}')
+    fin=$(grep -m1 "^Optimal log-likelihood" a.cont.stdout | awk '{print $NF}')
+    echo "  first run $end; continuation starts at $start, ends at $fin"
+    awk -v e="$end" -v s="$start" -v f="$fin" 'BEGIN { exit (s >= e - 0.1 && f >= s - 0.1) ? 0 : 1 }' \
+        || { echo "  the continuation did not start from the trained model"; return 1; }
+    echo "  continuation: PASS"
+}
+
+JOINT=(j_linked j_start_points j_gradcheck j_determinism j_quality j_continue)
 
 throttle() { while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$MAXJOBS" ]; do sleep 1; done; }
 

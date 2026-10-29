@@ -305,7 +305,8 @@ void LinkedGradientOptimizer::writeModelFile(const string &file) const {
         << " exchangeability matrix, estimated jointly from " << trees_.size() << " alignments. " << endl
         << "  The matrix belongs with its profiles; it is not a standalone matrix. Exchangeabilities" << endl
         << "  at the lower bound (1e-4 of the last entry) are not estimable from the data." << endl
-        << "  Use: -mdef " << file << " -m " << name << "+G4 ]" << endl
+        << "  Use: -mdef " << file << " -m " << name << "+G4"
+        << (estimatedGTR20() ? "; " + name + "GTR20 is the start for continuing the training" : "") << " ]" << endl
         << "begin models;" << endl
         << "model " << qname << " =" << endl;
     // PAML lower triangle (row a, columns b < a); the rates are stored as the upper triangle
@@ -321,14 +322,50 @@ void LinkedGradientOptimizer::writeModelFile(const string &file) const {
             for (int a = 0; a < S; a++) out << " " << pi[by_weight[j]][a];
             out << ";" << endl;
         }
-        out << "model " << name << " = " << qname << "+FMIX{";
+        ostringstream fmix;
+        fmix << setprecision(17) << "FMIX{";
         for (int j = 0; j < K; j++) {
             int k = by_weight[j];
-            out << (j ? "," : "") << name << "pi" << j + 1 << ":" << component(model, k)->total_num_subst << ":" << w[k];
+            fmix << (j ? "," : "") << name << "pi" << j + 1 << ":" << component(model, k)->total_num_subst << ":" << w[k];
         }
-        out << "};" << endl;
+        fmix << "}";
+        out << "model " << name << " = " << qname << "+" << fmix.str() << ";" << endl;
+        // the start for continuing the training (see continueCommand)
+        if (estimatedGTR20()) out << "model " << name << "GTR20 = GTR20+" << fmix.str() << ";" << endl;
     }
     out << "end;" << endl;
+}
+
+bool LinkedGradientOptimizer::estimatedGTR20() const {
+    ModelSubst *model = trees_[0]->getModel();
+    ModelMarkov *c0 = component(model, 0);
+    return model->getNMixtures() > 1 && c0 && model->num_states == 20 && c0->getNParams() == c0->getNumRateEntries() - 1;
+}
+
+string LinkedGradientOptimizer::continueCommand(int rounds) const {
+    if (steps_ == 0 || !estimatedGTR20()) return "";
+    Params &params = Params::getInstance();
+    const string prefix = params.out_prefix, name = "MM" + convertIntToString(trees_[0]->getModel()->getNMixtures());
+    // the user's options, without those the continuation replaces
+    const vector<string> drop_value = {"-t", "-te", "--tree", "-pre", "--prefix", "-mdef", "--mdef", "--model-joint",
+        "--link-partition", "--start-points", "--gtr20-model", "--init-exchange", "--loop-model"};
+    const vector<string> drop_flag = {"--tree-fix", "-redo", "--redo", "-mfopt", "--mfopt", "-mwopt", "--mix-opt",
+        "--link-exchange-rates", "--link-exchange", "--analytical-gradients"};
+    auto quote = [](const string &s) {
+        return s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_+-./:=,") == string::npos
+               ? s : "'" + s + "'";
+    };
+    istringstream in(params.original_params);
+    string tok, cmd = "iqtree3";
+    while (in >> tok) {
+        if (find(drop_value.begin(), drop_value.end(), tok) != drop_value.end()) { in >> tok; continue; }
+        if (find(drop_flag.begin(), drop_flag.end(), tok) != drop_flag.end()) continue;
+        cmd += " " + quote(tok);
+    }
+    cmd += " -te " + quote(prefix + ".treefile") + " -mdef " + quote(prefix + ".mm.nex") + " --model-joint " + name +
+           "GTR20 --gtr20-model " + name + "Q --link-exchange-rates -mfopt -mwopt --analytical-gradients --loop-model " +
+           convertIntToString(rounds) + " -pre " + quote(prefix + ".cont");
+    return cmd;
 }
 
 void LinkedGradientOptimizer::warnRatesAtUpperBound() const {

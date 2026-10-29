@@ -53,9 +53,17 @@ public:
      * K-class mixture with linked exchangeabilities `model MM<K>Q` (PAML lower
      * triangle, pinned entry 1, frequencies = weighted mean profile), `frequency
      * MM<K>pi1..K` (normalised, by decreasing weight) and `model MM<K> =
-     * MM<K>Q+FMIX{...}`; for one class `model MM1`. 17 significant digits.
+     * MM<K>Q+FMIX{...}`; for one class `model MM1`. 17 significant digits. With an
+     * estimated GTR20 also `model MM<K>GTR20 = GTR20+FMIX{...}`, the start for continuing.
      */
     void writeModelFile(const std::string &file) const;
+
+    /**
+     * The command that continues the training from <prefix>.mm.nex and <prefix>.treefile
+     * for `rounds` more rounds: the user's options with MM<K>GTR20 as the joint model and
+     * MM<K>Q as the GTR20 start. "" when not a mixture with an estimated GTR20.
+     */
+    std::string continueCommand(int rounds) const;
 
     /** warns, naming the pairs, when exchangeabilities end at the upper bound (1e4 x the pinned last entry) */
     void warnRatesAtUpperBound() const;
@@ -73,6 +81,8 @@ private:
         std::vector<std::vector<double>> rates, freqs;
         std::vector<double> weights;
     };
+    /** a mixture whose shared exchangeability matrix is an estimated GTR20 */
+    bool estimatedGTR20() const;
     void snapshot(RawState &st) const;
     /** writes `st` into every partition's copy */
     void restore(const RawState &st);

@@ -57,6 +57,9 @@ public:
      */
     void writeModelFile(const std::string &file) const;
 
+    /** warns, naming the pairs, when exchangeabilities end at the upper bound (1e4 x the pinned last entry) */
+    void warnRatesAtUpperBound() const;
+
     virtual int getNDim();
     virtual double targetFunk(double x[]);
     virtual double derivativeFunk(double x[], double dfx[]);

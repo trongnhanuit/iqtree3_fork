@@ -1054,6 +1054,9 @@ double PartitionModel::optimizeParameters(int fixed_len, bool write_info, double
                    (last_gain > 0.0 ? "; the last round still gained " + convertDoubleToString(last_gain) +
                     " (threshold " + convertDoubleToString(logl_epsilon * 10) + ")" : string()) +
                    ". Rerun with more rounds, e.g. --loop-model " + convertIntToString(2 * opt_steps));
+    if (write_info)
+        for (auto &lo : linked_ag)
+            if (lo.second) lo.second->warnRatesAtUpperBound();
 
     if (verbose_mode >= VB_MED || write_info)
 		cout << "Optimal log-likelihood: " << tree_lh << endl;

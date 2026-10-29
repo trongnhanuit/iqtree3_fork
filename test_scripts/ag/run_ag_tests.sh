@@ -588,6 +588,11 @@ robust_j_quality() {   # same FMIX start: the analytic linked step ends no worse
         # shellcheck disable=SC2086
         "$BIN" $args --prefix ${id}_on -redo --analytical-gradients > ${id}_on.stdout 2>&1 || { echo "  $id flag-on run failed"; return 1; }
         ! grep -q "round limit" ${id}_on.stdout || { echo "  $id: round-limit warning on a converged run"; return 1; }
+        # the upper-bound warning names exactly the entries of the written matrix at 1e4 (fmix2: one, fo: none)
+        local capped; capped=$(awk '/^model MM[0-9]*Q* =/ { f = 1; next } f && /;/ { exit } f' ${id}_on.mm.nex | tr ' ' '\n' | awk '$1 >= 9999.99' | wc -l | tr -d ' ')
+        if [ "$capped" = "0" ]; then ! grep -q "reached the upper bound" ${id}_on.stdout
+        else grep -q "WARNING: $capped exchangeabilit.* reached the upper bound" ${id}_on.stdout; fi \
+            || { echo "  $id: upper-bound warning does not match the $capped capped entries"; return 1; }
         off=$(logl_of ${id}_off.iqtree); on=$(logl_of ${id}_on.iqtree)
         echo "  $id: flag-off $off, flag-on $on"
         awk -v a="$off" -v b="$on" 'BEGIN { exit (b >= a - 0.1) ? 0 : 1 }' || { echo "  $id: analytic run worse than finite differences"; return 1; }

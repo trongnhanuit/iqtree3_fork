@@ -220,6 +220,19 @@ void ModelParamMap::discoverGroups(ModelMarkov *comp, SBlock &blk) const {
 /* pack / unpack                                                           */
 /* ---------------------------------------------------------------------- */
 
+vector<int> ModelParamMap::ratesAtUpperBound() const {
+    vector<int> entries;
+    for (auto &blk : sblocks_) {
+        ModelMarkov *c = component(blk.comps[0]);
+        vector<double> rates(c->getNumRateEntries());
+        c->getRateMatrix(rates.data());   // not pack(): the caller's model may be fixed again
+        for (int i = 0; i < blk.nvar; i++)
+            if (!blk.entries[i].empty() && log(rates[blk.entries[i][0]]) >= upper_[blk.offset + i] - 1e-9)
+                entries.insert(entries.end(), blk.entries[i].begin(), blk.entries[i].end());
+    }
+    return entries;
+}
+
 void ModelParamMap::pack(vector<double> &theta) const {
     theta.assign(ndim(), 0.0);
     for (auto &blk : sblocks_) {

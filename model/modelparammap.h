@@ -72,6 +72,8 @@ public:
     const std::vector<char> &clamped() const { return clamped_; }
     /** the last mixture weight (not a theta entry) was held at its floor by the last unpack() */
     bool lastWeightClamped() const { return last_w_clamped_; }
+    /** rate entries whose free exchangeability is at its upper bound in the current model */
+    std::vector<int> ratesAtUpperBound() const;
 
     /** current model -> theta */
     void pack(std::vector<double> &theta) const;

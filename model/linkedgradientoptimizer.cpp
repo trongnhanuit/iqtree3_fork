@@ -331,6 +331,22 @@ void LinkedGradientOptimizer::writeModelFile(const string &file) const {
     out << "end;" << endl;
 }
 
+void LinkedGradientOptimizer::warnRatesAtUpperBound() const {
+    if (steps_ == 0 || maps_.empty()) return;
+    vector<int> hit = maps_[0]->ratesAtUpperBound();
+    if (hit.empty()) return;
+    Alignment *aln = trees_[0]->aln;
+    vector<string> pair;   // rate entry -> "A-R", the upper triangle by rows
+    for (int a = 0; a < aln->num_states; a++)
+        for (int b = a + 1; b < aln->num_states; b++)
+            pair.push_back(aln->convertStateBackStr(a) + "-" + aln->convertStateBackStr(b));
+    string names;
+    for (int e : hit) names += (names.empty() ? "" : ", ") + pair[e];
+    outWarning(convertIntToString((int)hit.size()) + (hit.size() == 1 ? " exchangeability" : " exchangeabilities") +
+               " reached the upper bound (1e4 x the " + pair.back() + " entry) and " +
+               (hit.size() == 1 ? "is" : "are") + " capped there: " + names);
+}
+
 /* ---------------------------------------------------------------------- */
 /* one linked step                                                         */
 /* ---------------------------------------------------------------------- */

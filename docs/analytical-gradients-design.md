@@ -607,7 +607,8 @@ partition 0's flags (identical across copies).
 
 *Bounds.* Exchangeabilities are bounded relative to the pinned last entry
 (pinned x [1e-4, 1e4]); a POISSON start pins it at 10, and the absolute bound
-100 would otherwise cap every other entry at 10x.
+100 would otherwise cap every other entry at 10x. At the end of the alternation
+a warning names the pairs left at the upper bound.
 
 *Safety.* A failing analytic gradient (exception, non-finite value or eigen
 residual) uses finite differences for that call; a step that ends lower than it

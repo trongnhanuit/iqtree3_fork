@@ -19,7 +19,7 @@
 #              partition and -p must fall back with the warning; a simulated
 #              two-profile mixture must be recovered within absolute tolerances,
 #              and warm, cold and multi-start must reach the same optimum on it;
-#              --ag-udm-name above K=60 must be used if valid, else error
+#              built-in UDM64/UDM128 up to K=128; --ag-udm-name above that, used if valid, else error
 #   robust     integration behaviour: abort/resume from the checkpoint, checkpoint
 #              cross-compatibility with the default path, ModelFinder, PMSF's
 #              site-specific pass, +I+G restarts, fault injection, concurrent
@@ -333,7 +333,7 @@ run_partitions() {   # -Q takes the new path per partition; -p falls back with t
     [ "$rc" = "0" ] || touch "$REP/$id.FAIL"
 }
 
-run_udm_start() {   # K>60 warm start: no name warns+jitters; a valid name is used; an insufficient name errors
+run_udm_start() {   # protein warm start: UDM64/UDM128 up to K=128 (name ignored); above, no name jitters, a valid name is used, an insufficient one errors
     local id="q_udm_start"
     local dir="$OUT_DIR/$id" rc=0
     mkdir -p "$dir"
@@ -342,20 +342,29 @@ run_udm_start() {   # K>60 warm start: no name warns+jitters; a valid name is us
         cd "$dir" || exit 1
         local ARGS="-s $EX/aa_example.phy -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-abort-after init --ag-warm-select index -redo"
         # shellcheck disable=SC2086
-        "$BIN" $ARGS -m LG+F70 --prefix noname > noname.stdout 2>&1
-        grep -q "classes exceed C60; jittering" noname.stdout || { echo "  no-name run did not warn about K>60"; exit 1; }
-        grep -q "AG: 70 identical starting profiles; symmetry broken with log-normal jitter" noname.stdout || { echo "  no-name run did not fall back to jitter"; exit 1; }
-        echo "  no --ag-udm-name (K=70): warned and jittered, PASS"
+        "$BIN" $ARGS -m LG+F62 --prefix udm64 > udm64.stdout 2>&1
+        grep -q "AG: 62 identical starting profiles; symmetry broken with UDM64 profiles" udm64.stdout || { echo "  K=62 did not use UDM64"; exit 1; }
+        echo "  K=62: built-in UDM64 used, PASS"
         # shellcheck disable=SC2086
-        "$BIN" $ARGS -m LG+F62 -mdef "$FIX" --ag-udm-name TESTUDM --prefix okname > okname.stdout 2>&1
-        grep -q 'AG: 62 identical starting profiles; symmetry broken with "TESTUDM" profiles (--ag-udm-name)' okname.stdout || { echo "  a valid --ag-udm-name was not used"; exit 1; }
-        echo "  --ag-udm-name TESTUDM (K=62, exact fit): used, PASS"
+        "$BIN" $ARGS -m LG+F70 -mdef "$FIX" --ag-udm-name TESTUDM --prefix udm128 > udm128.stdout 2>&1
+        grep -q "AG: 70 identical starting profiles; symmetry broken with UDM128 profiles" udm128.stdout || { echo "  K=70 did not use UDM128"; exit 1; }
+        grep -q "AG: --ag-udm-name TESTUDM ignored: 70 classes use the built-in UDM128 profiles" udm128.stdout || { echo "  the ignored name was not reported"; exit 1; }
+        echo "  K=70 with --ag-udm-name: built-in UDM128 used, name ignored with a warning, PASS"
         # shellcheck disable=SC2086
-        "$BIN" $ARGS -m LG+F70 -mdef "$FIX" --ag-udm-name TESTUDM --prefix badname > badname.stdout 2>&1
+        "$BIN" $ARGS -m LG+F130 --prefix noname > noname.stdout 2>&1
+        grep -q "classes exceed UDM128; jittering" noname.stdout || { echo "  no-name run did not warn about K>128"; exit 1; }
+        grep -q "AG: 130 identical starting profiles; symmetry broken with log-normal jitter" noname.stdout || { echo "  no-name run did not fall back to jitter"; exit 1; }
+        echo "  no --ag-udm-name (K=130): warned and jittered, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS -m LG+F130 -mdef "$FIX" --ag-udm-name TESTUDM --prefix okname > okname.stdout 2>&1
+        grep -q 'AG: 130 identical starting profiles; symmetry broken with "TESTUDM" profiles (--ag-udm-name)' okname.stdout || { echo "  a valid --ag-udm-name was not used"; exit 1; }
+        echo "  --ag-udm-name TESTUDM (K=130, exact fit): used, PASS"
+        # shellcheck disable=SC2086
+        "$BIN" $ARGS -m LG+F140 -mdef "$FIX" --ag-udm-name TESTUDM --prefix badname > badname.stdout 2>&1
         local rc2=$?
         [ "$rc2" != "0" ] || { echo "  an insufficient --ag-udm-name should have failed but exited 0"; exit 1; }
-        grep -q "does not define 70 frequency profiles" badname.stdout || { echo "  the expected error message was not printed"; exit 1; }
-        echo "  --ag-udm-name TESTUDM (K=70, fixture has only 62): errored, PASS"
+        grep -q "does not define 140 frequency profiles" badname.stdout || { echo "  the expected error message was not printed"; exit 1; }
+        echo "  --ag-udm-name TESTUDM (K=140, fixture has only 130): errored, PASS"
     ) > "$REP/$id.txt" 2>&1
     rc=$?
     (echo "== $id (exit $rc)"; cat "$REP/$id.txt") > "$REP/$id.tmp" && mv "$REP/$id.tmp" "$REP/$id.txt"

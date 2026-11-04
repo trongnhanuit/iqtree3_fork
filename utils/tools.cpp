@@ -6181,8 +6181,8 @@ void usage_iqtree(char* argv[], bool full_command) {
     << endl << "MODEL PARAMETER OPTIMISATION (ANALYTICAL GRADIENTS):" << endl
     << "  --analytical-gradients   Exact-gradient EM+BFGS optimisation of model parameters" << endl
     << "                           (reversible models and mixtures; others use the default)" << endl
-    << "  --ag-start warm|cold     Warm start from C-series profiles (default) or random" << endl
-    << "  --ag-udm-name NAME       Above C60, warm-start from NAME's profiles (via -mdef)" << endl
+    << "  --ag-start warm|cold     Warm start from C-series/UDM profiles (default) or random" << endl
+    << "  --ag-udm-name NAME       Above 128 classes, warm-start from NAME's profiles (-mdef)" << endl
     << "  --ag-multistart NUM      Multi-start candidates (default: 0 = off; -1 for auto)" << endl
     << "  --ag-cascade on|off      Coarser EM warm-up passes before the target (default: off)" << endl
     << "  --ag-optalg BFGS|LBFGSB  Driver for the joint polish (default: BFGS)" << endl

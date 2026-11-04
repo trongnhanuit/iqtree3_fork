@@ -1859,7 +1859,7 @@ public:
     int ag_multistart_budget;
     /** --ag-start <warm|cold>: starting point for estimated profiles */
     string ag_start;
-    /** --ag-udm-name NAME: above C60, warm-start from NAME's profiles (via -mdef) instead of jitter */
+    /** --ag-udm-name NAME: above 128 classes, warm-start from NAME's profiles (via -mdef) instead of jitter */
     string ag_udm_name;
     /** --ag-warm-select <index|weight|sample>: which K reference profiles to borrow for warm-start (default weight) */
     string ag_warm_select;

@@ -358,8 +358,8 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
     // NOTE(design 6.4): identical classes are a fixed point of every gradient
     // method (the gradient is identical for all of them), so the `+Fk` default
     // start must be perturbed. Protein: the first k profiles of the smallest
-    // C-series with >= k classes; otherwise a light log-normal jitter from a
-    // private, seeded generator (no global RNG state touched).
+    // built-in family with >= k classes (C10..C60, UDM64, UDM128); otherwise a
+    // light log-normal jitter from a private, seeded generator (no global RNG state touched).
     string how;
     bool done = false;
     // --ag-warm-select weight|sample: borrow K profiles of the reference family
@@ -372,10 +372,17 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
     const string &warm_select = Params::getInstance().ag_warm_select;
     const bool by_weight = (warm_select == "weight" || warm_select == "sample");
     const bool by_sample = (warm_select == "sample");
-    if (S == 20 && est.size() <= 60) {
-        int kk = 10;
-        while (kk < (int)est.size()) kk += 10;
-        string family = "C" + convertIntToString(kk);
+    if (S == 20 && est.size() <= 128) {
+        string family = est.size() > 64 ? "UDM128" : est.size() > 60 ? "UDM64" : "";
+        if (family.empty()) {
+            int kk = 10;
+            while (kk < (int)est.size()) kk += 10;
+            family = "C" + convertIntToString(kk);
+        }
+        if (!Params::getInstance().ag_udm_name.empty())
+            outWarning("AG: --ag-udm-name " + Params::getInstance().ag_udm_name + " ignored: " +
+                       convertIntToString((int)est.size()) + " classes use the built-in " + family +
+                       " profiles (the name is used above 128 classes)");
         ModelsBlock *models_block = readModelsDefinition(Params::getInstance());
         vector<string> names;
         bool all = true;
@@ -403,8 +410,8 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
             done = true;
         }
     }
-    // --ag-udm-name: profiles from a name loaded via -mdef (e.g. a UDM file, not
-    // bundled here). Index mode tries both EDCluster's "<name>_C####" and this
+    // --ag-udm-name: profiles from a name loaded via -mdef (e.g. a larger EDCluster
+    // UDM file). Index mode tries both EDCluster's "<name>_C####" and this
     // codebase's "<name>pi#"; weight/sample modes read them straight off the composite.
     if (!done && !Params::getInstance().ag_udm_name.empty()) {
         const string &name = Params::getInstance().ag_udm_name;
@@ -442,8 +449,8 @@ void GradientOptimizer::breakSymmetry(bool write_info) {
         }
     }
     if (!done) {
-        if (S == 20 && est.size() > 60)
-            outWarning("AG: " + convertIntToString((int)est.size()) + " classes exceed C60; jittering. "
+        if (S == 20 && est.size() > 128)
+            outWarning("AG: " + convertIntToString((int)est.size()) + " classes exceed UDM128; jittering. "
                        "For real profiles: -mdef <file.nex> --ag-udm-name <NAME> "
                        "(e.g. a UDM file from https://github.com/dschrempf/EDCluster).");
         std::mt19937_64 rng((unsigned long long)Params::getInstance().ran_seed + 7919ULL);

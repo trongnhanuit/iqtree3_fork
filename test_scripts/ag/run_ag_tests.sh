@@ -23,7 +23,7 @@
 #   robust     integration behaviour: abort/resume from the checkpoint, checkpoint
 #              cross-compatibility with the default path, ModelFinder, PMSF's
 #              site-specific pass, +I+G restarts, fault injection, concurrent
-#              partitions at 4 threads
+#              partitions at 4 threads, --ag-em-repeat passes
 #
 # Cases run in parallel, at most N processes at a time (default: half the cores).
 # Exit code 0 = all cases passed, 1 = a failure, 2 = usage.
@@ -521,7 +521,26 @@ robust_x_threads_partitions() {   # X5: -Q at 4 threads (partitions enter the ho
     echo "  concurrent partitions: PASS"
 }
 
-ROBUST=(x_abort_resume x_ckp_crosscompat x_modelfinder x_pmsf x_gammai_restart x_fault x_threads_partitions)
+robust_x_em_repeat() {   # --ag-em-repeat: the warm-up repeats its W,R,F pass, never loses lnL, reaches the single-pass optimum
+    local ARGS="-s $EX/aa_example.phy -m LG+F2+R3 -te $HERE/data/aa_example_lg.nwk -nt 1 -seed $SEED --analytical-gradients --ag-stats"
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix one -redo > one.stdout 2>&1 || { echo "  single-pass run failed"; return 1; }
+    # shellcheck disable=SC2086
+    "$BIN" $ARGS --prefix rep -redo --ag-em-stop-frac 0.01 --ag-em-repeat 0.01 > rep.stdout 2>&1 || { echo "  repeat run failed"; return 1; }
+    local p1 p2; p1=$(grep -m1 "AG stats" one.stdout | grep -Eo "em_passes=[0-9]+" | cut -d= -f2)
+    p2=$(grep -m1 "AG stats" rep.stdout | grep -Eo "em_passes=[0-9]+" | cut -d= -f2)
+    echo "  em_passes single=$p1 repeat=$p2"
+    [ "$p1" = "1" ] || { echo "  the default did not make exactly one pass"; return 1; }
+    [ "${p2:-0}" -ge 2 ] || { echo "  --ag-em-repeat made fewer than two passes"; return 1; }
+    grep "EM warm-up log-likelihood" rep.stdout | awk '{ print $NF }' |
+        awk 'NR > 1 && $1 < prev - 1e-6 { bad = 1 } { prev = $1 } END { exit bad }' || { echo "  a pass lost lnL"; return 1; }
+    local a b; a=$(logl_of one.iqtree); b=$(logl_of rep.iqtree)
+    echo "  single=$a repeat=$b"
+    within "$a" "$b" 0.5 || { echo "  optima differ by more than 0.5"; return 1; }
+    echo "  em repeat: PASS"
+}
+
+ROBUST=(x_abort_resume x_ckp_crosscompat x_modelfinder x_pmsf x_gammai_restart x_fault x_threads_partitions x_em_repeat)
 
 throttle() { while [ "$(jobs -rp | wc -l | tr -d ' ')" -ge "$MAXJOBS" ]; do sleep 1; done; }
 

@@ -1395,6 +1395,15 @@ void parseArg(int argc, char *argv[], Params &params) {
                     throw "--ag-em-stop-frac must be in (0, 1]";
                 continue;
             }
+            if (strcmp(argv[cnt], "--ag-em-repeat") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --ag-em-repeat <fraction>";
+                params.ag_em_repeat = convert_double(argv[cnt]);
+                if (params.ag_em_repeat < 0.0 || params.ag_em_repeat > 1.0)
+                    throw "--ag-em-repeat must be in [0, 1]";
+                continue;
+            }
             if (strcmp(argv[cnt], "--ag-stats") == 0) {
                 params.ag_stats = true;
                 continue;
@@ -7483,6 +7492,7 @@ void Params::setDefault() {
     ag_em_axes = "W,R,F";
     ag_em_stop_axes = "W,R,F";
     ag_em_stop_frac = 0.001;
+    ag_em_repeat = 0.0;
     ag_stats = false;
     ag_abort_after = "";
     ag_dump_gradient = false;

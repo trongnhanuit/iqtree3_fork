@@ -664,8 +664,8 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     }
 
     // NOTE(design 10): phase 1 -- EM warm-up. Cheap and fixed-effort: one
-    // branch step + one accept-or-revert M-step per axis, per level, never
-    // repeated and never polished (a starting point for BFGS, not a
+    // branch step + one accept-or-revert M-step per axis, per level, not
+    // repeated (unless --ag-em-repeat) and never polished (a starting point for BFGS, not a
     // converged answer -- over-optimising one axis while the others are
     // still wrong is wasted work). --ag-cascade off (default) collapses
     // this to a single pass at the target precision; on adds coarser
@@ -678,6 +678,8 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
         for (double e : coarse) if (e > logl_epsilon) levels.push_back(e);
     }
     levels.push_back(logl_epsilon);
+    const int max_rounds = max(1, params.num_param_iterations - 2);
+    int em_passes = 0;
 
     if (em_enabled_) {
         for (double eps : levels) {
@@ -689,21 +691,31 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
             }
             n_lh_++;
             cur_lh = tree_->computeLikelihood();
-            for (char ax : em_axes_) {
-                if (ax == 'W') cur_lh = emWeights(cur_lh);
-                else if (ax == 'R') cur_lh = emRates(cur_lh, gradient_epsilon);
-                else if (ax == 'F') cur_lh = emProfilesLoop(cur_lh);
+            // --ag-em-repeat FRAC: repeat the W,R,F pass (not the branch step) until a
+            // pass gains < FRAC of the largest pass gain so far, or < eps
+            double max_gain = 0.0;
+            for (int pass = 1; pass <= max_rounds; pass++) {
+                const double before = cur_lh;
+                for (char ax : em_axes_) {
+                    if (ax == 'W') cur_lh = emWeights(cur_lh);
+                    else if (ax == 'R') cur_lh = emRates(cur_lh, gradient_epsilon);
+                    else if (ax == 'F') cur_lh = emProfilesLoop(cur_lh);
+                }
+                rounds_++;
+                em_passes++;
+                if (cur_lh > best.logl) snapshot(best, cur_lh);
+                if (write_info) {
+                    ostringstream os;
+                    os << (rounds_ + 1) << ". EM warm-up log-likelihood: " << cur_lh;
+                    if (levels.size() > 1) os << " (level " << eps << ")";
+                    if (verbose_mode >= VB_MED) os << " (after " << (getRealTime() - t0) << " wall-clock sec)";
+                    say(os.str());
+                }
+                abortAfter("round:" + convertIntToString(rounds_));
+                const double gain = cur_lh - before;
+                max_gain = max(max_gain, gain);
+                if (params.ag_em_repeat <= 0.0 || gain < params.ag_em_repeat * max_gain || gain < eps) break;
             }
-            rounds_++;
-            if (cur_lh > best.logl) snapshot(best, cur_lh);
-            if (write_info) {
-                ostringstream os;
-                os << (rounds_ + 1) << ". EM warm-up log-likelihood: " << cur_lh;
-                if (levels.size() > 1) os << " (level " << eps << ")";
-                if (verbose_mode >= VB_MED) os << " (after " << (getRealTime() - t0) << " wall-clock sec)";
-                say(os.str());
-            }
-            abortAfter("round:" + convertIntToString(rounds_));
         }
     }
 
@@ -713,7 +725,6 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     // BFGS iterations, so this outer loop keeps the plain absolute-floor
     // rule only (unchanged from the pre-restructuring target level).
     logl_epsilon_ = logl_epsilon;
-    const int max_rounds = max(1, params.num_param_iterations - 2);
     double prev_lh = cur_lh;
     int phase2_rounds = 0;
     for (int round = 1; phase2_rounds < max_rounds; round++) {
@@ -768,7 +779,7 @@ double GradientOptimizer::optimize(int fixed_len, bool write_info, double logl_e
     if (params.ag_stats) {
         ostringstream os;
         os << "AG stats: rounds=" << rounds_ << " em_levels=" << (em_enabled_ ? (int)levels.size() : 0)
-           << " polish_rounds=" << phase2_rounds << " bfgs_iterations=" << n_bfgs_iter_
+           << " em_passes=" << em_passes << " polish_rounds=" << phase2_rounds << " bfgs_iterations=" << n_bfgs_iter_
            << " likelihood_evaluations=" << n_lh_ << " gradient_evaluations=" << n_grad_
            << " em_steps(W/R/F)=" << n_em_w_ << "/" << n_em_r_ << "/" << n_em_f_ << " em_reverts=" << n_em_revert_
            << " multistart_candidates=" << n_multistart_

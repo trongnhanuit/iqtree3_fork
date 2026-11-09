@@ -1877,6 +1877,9 @@ public:
     string ag_em_stop_axes;
     /** --ag-em-stop-frac fraction: relative threshold used by ag_em_stop_axes (default 0.001) */
     double ag_em_stop_frac;
+    /** --ag-em-repeat fraction: repeat the EM warm-up's W,R,F pass until a pass gains less than
+        this fraction of the largest pass gain so far (default 0 = a single pass) */
+    double ag_em_repeat;
     /** --ag-stats: print the optimiser's own likelihood/gradient evaluation counts */
     bool ag_stats;
     /** (hidden) --ag-abort-after <level>: dump the checkpoint and exit after a cascade level */

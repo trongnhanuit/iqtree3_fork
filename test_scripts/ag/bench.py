@@ -62,8 +62,10 @@ to 50% of the cores.
 3 families -- simplest DNA (GTR+F4+I+G4), simple mixture (LG+F4+R4), complex
 mixture (GTR20+F8+I+R4) -- all 40 taxa, random profiles/weights (and, for the
 GTR/GTR20 families, random exchangeabilities via random_gtr_mix), two seeds.
-Arms: new-default / new-stop1 (--ag-em-stop-axes W,R,F) / new-stop01 (same,
---ag-em-stop-frac 0.001), all on <iqtree_binary>, plus old-branch on
+Arms: new-default / new-stop1 (--ag-em-stop-axes W,R,F --ag-em-stop-frac 0.01) /
+new-stop01 (same, 0.001) / new-repeat (1% per axis, W,R,F passes repeated
+until a pass gains < 1% of the largest pass gain: --ag-em-stop-frac 0.01
+--ag-em-repeat 0.01), all on <iqtree_binary>, plus old-branch on
 --old-binary PATH (a separately built binary, e.g. the analytical_gradients
 branch tip, predating --ag-em-stop-axes/the phase-1/phase-2 optimiser split
 entirely). -j defaults to 50% of the cores.
@@ -300,14 +302,15 @@ ARMS = {
     # stopfrac tier: does --ag-em-stop-axes help, and does the fraction matter?
     # old-branch runs on --old-binary instead of the primary binary (see ARM_BINARY).
     "new-default": ("--analytical-gradients --ag-stats", "stopfrac"),
-    "new-stop1":   ("--analytical-gradients --ag-stats --ag-em-stop-axes W,R,F", "stopfrac"),
+    "new-stop1":   ("--analytical-gradients --ag-stats --ag-em-stop-axes W,R,F --ag-em-stop-frac 0.01", "stopfrac"),
     "new-stop01":  ("--analytical-gradients --ag-stats --ag-em-stop-axes W,R,F --ag-em-stop-frac 0.001", "stopfrac"),
+    "new-repeat":  ("--analytical-gradients --ag-stats --ag-em-stop-frac 0.01 --ag-em-repeat 0.01", "stopfrac"),
     "old-branch":  ("--analytical-gradients --ag-stats", "stopfrac"),
 }
 THOROUGH_ARMS = ["old-default", "new-warm", "new-cascade", "new-cold", "new-multi", "new-noem", "new-cold-multi"]
 MINI_ARMS = THOROUGH_ARMS   # same set; the point of this tier is small enough data that old-default finishes
 EMORDER_ARMS = ["new-fwr", "new-wrf"]
-STOPFRAC_ARMS = ["new-default", "new-stop1", "new-stop01", "old-branch"]
+STOPFRAC_ARMS = ["new-default", "new-stop1", "new-stop01", "new-repeat", "old-branch"]
 ARM_BINARY = {"old-branch": "old"}   # arm name -> binary key (default "head" == the primary binary)
 # arms that only change the start of estimated (+FO) profiles; identical to new-warm when the profiles are fixed
 PROFILE_START_ARMS = ("new-cold", "new-multi", "new-cold-multi")

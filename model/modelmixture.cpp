@@ -4058,6 +4058,8 @@ double ModelMixture::targetFunk(double x[]) {
     	ASSERT(phylo_tree);
     	if (dim > 0) // only clear all partial_lh if changing at least 1 rate matrix
     		phylo_tree->clearAllPartialLH();
+    	else if (!fix_prop && phylo_tree->ptn_invar && phylo_tree->getRate()->getPInvar() > 0.0)
+    		phylo_tree->computePtnInvar(); // +I: the invariant-site term uses the weighted class frequencies
     //	if (prop[size()-1] < 0.0) return 1.0e+12;
     	return -phylo_tree->computeLikelihood();
     
